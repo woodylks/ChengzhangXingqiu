@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="成長星球">
+<title>成長星球 · 育兒知識庫</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FDF6EE;
+  --card: #FFFFFF;
+  --text: #2D2016;
+  --muted: #9B8B7A;
+  --border: #EDE3D9;
+  --kid1: #FF6B35;
+  --kid1-light: #FFF1EC;
+  --kid1-mid: #FFD4C2;
+  --kid2: #4FACDE;
+  --kid2-light: #EBF7FF;
+  --kid2-mid: #B8E2F7;
+  --accent: #F7C948;
+  --accent-light: #FFFBEB;
+  --green: #52C98A;
+  --green-light: #EDFBF3;
+  --purple: #8B5CF6;
+  --purple-light: #F3EEFF;
+  --red: #F87171;
+  --shadow-sm: 0 1px 3px rgba(45,32,22,0.08);
+  --shadow: 0 4px 16px rgba(45,32,22,0.10);
+  --shadow-lg: 0 8px 32px rgba(45,32,22,0.14);
+  --radius: 20px;
+  --radius-sm: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Noto Sans TC', 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: linear-gradient(135deg, #FF6B35 0%, #F7C948 50%, #4FACDE 100%);
+  padding: 52px 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.app-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.07'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.header-content { position: relative; display: flex; align-items: center; justify-content: space-between; }
+.header-logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon { font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+.logo-text h1 { font-family: 'Nunito', sans-serif; font-size: 22px; font-weight: 900; color: white; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+.logo-text p { font-size: 11px; color: rgba(255,255,255,0.85); font-weight: 600; }
+.header-date { text-align: right; color: white; }
+.header-date .date-num { font-family: 'Nunito', sans-serif; font-size: 28px; font-weight: 900; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+.header-date .date-str { font-size: 11px; opacity: 0.85; font-weight: 600; }
+
+/* ── KID SWITCHER ── */
+.kid-switcher {
+  display: flex; gap: 10px; padding: 16px 20px 0;
+  position: relative; z-index: 1;
+}
+.kid-tab {
+  flex: 1; padding: 10px 16px; border-radius: 50px; border: none;
+  font-family: 'Noto Sans TC', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.25s; display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: rgba(255,255,255,0.3); color: white; backdrop-filter: blur(10px);
+}
+.kid-tab.active-1 { background: var(--kid1); color: white; box-shadow: 0 4px 12px rgba(255,107,53,0.4); }
+.kid-tab.active-2 { background: var(--kid2); color: white; box-shadow: 0 4px 12px rgba(79,172,222,0.4); }
+.kid-tab .kid-avatar { font-size: 18px; }
+
+/* ── NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: white; border-top: 1px solid var(--border);
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+  display: flex; box-shadow: 0 -4px 20px rgba(45,32,22,0.08);
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 4px; border: none; background: none; cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif; font-size: 10px; font-weight: 600;
+  color: var(--muted); transition: all 0.2s; border-radius: 12px;
+}
+.nav-btn .nav-icon { font-size: 22px; transition: transform 0.2s; }
+.nav-btn.active { color: var(--kid1); }
+.nav-btn.active .nav-icon { transform: scale(1.15); }
+.nav-btn.active-2 { color: var(--kid2); }
+.nav-btn.active-2 .nav-icon { transform: scale(1.15); }
+
+/* ── MAIN ── */
+.main-content { padding: 16px 16px 90px; }
+
+/* ── SECTION ── */
+.section { display: none; }
+.section.visible { display: block; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── CARDS ── */
+.card {
+  background: var(--card); border-radius: var(--radius); padding: 18px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--border); margin-bottom: 14px;
+}
+.card-title { font-size: 15px; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.card-title .icon { font-size: 18px; }
+
+/* ── DASHBOARD ── */
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  background: var(--card); border-radius: var(--radius-sm); padding: 14px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.stat-emoji { font-size: 22px; }
+.stat-value { font-family: 'Nunito', sans-serif; font-size: 26px; font-weight: 900; line-height: 1; }
+.stat-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+/* ── TASKS ── */
+.task-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  background: var(--bg); border: 1.5px solid var(--border);
+  margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+}
+.task-item:active { transform: scale(0.98); }
+.task-item.done { opacity: 0.5; }
+.task-check {
+  width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 11px; font-weight: 900; transition: all 0.2s; margin-top: 1px;
+}
+.task-check.checked-1 { background: var(--kid1); border-color: var(--kid1); color: white; }
+.task-check.checked-2 { background: var(--kid2); border-color: var(--kid2); color: white; }
+.task-info { flex: 1; min-width: 0; }
+.task-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.task-meta { font-size: 11px; color: var(--muted); }
+.task-done-text { text-decoration: line-through; }
+.priority-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px;
+}
+
+/* add task */
+.add-task-btn {
+  width: 100%; padding: 12px; border-radius: var(--radius-sm);
+  border: 2px dashed var(--border); background: none; cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif; font-size: 14px; font-weight: 700;
+  color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.2s;
+}
+.add-task-btn:active { background: var(--border); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+  display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-sheet {
+  background: white; border-radius: 24px 24px 0 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  width: 100%; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-size: 18px; font-weight: 900; margin-bottom: 16px; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-input {
+  width: 100%; padding: 12px 14px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); font-family: 'Noto Sans TC', sans-serif;
+  font-size: 15px; background: var(--bg); color: var(--text); outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--kid1); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-primary {
+  width: 100%; padding: 14px; border-radius: var(--radius-sm); border: none;
+  background: var(--kid1); color: white; font-family: 'Noto Sans TC', sans-serif;
+  font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s;
+}
+.btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+.btn-primary.kid2 { background: var(--kid2); }
+
+/* ── PROGRESS BARS ── */
+.progress-item { margin-bottom: 12px; }
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.progress-label { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.progress-pct { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; }
+.progress-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* ── SUBJECT GRID ── */
+.subject-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.subject-card {
+  background: var(--card); border-radius: var(--radius-sm); padding: 14px 10px;
+  border: 1.5px solid var(--border); cursor: pointer; transition: all 0.2s;
+  text-align: center; box-shadow: var(--shadow-sm);
+}
+.subject-card:active { transform: scale(0.95); }
+.subject-card.selected { border-color: var(--kid1); background: var(--kid1-light); box-shadow: 0 0 0 3px rgba(255,107,53,0.15); }
+.subject-card.selected-2 { border-color: var(--kid2); background: var(--kid2-light); box-shadow: 0 0 0 3px rgba(79,172,222,0.15); }
+.subject-emoji { font-size: 26px; margin-bottom: 4px; }
+.subject-name { font-size: 12px; font-weight: 700; }
+.subject-score { font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 900; margin-top: 2px; }
+
+/* ── NOTICES ── */
+.notice-item {
+  background: var(--bg); border-radius: var(--radius-sm);
+  padding: 12px 14px; margin-bottom: 8px; border-left: 4px solid var(--kid1);
+}
+.notice-item.kid2 { border-left-color: var(--kid2); }
+.notice-date { font-size: 10px; color: var(--muted); font-weight: 600; margin-bottom: 3px; }
+.notice-title { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+.notice-body { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.notice-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 700; margin-bottom: 6px;
+}
+
+/* ── TRAINING LOG ── */
+.training-item {
+  background: var(--bg); border-radius: var(--radius-sm);
+  padding: 12px 14px; margin-bottom: 8px; display: flex; gap: 12px;
+}
+.training-date-box {
+  background: var(--kid1); color: white; border-radius: 10px;
+  padding: 6px 10px; text-align: center; flex-shrink: 0; min-width: 44px;
+}
+.training-date-box.kid2 { background: var(--kid2); }
+.training-month { font-size: 9px; font-weight: 700; opacity: 0.85; }
+.training-day { font-family: 'Nunito', sans-serif; font-size: 20px; font-weight: 900; line-height: 1; }
+.training-info { flex: 1; }
+.training-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.training-meta { font-size: 11px; color: var(--muted); }
+.training-rating { display: flex; gap: 2px; margin-top: 4px; font-size: 14px; }
+
+/* ── AI CHAT ── */
+.chat-area {
+  height: calc(100vh - 360px); min-height: 300px;
+  overflow-y: auto; padding: 4px 0; margin-bottom: 12px;
+}
+.msg { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start; }
+.msg.user { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+  background: linear-gradient(135deg, var(--kid1), var(--accent));
+}
+.msg.user .msg-avatar { background: linear-gradient(135deg, var(--kid2), var(--purple)); }
+.msg-bubble {
+  max-width: 78%; padding: 10px 14px; border-radius: 18px; font-size: 14px;
+  line-height: 1.6; background: white; border: 1px solid var(--border);
+  border-bottom-left-radius: 4px; white-space: pre-wrap;
+}
+.msg.user .msg-bubble {
+  background: linear-gradient(135deg, var(--kid2), #6BC5E8);
+  color: white; border: none; border-bottom-right-radius: 4px; border-bottom-left-radius: 18px;
+}
+.typing-dots { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+.typing-dots span {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--muted);
+  animation: typing 1.2s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+
+.chat-quick-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.quick-btn {
+  padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: white; font-family: 'Noto Sans TC', sans-serif; font-size: 12px;
+  font-weight: 700; cursor: pointer; color: var(--text); transition: all 0.2s; white-space: nowrap;
+}
+.quick-btn:active { background: var(--border); }
+
+.chat-input-row { display: flex; gap: 8px; }
+.chat-input {
+  flex: 1; padding: 12px 14px; border-radius: 50px; border: 1.5px solid var(--border);
+  font-family: 'Noto Sans TC', sans-serif; font-size: 14px; background: var(--bg);
+  outline: none; transition: border-color 0.2s;
+}
+.chat-input:focus { border-color: var(--kid2); }
+.chat-send {
+  width: 44px; height: 44px; border-radius: 50%; border: none;
+  background: var(--kid2); color: white; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all 0.2s;
+}
+.chat-send:active { transform: scale(0.92); }
+.chat-send:disabled { opacity: 0.5; }
+
+/* ── QUIZ ── */
+.quiz-subject-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.quiz-subject-btn {
+  background: var(--card); border-radius: var(--radius-sm); padding: 16px 8px;
+  border: 1.5px solid var(--border); cursor: pointer; text-align: center;
+  box-shadow: var(--shadow-sm); transition: all 0.2s;
+}
+.quiz-subject-btn:active { transform: scale(0.95); }
+.quiz-subject-btn .emoji { font-size: 28px; margin-bottom: 4px; }
+.quiz-subject-btn .name { font-size: 12px; font-weight: 700; }
+
+.quiz-box { background: var(--card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+.quiz-progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+.quiz-progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--kid1), var(--accent)); transition: width 0.4s; }
+.quiz-q { font-size: 17px; font-weight: 800; line-height: 1.5; margin-bottom: 20px; }
+.quiz-option {
+  width: 100%; padding: 14px 16px; border-radius: var(--radius-sm);
+  border: 2px solid var(--border); background: var(--bg);
+  font-family: 'Noto Sans TC', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; text-align: left; margin-bottom: 10px; transition: all 0.2s;
+  display: flex; align-items: center; gap: 10px;
+}
+.quiz-option:active { transform: scale(0.99); }
+.quiz-option.correct { border-color: var(--green); background: var(--green-light); }
+.quiz-option.wrong { border-color: var(--red); background: #FFF0F0; }
+.quiz-option .opt-letter {
+  width: 26px; height: 26px; border-radius: 50%; background: var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+  font-weight: 900; flex-shrink: 0; font-family: 'Nunito', sans-serif;
+}
+.quiz-option.correct .opt-letter { background: var(--green); color: white; }
+.quiz-option.wrong .opt-letter { background: var(--red); color: white; }
+
+.quiz-result { text-align: center; padding: 20px; }
+.quiz-result .big-emoji { font-size: 64px; margin-bottom: 12px; }
+.quiz-result .score-text { font-family: 'Nunito', sans-serif; font-size: 52px; font-weight: 900; color: var(--kid1); }
+.quiz-result .score-label { font-size: 16px; color: var(--muted); margin-bottom: 24px; font-weight: 600; }
+.btn-retry {
+  padding: 14px 32px; border-radius: 50px; border: none;
+  background: linear-gradient(135deg, var(--kid1), var(--accent));
+  color: white; font-family: 'Noto Sans TC', sans-serif; font-size: 16px; font-weight: 800;
+  cursor: pointer; box-shadow: 0 4px 16px rgba(255,107,53,0.3);
+}
+
+/* ── TAGS ── */
+.tag {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+}
+.tag-orange { background: var(--kid1-light); color: var(--kid1); }
+.tag-blue { background: var(--kid2-light); color: var(--kid2); }
+.tag-green { background: var(--green-light); color: var(--green); }
+.tag-yellow { background: var(--accent-light); color: #B45309; }
+.tag-purple { background: var(--purple-light); color: var(--purple); }
+
+/* ── SECTION LABEL ── */
+.section-label {
+  font-size: 11px; font-weight: 800; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; margin-top: 4px;
+}
+
+/* ── UPLOAD AREA ── */
+.upload-area {
+  border: 2px dashed var(--border); border-radius: var(--radius-sm);
+  padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;
+  background: var(--bg);
+}
+.upload-area:active { background: var(--border); }
+.upload-icon { font-size: 32px; margin-bottom: 8px; }
+.upload-text { font-size: 14px; font-weight: 700; color: var(--muted); }
+.upload-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.file-list { margin-top: 12px; }
+.file-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: white; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 6px;
+}
+.file-icon { font-size: 20px; flex-shrink: 0; }
+.file-name { flex: 1; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-date { font-size: 10px; color: var(--muted); }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 32px 16px; color: var(--muted); }
+.empty-state .emoji { font-size: 40px; margin-bottom: 10px; }
+.empty-state p { font-size: 14px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="header-content">
+    <div class="header-logo">
+      <span class="logo-icon">🌟</span>
+      <div class="logo-text">
+        <h1>成長星球</h1>
+        <p>育兒學習管理中心</p>
+      </div>
+    </div>
+    <div class="header-date">
+      <div class="date-num" id="dateNum"></div>
+      <div class="date-str" id="dateStr"></div>
+    </div>
+  </div>
+  <div class="kid-switcher">
+    <button class="kid-tab active-1" id="kidBtn1" onclick="switchKid(1)">
+      <span class="kid-avatar">🦁</span> 大寶（小3）
+    </button>
+    <button class="kid-tab" id="kidBtn2" onclick="switchKid(2)">
+      <span class="kid-avatar">🐰</span> 細寶（小1）
+    </button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-content">
+
+  <!-- ── 總覽 ── -->
+  <div class="section visible" id="sec-dashboard">
+    <div id="greeting-banner" class="card" style="background: linear-gradient(135deg, var(--kid1-light), var(--accent-light)); border-color: var(--kid1-mid);">
+      <div style="font-size:22px; margin-bottom:6px;" id="greeting-emoji">☀️</div>
+      <div style="font-size:17px; font-weight:900;" id="greeting-text">早晨！今天繼續加油！</div>
+      <div style="font-size:13px; color:var(--muted); margin-top:4px;" id="greeting-sub">大寶有 <strong id="pending-count">0</strong> 項任務待完成</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <span class="stat-emoji">✅</span>
+        <div class="stat-value" id="stat-done" style="color:var(--green)">0/0</div>
+        <div class="stat-label">今日任務</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-emoji">📈</span>
+        <div class="stat-value" id="stat-avg" style="color:var(--kid1)">-</div>
+        <div class="stat-label">平均進度</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-emoji">📢</span>
+        <div class="stat-value" id="stat-notices" style="color:var(--purple)">0</div>
+        <div class="stat-label">最新通知</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-emoji">🏅</span>
+        <div class="stat-value" id="stat-streak" style="color:var(--accent)">0天</div>
+        <div class="stat-label">連續學習</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span> 今日任務清單</div>
+      <div id="task-list"></div>
+      <button class="add-task-btn" onclick="openAddTask()">＋ 新增任務</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> 學科進度一覽</div>
+      <div id="progress-overview"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📢</span> 最新學校通知</div>
+      <div id="notices-preview"></div>
+    </div>
+  </div>
+
+  <!-- ── 學業 ── -->
+  <div class="section" id="sec-academic">
+    <div class="section-label">選擇科目</div>
+    <div class="subject-grid" id="subject-grid"></div>
+    <div id="subject-detail"></div>
+  </div>
+
+  <!-- ── 體藝 ── -->
+  <div class="section" id="sec-arts">
+    <div class="section-label">選擇體藝項目</div>
+    <div class="subject-grid" id="arts-grid"></div>
+    <div id="arts-detail"></div>
+  </div>
+
+  <!-- ── AI助手 ── -->
+  <div class="section" id="sec-ai">
+    <div class="card" style="margin-bottom:10px;">
+      <div class="card-title"><span class="icon">🤖</span> AI學習助手</div>
+      <div style="font-size:12px; color:var(--muted); margin-top:-8px; margin-bottom:10px;">根據孩子學習狀況，智能分析 · 自動出題 · 陪練輔導</div>
+      <div class="chat-quick-btns" id="quick-btns"></div>
+    </div>
+    <div class="card" style="padding: 14px;">
+      <div class="chat-area" id="chat-area"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="問我任何學習問題…" onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="chat-send" id="chat-send" onclick="sendMsg()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 練習 ── -->
+  <div class="section" id="sec-quiz">
+    <div id="quiz-content"></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-dashboard" onclick="switchTab('dashboard')">
+    <span class="nav-icon">🏠</span>總覽
+  </button>
+  <button class="nav-btn" id="nav-academic" onclick="switchTab('academic')">
+    <span class="nav-icon">📚</span>學業
+  </button>
+  <button class="nav-btn" id="nav-arts" onclick="switchTab('arts')">
+    <span class="nav-icon">🎨</span>體藝
+  </button>
+  <button class="nav-btn" id="nav-ai" onclick="switchTab('ai')">
+    <span class="nav-icon">🤖</span>AI助手
+  </button>
+  <button class="nav-btn" id="nav-quiz" onclick="switchTab('quiz')">
+    <span class="nav-icon">✏️</span>練習
+  </button>
+</nav>
+
+<!-- ADD TASK MODAL -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">➕ 新增任務</div>
+    <div class="form-group">
+      <label class="form-label">任務名稱</label>
+      <input class="form-input" id="new-task-name" placeholder="例：數學功課 第3頁">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">科目</label>
+        <select class="form-input" id="new-task-subject"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">類型</label>
+        <select class="form-input" id="new-task-type">
+          <option value="homework">功課</option>
+          <option value="exam">考試準備</option>
+          <option value="practice">練習</option>
+          <option value="training">訓練</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">優先級</label>
+        <select class="form-input" id="new-task-priority">
+          <option value="high">🔴 緊急</option>
+          <option value="medium" selected>🟡 普通</option>
+          <option value="low">🟢 輕鬆</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">截止</label>
+        <select class="form-input" id="new-task-due">
+          <option value="今天">今天</option>
+          <option value="明天">明天</option>
+          <option value="本週">本週</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-primary" id="add-task-confirm" onclick="confirmAddTask()">確認新增</button>
+  </div>
+</div>
+
+<!-- ADD NOTICE MODAL -->
+<div class="modal-overlay" id="notice-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📢 新增學校通知</div>
+    <div class="form-group">
+      <label class="form-label">通知標題</label>
+      <input class="form-input" id="new-notice-title" placeholder="例：期中考試通知">
+    </div>
+    <div class="form-group">
+      <label class="form-label">科目</label>
+      <select class="form-input" id="new-notice-subject"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">通知內容</label>
+      <textarea class="form-input" id="new-notice-body" rows="3" placeholder="通知詳情…" style="resize:none;"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">類型</label>
+        <select class="form-input" id="new-notice-type">
+          <option value="exam">考試</option>
+          <option value="event">活動</option>
+          <option value="homework">功課</option>
+          <option value="general">一般</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">上傳圖片</label>
+        <input type="file" accept="image/*" id="notice-file" style="display:none" onchange="handleFileUpload(this)">
+        <button class="form-input" style="cursor:pointer;text-align:left;font-weight:700;color:var(--muted);" onclick="document.getElementById('notice-file').click()">📷 選擇照片</button>
+      </div>
+    </div>
+    <button class="btn-primary" id="add-notice-confirm" onclick="confirmAddNotice()">確認新增</button>
+  </div>
+</div>
+
+<!-- ADD TRAINING MODAL -->
+<div class="modal-overlay" id="training-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏅 記錄訓練</div>
+    <div class="form-group">
+      <label class="form-label">訓練內容</label>
+      <input class="form-input" id="new-training-title" placeholder="例：游泳 自由泳換氣練習">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">時長</label>
+        <input class="form-input" id="new-training-duration" placeholder="例：45分鐘">
+      </div>
+      <div class="form-group">
+        <label class="form-label">評分</label>
+        <select class="form-input" id="new-training-rating">
+          <option value="5">⭐⭐⭐⭐⭐ 超棒</option>
+          <option value="4" selected>⭐⭐⭐⭐ 不錯</option>
+          <option value="3">⭐⭐⭐ 一般</option>
+          <option value="2">⭐⭐ 需加強</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">老師評語</label>
+      <input class="form-input" id="new-training-comment" placeholder="老師說了什麼？">
+    </div>
+    <button class="btn-primary" id="add-training-confirm" onclick="confirmAddTraining()">確認記錄</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let currentKid = 1;
+let currentTab = 'dashboard';
+let selectedSubject = null;
+let selectedArts = null;
+let quizState = null;
+let isAiTyping = false;
+let currentTrainingArts = null;
+
+const KIDS = {
+  1: { name: '大寶', grade: '小學3年級', avatar: '🦁', color: 'var(--kid1)', light: 'var(--kid1-light)' },
+  2: { name: '細寶', grade: '小學1年級', avatar: '🐰', color: 'var(--kid2)', light: 'var(--kid2-light)' }
+};
+
+const SUBJECTS = [
+  { id: 'math', name: '數學', emoji: '📐' },
+  { id: 'chinese', name: '語文', emoji: '📖' },
+  { id: 'english', name: '英語', emoji: '🔤' },
+  { id: 'science', name: '常識', emoji: '🔬' },
+  { id: 'it', name: 'IT', emoji: '💻' },
+  { id: 'other', name: '其他', emoji: '📚' },
+];
+
+const ARTS = [
+  { id: 'swim', name: '游泳', emoji: '🏊' },
+  { id: 'art', name: '繪畫', emoji: '🎨' },
+  { id: 'dance', name: '舞蹈', emoji: '💃' },
+  { id: 'music', name: '音樂', emoji: '🎹' },
+];
+
+const ALL_SUBJECTS = [...SUBJECTS, ...ARTS];
+
+// Storage helpers
+function loadData(key, def) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
+}
+function saveData(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+// Per-kid data
+function kkey(key) { return `kid${currentKid}_${key}`; }
+function getTasks() { return loadData(kkey('tasks'), getDefaultTasks()); }
+function saveTasks(t) { saveData(kkey('tasks'), t); }
+function getNotices() { return loadData(kkey('notices'), getDefaultNotices()); }
+function saveNotices(n) { saveData(kkey('notices'), n); }
+function getProgress() { return loadData(kkey('progress'), getDefaultProgress()); }
+function saveProgress(p) { saveData(kkey('progress'), p); }
+function getTraining() { return loadData(kkey('training'), getDefaultTraining()); }
+function saveTraining(t) { saveData(kkey('training'), t); }
+function getStreak() { return loadData(kkey('streak'), 7); }
+
+function getDefaultTasks() {
+  if (currentKid === 1) return [
+    { id: 1, name: '數學功課 – 分數練習', subject: 'math', type: 'homework', due: '今天', priority: 'high', done: false },
+    { id: 2, name: '語文默書準備', subject: 'chinese', type: 'exam', due: '今天', priority: 'high', done: false },
+    { id: 3, name: '英語閱讀 P.12-15', subject: 'english', type: 'homework', due: '今天', priority: 'medium', done: true },
+    { id: 4, name: '游泳訓練', subject: 'swim', type: 'training', due: '今天', priority: 'medium', done: false },
+  ];
+  return [
+    { id: 1, name: '數學功課 – 加減法', subject: 'math', type: 'homework', due: '今天', priority: 'high', done: false },
+    { id: 2, name: '普通話生字抄寫', subject: 'chinese', type: 'homework', due: '今天', priority: 'medium', done: true },
+    { id: 3, name: '鋼琴練習 第2課', subject: 'music', type: 'training', due: '今天', priority: 'medium', done: false },
+  ];
+}
+function getDefaultNotices() {
+  const today = new Date().toLocaleDateString('zh-HK');
+  if (currentKid === 1) return [
+    { id: 1, subject: 'math', title: '期中數學考試通知', body: '下週五舉行數學期中考試，範圍第1-5章，請認真溫習。', type: 'exam', date: today, file: null },
+    { id: 2, subject: 'english', title: '英語演講比賽', body: '本月底舉行英語演講比賽，歡迎同學積極參與。', type: 'event', date: today, file: null },
+  ];
+  return [
+    { id: 1, subject: 'chinese', title: '語文默書範圍', body: '本週五默書，範圍：第3-5課生字，共20個。', type: 'exam', date: today, file: null },
+  ];
+}
+function getDefaultProgress() {
+  if (currentKid === 1) return { math:75, chinese:82, english:68, science:79, it:85, other:70, swim:88, art:65, dance:72, music:75 };
+  return { math:70, chinese:78, english:60, science:72, it:65, other:68, swim:60, art:80, dance:85, music:78 };
+}
+function getDefaultTraining() {
+  const today = new Date();
+  const fmt = (d) => `${d.getMonth()+1}月${d.getDate()}日`;
+  const d2 = new Date(today); d2.setDate(today.getDate()-2);
+  const d5 = new Date(today); d5.setDate(today.getDate()-5);
+  if (currentKid === 1) return [
+    { id: 1, arts: 'swim', title: '游泳 – 自由泳換氣練習', duration: '60分鐘', rating: 4, comment: '換氣動作進步明顯', date: fmt(today) },
+    { id: 2, arts: 'swim', title: '游泳 – 仰泳技巧', duration: '45分鐘', rating: 5, comment: '表現出色！', date: fmt(d2) },
+    { id: 3, arts: 'art', title: '水彩畫 – 風景', duration: '90分鐘', rating: 4, comment: '色彩搭配很好', date: fmt(d5) },
+  ];
+  return [
+    { id: 1, arts: 'music', title: '鋼琴 – 小奏鳴曲第1課', duration: '30分鐘', rating: 4, comment: '手型需注意', date: fmt(today) },
+    { id: 2, arts: 'dance', title: '芭蕾 – 基本步法', duration: '60分鐘', rating: 5, comment: '非常投入！', date: fmt(d2) },
+  ];
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+window.onload = function() {
+  setDate();
+  renderDashboard();
+  renderSubjectGrid();
+  renderArtsGrid();
+  initChat();
+  renderQuiz();
+  populateSubjectSelects();
+};
+
+function setDate() {
+  const now = new Date();
+  const days = ['日','一','二','三','四','五','六'];
+  document.getElementById('dateNum').textContent = now.getDate();
+  document.getElementById('dateStr').textContent = `${now.getMonth()+1}月 · 週${days[now.getDay()]}`;
+}
+
+// ══════════════════════════════════════════════
+//  KID SWITCH
+// ══════════════════════════════════════════════
+function switchKid(kid) {
+  currentKid = kid;
+  selectedSubject = null;
+  selectedArts = null;
+  document.getElementById('kidBtn1').className = `kid-tab${kid===1?' active-1':''}`;
+  document.getElementById('kidBtn2').className = `kid-tab${kid===2?' active-2':''}`;
+  // update nav active class
+  updateNavActive();
+  renderDashboard();
+  renderSubjectGrid();
+  renderArtsGrid();
+  renderSubjectDetail();
+  renderArtsDetail();
+  renderQuiz();
+  populateSubjectSelects();
+  initChat();
+}
+
+// ══════════════════════════════════════════════
+//  TAB SWITCH
+// ══════════════════════════════════════════════
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.getElementById(`sec-${tab}`).classList.add('visible');
+  updateNavActive();
+}
+function updateNavActive() {
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.remove('active','active-2');
+  });
+  const activeClass = currentKid === 1 ? 'active' : 'active-2';
+  document.getElementById(`nav-${currentTab}`)?.classList.add(activeClass);
+}
+
+// ══════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════
+function renderDashboard() {
+  renderGreeting();
+  renderTaskList();
+  renderProgressOverview();
+  renderNoticesPreview();
+}
+
+function renderGreeting() {
+  const h = new Date().getHours();
+  const emojis = h < 12 ? '☀️' : h < 18 ? '🌤️' : '🌙';
+  const greets = h < 12 ? '早晨！今天繼續加油！' : h < 18 ? '下午好！繼續努力！' : '晚上好！辛苦了！';
+  const tasks = getTasks();
+  const pending = tasks.filter(t => !t.done && t.due === '今天').length;
+  document.getElementById('greeting-emoji').textContent = emojis;
+  document.getElementById('greeting-text').textContent = greets;
+  document.getElementById('pending-count').textContent = pending;
+  document.getElementById('greeting-sub').textContent =
+    `${KIDS[currentKid].name} 今天有 ${pending} 項任務待完成`;
+  const banner = document.getElementById('greeting-banner');
+  banner.style.borderColor = currentKid===1 ? 'var(--kid1-mid)' : 'var(--kid2-mid)';
+  banner.style.background = currentKid===1
+    ? 'linear-gradient(135deg, var(--kid1-light), var(--accent-light))'
+    : 'linear-gradient(135deg, var(--kid2-light), var(--accent-light))';
+
+  // stats
+  const tasks2 = getTasks();
+  const done = tasks2.filter(t=>t.done).length;
+  const total = tasks2.length;
+  document.getElementById('stat-done').textContent = `${done}/${total}`;
+  const prog = getProgress();
+  const vals = Object.values(prog).filter(Boolean);
+  const avg = vals.length ? Math.round(vals.reduce((a,b)=>a+b)/vals.length) : 0;
+  document.getElementById('stat-avg').textContent = avg+'%';
+  document.getElementById('stat-avg').style.color = currentKid===1?'var(--kid1)':'var(--kid2)';
+  document.getElementById('stat-notices').textContent = getNotices().length;
+  document.getElementById('stat-streak').textContent = getStreak()+'天';
+}
+
+function renderTaskList() {
+  const tasks = getTasks();
+  const el = document.getElementById('task-list');
+  if (!tasks.length) { el.innerHTML = '<div class="empty-state"><div class="emoji">📋</div><p>暫無任務，點擊下方新增</p></div>'; return; }
+  el.innerHTML = tasks.map(t => {
+    const subj = ALL_SUBJECTS.find(s=>s.id===t.subject);
+    const colors = { high:'var(--red)', medium:'var(--accent)', low:'var(--green)' };
+    const checkClass = t.done ? `checked-${currentKid}` : '';
+    return `
+    <div class="task-item${t.done?' done':''}" onclick="toggleTask(${t.id})">
+      <div class="task-check ${checkClass}">${t.done?'✓':''}</div>
+      <div class="task-info">
+        <div class="task-name${t.done?' task-done-text':''}">${t.name}</div>
+        <div class="task-meta">${subj?.emoji||'📚'} ${subj?.name||t.subject} · ${t.due} · ${typeLabel(t.type)}</div>
+      </div>
+      <div class="priority-dot" style="background:${colors[t.priority]||'var(--muted)'}"></div>
+    </div>`;
+  }).join('');
+}
+
+function typeLabel(t) {
+  return {homework:'功課',exam:'考試',practice:'練習',training:'訓練',other:'其他'}[t]||t;
+}
+
+function toggleTask(id) {
+  const tasks = getTasks();
+  const t = tasks.find(t=>t.id===id);
+  if (t) t.done = !t.done;
+  saveTasks(tasks);
+  renderTaskList();
+  renderGreeting();
+}
+
+function renderProgressOverview() {
+  const prog = getProgress();
+  const el = document.getElementById('progress-overview');
+  el.innerHTML = SUBJECTS.map(s => {
+    const v = prog[s.id]||0;
+    const color = v>=80?'var(--green)':v>=60?currentKid===1?'var(--kid1)':'var(--kid2)':'var(--red)';
+    return `
+    <div class="progress-item">
+      <div class="progress-header">
+        <span class="progress-label">${s.emoji} ${s.name}</span>
+        <span class="progress-pct" style="color:${color}">${v}%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${v}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderNoticesPreview() {
+  const notices = getNotices().slice(0,3);
+  const el = document.getElementById('notices-preview');
+  if (!notices.length) { el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>暫無通知</p></div>'; return; }
+  const typeColors = { exam:'tag-orange', event:'tag-purple', homework:'tag-blue', general:'tag-green' };
+  const typeNames = { exam:'考試', event:'活動', homework:'功課', general:'一般' };
+  el.innerHTML = notices.map(n => {
+    const subj = ALL_SUBJECTS.find(s=>s.id===n.subject);
+    return `
+    <div class="notice-item${currentKid===2?' kid2':''}">
+      <span class="tag ${typeColors[n.type]||'tag-green'}">${typeNames[n.type]||'通知'}</span>
+      <div class="notice-date">${n.date} · ${subj?.emoji||''} ${subj?.name||n.subject}</div>
+      <div class="notice-title">${n.title}</div>
+      <div class="notice-body">${n.body}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  SUBJECT GRID
+// ══════════════════════════════════════════════
+function renderSubjectGrid() {
+  const prog = getProgress();
+  const el = document.getElementById('subject-grid');
+  const color = currentKid===1?'var(--kid1)':'var(--kid2)';
+  el.innerHTML = SUBJECTS.map(s => {
+    const v = prog[s.id]||0;
+    const sel = selectedSubject===s.id;
+    return `
+    <div class="subject-card${sel?(currentKid===1?' selected':' selected-2'):''}" onclick="selectSubject('${s.id}')">
+      <div class="subject-emoji">${s.emoji}</div>
+      <div class="subject-name">${s.name}</div>
+      <div class="subject-score" style="color:${sel?color:'var(--muted)'}">${v}%</div>
+    </div>`;
+  }).join('');
+}
+
+function selectSubject(id) {
+  selectedSubject = selectedSubject===id?null:id;
+  renderSubjectGrid();
+  renderSubjectDetail();
+}
+
+function renderSubjectDetail() {
+  const el = document.getElementById('subject-detail');
+  if (!selectedSubject) { el.innerHTML=''; return; }
+  const subj = SUBJECTS.find(s=>s.id===selectedSubject);
+  const prog = getProgress();
+  const notices = getNotices().filter(n=>n.subject===selectedSubject);
+  const tasks = getTasks().filter(t=>t.subject===selectedSubject);
+  const v = prog[selectedSubject]||0;
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  const kidLight = currentKid===1?'var(--kid1-light)':'var(--kid2-light)';
+
+  el.innerHTML = `
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:32px">${subj.emoji}</span>
+        <div>
+          <div style="font-size:18px;font-weight:900">${subj.name}</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600">${KIDS[currentKid].name} · ${KIDS[currentKid].grade}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'Nunito',sans-serif;font-size:32px;font-weight:900;color:${kidColor}">${v}%</div>
+        <div style="font-size:11px;color:var(--muted)">${v>=80?'優秀':v>=60?'良好':'需加強'}</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px;">
+      <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden">
+        <div style="width:${v}%;height:100%;background:${kidColor};border-radius:5px"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <button onclick="switchTab('quiz');startQuizFor('${selectedSubject}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:none;background:${kidColor};color:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">✏️ 開始練習</button>
+      <button onclick="openAddNotice('${selectedSubject}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">📢 新增通知</button>
+      <button onclick="openProgressEdit('${selectedSubject}')" style="padding:10px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">📊 更新進度</button>
+    </div>
+
+    <div class="section-label">📢 學校通知 (${notices.length})</div>
+    ${notices.length ? notices.map(n=>`
+      <div class="notice-item${currentKid===2?' kid2':''}">
+        <div class="notice-date">${n.date}</div>
+        <div class="notice-title">${n.title}</div>
+        <div class="notice-body">${n.body}</div>
+        ${n.file?`<div style="margin-top:6px;font-size:12px;color:var(--kid2)">📎 ${n.file}</div>`:''}
+      </div>`).join('') : '<div class="empty-state" style="padding:16px"><div class="emoji" style="font-size:24px">📭</div><p>暫無通知</p></div>'}
+
+    <div class="section-label" style="margin-top:14px">📋 相關任務 (${tasks.length})</div>
+    ${tasks.length ? tasks.map(t=>`
+      <div class="task-item${t.done?' done':''}" onclick="toggleTask(${t.id});renderSubjectDetail();">
+        <div class="task-check${t.done?' checked-'+currentKid:''}">${t.done?'✓':''}</div>
+        <div class="task-info">
+          <div class="task-name${t.done?' task-done-text':''}">${t.name}</div>
+          <div class="task-meta">${t.due} · ${typeLabel(t.type)}</div>
+        </div>
+      </div>`).join('') : '<div class="empty-state" style="padding:16px"><div class="emoji" style="font-size:24px">📋</div><p>暫無任務</p></div>'}
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+//  ARTS
+// ══════════════════════════════════════════════
+function renderArtsGrid() {
+  const prog = getProgress();
+  const el = document.getElementById('arts-grid');
+  const color = currentKid===1?'var(--kid1)':'var(--kid2)';
+  el.innerHTML = ARTS.map(s => {
+    const v = prog[s.id]||0;
+    const sel = selectedArts===s.id;
+    return `
+    <div class="subject-card${sel?(currentKid===1?' selected':' selected-2'):''}" onclick="selectArts('${s.id}')">
+      <div class="subject-emoji">${s.emoji}</div>
+      <div class="subject-name">${s.name}</div>
+      <div class="subject-score" style="color:${sel?color:'var(--muted)'}">${v}%</div>
+    </div>`;
+  }).join('');
+}
+
+function selectArts(id) {
+  selectedArts = selectedArts===id?null:id;
+  renderArtsGrid();
+  renderArtsDetail();
+}
+
+function renderArtsDetail() {
+  const el = document.getElementById('arts-detail');
+  if (!selectedArts) { el.innerHTML=''; return; }
+  const arts = ARTS.find(s=>s.id===selectedArts);
+  const prog = getProgress();
+  const training = getTraining().filter(t=>t.arts===selectedArts);
+  const v = prog[selectedArts]||0;
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+
+  const tips = {
+    swim: ['每次訓練前做好熱身', '注意換氣節奏和動作標準', '計時記錄每次進步', '動作標準優先於速度'],
+    art: ['每天素描練習15分鐘', '觀察光影和色彩變化', '嘗試不同畫材媒介', '臨摹名作學習技法'],
+    dance: ['注意基本功訓練', '保持節奏感和表情', '錄影自我觀察改進', '多聽音樂培養感覺'],
+    music: ['每天定時練習30分鐘', '注意手型和指法', '先慢速練熟再加速', '背譜前先看譜練熟'],
+  };
+
+  el.innerHTML = `
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:32px">${arts.emoji}</span>
+        <div>
+          <div style="font-size:18px;font-weight:900">${arts.name}</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600">${KIDS[currentKid].name}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'Nunito',sans-serif;font-size:32px;font-weight:900;color:${kidColor}">${v}%</div>
+        <div style="font-size:11px;color:var(--muted)">${v>=80?'優秀':v>=60?'良好':'繼續進步'}</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button onclick="openAddTraining('${selectedArts}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:none;background:${kidColor};color:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">🏅 記錄訓練</button>
+      <button onclick="switchTab('ai');aiCoach('${selectedArts}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">🤖 AI陪練</button>
+      <button onclick="openProgressEdit('${selectedArts}')" style="padding:10px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">📊 更新</button>
+    </div>
+
+    <div class="section-label">💡 訓練建議</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+      ${(tips[selectedArts]||[]).map(t=>`
+        <div style="background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;font-weight:600;border:1px solid var(--border)">
+          <span style="color:${kidColor}">•</span> ${t}
+        </div>`).join('')}
+    </div>
+
+    <div class="section-label">📅 訓練記錄 (${training.length})</div>
+    ${training.length ? training.map(t=>`
+      <div class="training-item">
+        <div class="training-date-box${currentKid===2?' kid2':''}">
+          <div class="training-month">${t.date.replace(/\d+日/,'')}</div>
+          <div class="training-day">${t.date.match(/(\d+)日/)?.[1]||'?'}</div>
+        </div>
+        <div class="training-info">
+          <div class="training-title">${t.title}</div>
+          <div class="training-meta">⏱ ${t.duration} · 💬 ${t.comment}</div>
+          <div class="training-rating">${'⭐'.repeat(t.rating)}</div>
+        </div>
+      </div>`).join('') : '<div class="empty-state" style="padding:16px"><div class="emoji" style="font-size:24px">🏅</div><p>暫無記錄，點擊上方新增</p></div>'}
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+//  AI CHAT
+// ══════════════════════════════════════════════
+let chatHistory = [];
+
+function initChat() {
+  chatHistory = [];
+  const kid = KIDS[currentKid];
+  const prog = getProgress();
+  const weak = SUBJECTS.filter(s=>prog[s.id]<70).map(s=>s.name).join('、') || '暫無';
+  document.getElementById('chat-area').innerHTML = '';
+  appendMsg('ai', `你好！我是AI學習助手小智 🌟\n\n我已了解${kid.name}的學習情況：\n• 年級：${kid.grade}\n• 需要加強：${weak}\n\n我可以幫你：出練習題、分析進度、制定計劃、體藝陪練。今天想從哪裡開始？`);
+
+  const quickBtns = document.getElementById('quick-btns');
+  quickBtns.innerHTML = [
+    `幫${kid.name}出數學題`,
+    `分析學習進度`,
+    `制定本週計劃`,
+    `游泳訓練建議`,
+  ].map(q=>`<button class="quick-btn" onclick="quickAsk('${q}')">${q}</button>`).join('');
+}
+
+function appendMsg(role, text) {
+  const el = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar">${role==='ai'?'🤖':'👤'}</div>
+    <div class="msg-bubble">${text}</div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function appendTyping() {
+  const el = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = 'msg'; div.id = 'typing-indicator';
+  div.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function removeTyping() {
+  document.getElementById('typing-indicator')?.remove();
+}
+
+async function sendMsg() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || isAiTyping) return;
+  input.value = '';
+  appendMsg('user', text);
+  chatHistory.push({ role:'user', content: text });
+  isAiTyping = true;
+  document.getElementById('chat-send').disabled = true;
+  appendTyping();
+
+  const kid = KIDS[currentKid];
+  const prog = getProgress();
+  const progStr = ALL_SUBJECTS.map(s=>`${s.name}:${prog[s.id]||0}分`).join('，');
+  const systemPrompt = `你是專業兒童教育AI助手「小智」，正在幫助家長管理孩子的學習。
+孩子資料：${kid.name}，${kid.grade}，學習進度：${progStr}。
+科目：數學、語文、英語、常識、IT。體藝：游泳、繪畫、舞蹈、音樂（鋼琴）。
+你可以：出練習題（附解題步驟）、分析進度、制定計劃、提供體藝訓練建議。
+請用溫暖鼓勵的語氣，回覆簡潔有用，適當使用emoji，用繁體中文回覆。`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: chatHistory
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || '抱歉，暫時無法回應，請稍後再試。';
+    removeTyping();
+    appendMsg('ai', reply);
+    chatHistory.push({ role:'assistant', content: reply });
+  } catch {
+    removeTyping();
+    appendMsg('ai', '網絡連接有問題，請稍後再試 😅');
+  }
+  isAiTyping = false;
+  document.getElementById('chat-send').disabled = false;
+}
+
+function quickAsk(q) {
+  document.getElementById('chat-input').value = q;
+  sendMsg();
+}
+
+function aiCoach(artsId) {
+  const arts = ARTS.find(a=>a.id===artsId);
+  const prog = getProgress();
+  const v = prog[artsId]||0;
+  quickAsk(`我想要${arts.name}的AI陪練，${KIDS[currentKid].name}目前水平${v}分，請幫我制定今天的訓練計劃`);
+}
+
+// ══════════════════════════════════════════════
+//  QUIZ
+// ══════════════════════════════════════════════
+const QUIZ_DATA = {
+  math: {
+    label: '數學', emoji: '📐',
+    q1: [
+      { q: '3/4 + 1/2 = ?', opts: ['5/4','4/6','7/4','1/4'], ans: 0 },
+      { q: '正方形邊長5cm，面積是？', opts: ['20cm²','25cm²','10cm²','15cm²'], ans: 1 },
+      { q: '36 ÷ 4 × 3 = ?', opts: ['3','27','48','9'], ans: 1 },
+      { q: '小明有24顆糖，分給6個朋友，每人得多少？', opts: ['3顆','4顆','6顆','8顆'], ans: 1 },
+      { q: '1小時15分 = 多少分鐘？', opts: ['65分','70分','75分','80分'], ans: 2 },
+    ],
+    q2: [
+      { q: '5 + 3 = ?', opts: ['7','8','9','6'], ans: 1 },
+      { q: '10 - 4 = ?', opts: ['4','5','6','7'], ans: 2 },
+      { q: '2 × 4 = ?', opts: ['6','7','8','9'], ans: 2 },
+      { q: '12 ÷ 3 = ?', opts: ['3','4','5','6'], ans: 1 },
+    ],
+  },
+  english: {
+    label: '英語', emoji: '🔤',
+    q1: [
+      { q: 'What is the past tense of "go"?', opts: ['goed','gone','went','going'], ans: 2 },
+      { q: 'Choose the correct sentence:', opts: ['She go to school','She goes to school','She going','She goed'], ans: 1 },
+      { q: '"Apple" in Chinese means?', opts: ['香蕉','蘋果','橙','草莓'], ans: 1 },
+    ],
+    q2: [
+      { q: 'How do you say 貓 in English?', opts: ['Dog','Bird','Cat','Fish'], ans: 2 },
+      { q: 'A, B, C, D, E, __ ?', opts: ['F','G','H','I'], ans: 0 },
+      { q: 'How many days in a week?', opts: ['5','6','7','8'], ans: 2 },
+    ],
+  },
+  chinese: {
+    label: '語文', emoji: '📖',
+    q1: [
+      { q: '「春眠不覺曉」的下一句是？', opts: ['處處聞啼鳥','夜來風雨聲','花落知多少','床前明月光'], ans: 0 },
+      { q: '下列詞語哪個是反義詞對？', opts: ['大小','美麗','高興','快樂'], ans: 0 },
+      { q: '「一石二鳥」是什麼意思？', opts: ['兩隻鳥','一舉兩得','石頭很重','打獵技術'], ans: 1 },
+    ],
+    q2: [
+      { q: '貓的「貓」字有多少畫？', opts: ['10畫','11畫','12畫','13畫'], ans: 2 },
+      { q: '「大」字的反義詞是？', opts: ['高','小','多','長'], ans: 1 },
+    ],
+  },
+};
+
+function renderQuiz() {
+  const el = document.getElementById('quiz-content');
+  if (!quizState) {
+    el.innerHTML = `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-title"><span class="icon">✏️</span> 智能練習出題</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">根據${KIDS[currentKid].name}的學習進度，AI會出針對性的練習題</div>
+      <div class="quiz-subject-grid">
+        ${SUBJECTS.slice(0,5).map(s=>`
+          <div class="quiz-subject-btn" onclick="startQuiz('${s.id}')">
+            <div class="emoji">${s.emoji}</div>
+            <div class="name">${s.name}</div>
+          </div>`).join('')}
+        <div class="quiz-subject-btn" onclick="switchTab('ai');quickAsk('請幫${KIDS[currentKid].name}出5道常識練習題')">
+          <div class="emoji">🤖</div>
+          <div class="name">AI出題</div>
+        </div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  if (quizState.finished) {
+    const pct = Math.round(quizState.score/quizState.total*100);
+    el.innerHTML = `
+    <div class="card quiz-box">
+      <div class="quiz-result">
+        <div class="big-emoji">${pct>=80?'🏆':pct>=60?'👍':'💪'}</div>
+        <div class="score-text">${quizState.score}/${quizState.total}</div>
+        <div class="score-label">${pct>=80?'非常棒！繼續保持！':pct>=60?'不錯！還有進步空間！':'繼續努力，你可以的！'}</div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <button onclick="quizState=null;renderQuiz()" style="padding:12px 24px;border-radius:50px;border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">返回選題</button>
+          <button class="btn-retry" onclick="startQuiz('${quizState.subject}')">再練一次</button>
+        </div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const q = quizState.questions[quizState.current];
+  const pct = (quizState.current/quizState.total)*100;
+  el.innerHTML = `
+  <div class="card quiz-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-size:12px;color:var(--muted);font-weight:600">題目 ${quizState.current+1} / ${quizState.total}</span>
+      <button onclick="quizState=null;renderQuiz()" style="padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;cursor:pointer;">退出</button>
+    </div>
+    <div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:${pct}%"></div></div>
+    <div class="quiz-q">${q.q}</div>
+    ${q.opts.map((opt,i)=>`
+      <button class="quiz-option${quizState.answered!==null?(i===q.ans?' correct':i===quizState.answered?' wrong':''):''}" onclick="answerQuiz(${i})" ${quizState.answered!==null?'disabled':''}>
+        <span class="opt-letter">${String.fromCharCode(65+i)}</span> ${opt}
+      </button>`).join('')}
+  </div>`;
+}
+
+function startQuiz(subjectId) {
+  switchTab('quiz');
+  const qData = QUIZ_DATA[subjectId];
+  if (!qData) {
+    switchTab('ai');
+    quickAsk(`請幫${KIDS[currentKid].name}出5道${SUBJECTS.find(s=>s.id===subjectId)?.name||subjectId}練習題，附解題步驟`);
+    return;
+  }
+  const questions = currentKid===1 ? (qData.q1||qData.q2) : (qData.q2||qData.q1);
+  quizState = { subject: subjectId, questions, total: questions.length, current: 0, score: 0, answered: null, finished: false };
+  renderQuiz();
+}
+
+function startQuizFor(subjectId) {
+  quizState = null;
+  startQuiz(subjectId);
+}
+
+function answerQuiz(idx) {
+  if (quizState.answered !== null) return;
+  quizState.answered = idx;
+  const correct = idx === quizState.questions[quizState.current].ans;
+  if (correct) quizState.score++;
+  renderQuiz();
+  setTimeout(() => {
+    quizState.current++;
+    quizState.answered = null;
+    if (quizState.current >= quizState.total) quizState.finished = true;
+    renderQuiz();
+  }, 1000);
+}
+
+// ══════════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════════
+function populateSubjectSelects() {
+  const allS = [...SUBJECTS, ...ARTS];
+  ['new-task-subject','new-notice-subject'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = allS.map(s=>`<option value="${s.id}">${s.emoji} ${s.name}</option>`).join('');
+  });
+}
+
+function openAddTask() {
+  document.getElementById('add-task-confirm').className = `btn-primary${currentKid===2?' kid2':''}`;
+  openModal('task-modal');
+}
+
+function openAddNotice(subjectId) {
+  const el = document.getElementById('new-notice-subject');
+  if (el && subjectId) el.value = subjectId;
+  document.getElementById('add-notice-confirm').className = `btn-primary${currentKid===2?' kid2':''}`;
+  openModal('notice-modal');
+}
+
+function openAddTraining(artsId) {
+  currentTrainingArts = artsId;
+  document.getElementById('add-training-confirm').className = `btn-primary${currentKid===2?' kid2':''}`;
+  openModal('training-modal');
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+});
+
+function confirmAddTask() {
+  const name = document.getElementById('new-task-name').value.trim();
+  if (!name) return;
+  const tasks = getTasks();
+  tasks.unshift({
+    id: Date.now(),
+    name,
+    subject: document.getElementById('new-task-subject').value,
+    type: document.getElementById('new-task-type').value,
+    priority: document.getElementById('new-task-priority').value,
+    due: document.getElementById('new-task-due').value,
+    done: false,
+  });
+  saveTasks(tasks);
+  closeModal('task-modal');
+  document.getElementById('new-task-name').value = '';
+  renderTaskList();
+  renderGreeting();
+}
+
+function confirmAddNotice() {
+  const title = document.getElementById('new-notice-title').value.trim();
+  if (!title) return;
+  const notices = getNotices();
+  const today = new Date().toLocaleDateString('zh-HK');
+  notices.unshift({
+    id: Date.now(),
+    title,
+    subject: document.getElementById('new-notice-subject').value,
+    body: document.getElementById('new-notice-body').value,
+    type: document.getElementById('new-notice-type').value,
+    date: today,
+    file: null,
+  });
+  saveNotices(notices);
+  closeModal('notice-modal');
+  document.getElementById('new-notice-title').value = '';
+  document.getElementById('new-notice-body').value = '';
+  renderNoticesPreview();
+  renderSubjectDetail();
+  renderGreeting();
+}
+
+function confirmAddTraining() {
+  const title = document.getElementById('new-training-title').value.trim();
+  if (!title) return;
+  const training = getTraining();
+  const today = new Date();
+  training.unshift({
+    id: Date.now(),
+    arts: currentTrainingArts || selectedArts,
+    title,
+    duration: document.getElementById('new-training-duration').value || '未記錄',
+    rating: parseInt(document.getElementById('new-training-rating').value),
+    comment: document.getElementById('new-training-comment').value || '—',
+    date: `${today.getMonth()+1}月${today.getDate()}日`,
+  });
+  saveTraining(training);
+  closeModal('training-modal');
+  document.getElementById('new-training-title').value = '';
+  document.getElementById('new-training-comment').value = '';
+  renderArtsDetail();
+}
+
+function openProgressEdit(subjectId) {
+  const subj = ALL_SUBJECTS.find(s=>s.id===subjectId);
+  const prog = getProgress();
+  const current = prog[subjectId]||0;
+  const val = prompt(`更新「${subj?.name}」進度（目前：${current}%）\n請輸入新數字（0-100）：`, current);
+  if (val===null) return;
+  const n = parseInt(val);
+  if (isNaN(n)||n<0||n>100) { alert('請輸入0到100之間的數字'); return; }
+  prog[subjectId] = n;
+  saveProgress(prog);
+  renderProgressOverview();
+  renderSubjectGrid();
+  renderArtsGrid();
+  renderSubjectDetail();
+  renderArtsDetail();
+  renderGreeting();
+}
+
+function handleFileUpload(input) {
+  if (input.files && input.files[0]) {
+    const btn = input.nextElementSibling || input.previousElementSibling;
+    alert(`已選擇：${input.files[0].name}\n（預覽功能需要部署後才能完整使用）`);
+  }
+}
+</script>
+</body>
+</html>
