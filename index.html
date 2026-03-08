@@ -429,10 +429,16 @@ body {
     <div class="card" style="border: 2px solid var(--accent); background: var(--accent-light);">
       <div class="card-title" style="margin-bottom:8px;"><span class="icon">📸</span> 拍黑板自動新增功課</div>
       <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">上傳黑板照片，AI自動識別今天的功課並新增到任務清單</div>
-      <input type="file" accept="image/*" capture="environment" id="blackboard-file" style="display:none" onchange="scanBlackboard(this)">
-      <button onclick="checkApiKeyAndScan()" style="width:100%;padding:14px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,#F7C948,#FF6B35);color:white;font-family:'Noto Sans TC',sans-serif;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-        📷 拍攝 / 上傳黑板照片
-      </button>
+      <input type="file" accept="image/*" capture="environment" id="blackboard-camera" style="display:none" onchange="scanBlackboard(this)">
+      <input type="file" accept="image/*" id="blackboard-gallery" style="display:none" onchange="scanBlackboard(this)">
+      <div style="display:flex;gap:10px;">
+        <button onclick="checkApiKeyAndScan('camera')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,#F7C948,#FF6B35);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+          📷 拍照
+        </button>
+        <button onclick="checkApiKeyAndScan('gallery')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,#4FACDE,#8B5CF6);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+          🖼️ 相冊
+        </button>
+      </div>
       <div id="scan-status" style="margin-top:10px;font-size:13px;text-align:center;color:var(--muted);display:none;"></div>
     </div>
 
@@ -1491,12 +1497,20 @@ function getApiKey() {
   return localStorage.getItem('anthropic_api_key') || '';
 }
 
-function checkApiKeyAndScan() {
+let pendingScanMode = 'camera';
+
+function checkApiKeyAndScan(mode) {
+  pendingScanMode = mode || 'camera';
   if (getApiKey()) {
-    document.getElementById('blackboard-file').click();
+    triggerScanInput(pendingScanMode);
   } else {
     openModal('apikey-modal');
   }
+}
+
+function triggerScanInput(mode) {
+  const id = mode === 'gallery' ? 'blackboard-gallery' : 'blackboard-camera';
+  document.getElementById(id).click();
 }
 
 function saveApiKey() {
@@ -1508,7 +1522,7 @@ function saveApiKey() {
   localStorage.setItem('anthropic_api_key', key);
   closeModal('apikey-modal');
   document.getElementById('apikey-input').value = '';
-  document.getElementById('blackboard-file').click();
+  triggerScanInput(pendingScanMode);
 }
 
 async function scanBlackboard(input) {
