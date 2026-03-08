@@ -386,6 +386,87 @@ body {
 .empty-state .emoji { font-size: 40px; margin-bottom: 10px; }
 .empty-state p { font-size: 14px; font-weight: 600; }
 </style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCBMZh8xA-bsHGAldewgTp35gfGWyrzdvU",
+    authDomain: "chengzhangxingqiu.firebaseapp.com",
+    projectId: "chengzhangxingqiu",
+    storageBucket: "chengzhangxingqiu.firebasestorage.app",
+    messagingSenderId: "1115829431851",
+    appId: "1:1115829431851:web:65c40801c3b25933c4d46e",
+    measurementId: "G-B7YLWW9K6T"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ── Firebase helpers ──
+  async function fbSet(path, data) {
+    try { await setDoc(doc(db, path), data); return true; } catch(e) { console.error('fbSet error', e); return false; }
+  }
+  async function fbGet(path) {
+    try { const d = await getDoc(doc(db, path)); return d.exists() ? d.data() : null; } catch(e) { return null; }
+  }
+  async function fbAdd(colPath, data) {
+    try { const r = await addDoc(collection(db, colPath), data); return r.id; } catch(e) { return null; }
+  }
+  async function fbGetAll(colPath) {
+    try {
+      const q = query(collection(db, colPath), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) { return []; }
+  }
+  async function fbDelete(path) {
+    try { await deleteDoc(doc(db, path)); return true; } catch(e) { return false; }
+  }
+
+  // Expose to global scope
+  window.fbSet = fbSet;
+  window.fbGet = fbGet;
+  window.fbAdd = fbAdd;
+  window.fbGetAll = fbGetAll;
+  window.fbDelete = fbDelete;
+  window.fbReady = true;
+
+  // ── Sync functions ──
+  window.syncTasksToCloud = async function(kid, tasks) {
+    await fbSet(`data/kid${kid}/tasks`, { items: tasks, updatedAt: Date.now() });
+  };
+  window.syncNoticesFromCloud = async function(kid) {
+    const d = await fbGet(`data/kid${kid}/notices`);
+    return d ? d.items : null;
+  };
+  window.syncNoticesToCloud = async function(kid, notices) {
+    await fbSet(`data/kid${kid}/notices`, { items: notices, updatedAt: Date.now() });
+  };
+  window.syncProgressToCloud = async function(kid, progress) {
+    await fbSet(`data/kid${kid}/progress`, { items: progress, updatedAt: Date.now() });
+  };
+  window.syncTrainingToCloud = async function(kid, training) {
+    await fbSet(`data/kid${kid}/training`, { items: training, updatedAt: Date.now() });
+  };
+  window.loadAllFromCloud = async function(kid) {
+    const [tasks, notices, progress, training] = await Promise.all([
+      fbGet(`data/kid${kid}/tasks`),
+      fbGet(`data/kid${kid}/notices`),
+      fbGet(`data/kid${kid}/progress`),
+      fbGet(`data/kid${kid}/training`),
+    ]);
+    return {
+      tasks: tasks?.items || null,
+      notices: notices?.items || null,
+      progress: progress?.items || null,
+      training: training?.items || null,
+    };
+  };
+
+  console.log('Firebase ready ✅');
+  window.dispatchEvent(new Event('firebaseReady'));
+</script>
 </head>
 <body>
 
@@ -720,7 +801,7 @@ const ARTS = [
 
 const ALL_SUBJECTS = [...SUBJECTS, ...ARTS];
 
-// Storage helpers
+// Storage helpers - localStorage + Firebase cloud sync
 function loadData(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
 }
@@ -731,14 +812,66 @@ function saveData(key, val) {
 // Per-kid data
 function kkey(key) { return `kid${currentKid}_${key}`; }
 function getTasks() { return loadData(kkey('tasks'), getDefaultTasks()); }
-function saveTasks(t) { saveData(kkey('tasks'), t); }
+function saveTasks(t) {
+  saveData(kkey('tasks'), t);
+  if (window.fbReady) window.syncTasksToCloud(currentKid, t);
+}
 function getNotices() { return loadData(kkey('notices'), getDefaultNotices()); }
-function saveNotices(n) { saveData(kkey('notices'), n); }
+function saveNotices(n) {
+  saveData(kkey('notices'), n);
+  if (window.fbReady) window.syncNoticesToCloud(currentKid, n);
+}
 function getProgress() { return loadData(kkey('progress'), getDefaultProgress()); }
-function saveProgress(p) { saveData(kkey('progress'), p); }
+function saveProgress(p) {
+  saveData(kkey('progress'), p);
+  if (window.fbReady) window.syncProgressToCloud(currentKid, p);
+}
 function getTraining() { return loadData(kkey('training'), getDefaultTraining()); }
-function saveTraining(t) { saveData(kkey('training'), t); }
+function saveTraining(t) {
+  saveData(kkey('training'), t);
+  if (window.fbReady) window.syncTrainingToCloud(currentKid, t);
+}
 function getStreak() { return loadData(kkey('streak'), 7); }
+
+// Load from cloud on startup
+async function loadFromCloud(kid) {
+  if (!window.fbReady) return;
+  showCloudStatus('☁️ 正在從雲端載入資料…');
+  try {
+    const data = await window.loadAllFromCloud(kid);
+    let changed = false;
+    if (data.tasks) { saveData(`kid${kid}_tasks`, data.tasks); changed = true; }
+    if (data.notices) { saveData(`kid${kid}_notices`, data.notices); changed = true; }
+    if (data.progress) { saveData(`kid${kid}_progress`, data.progress); changed = true; }
+    if (data.training) { saveData(`kid${kid}_training`, data.training); changed = true; }
+    if (changed) {
+      renderDashboard();
+      renderSubjectGrid();
+      renderArtsGrid();
+    }
+    showCloudStatus('✅ 雲端資料已同步');
+    setTimeout(hideCloudStatus, 2000);
+  } catch(e) {
+    showCloudStatus('⚠️ 雲端同步失敗，使用本地資料');
+    setTimeout(hideCloudStatus, 3000);
+  }
+}
+
+function showCloudStatus(msg) {
+  let el = document.getElementById('cloud-status');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'cloud-status';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(45,32,22,0.85);color:white;text-align:center;padding:8px;font-size:13px;font-weight:700;backdrop-filter:blur(10px);';
+    document.body.prepend(el);
+  }
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideCloudStatus() {
+  const el = document.getElementById('cloud-status');
+  if (el) el.style.display = 'none';
+}
 
 function getDefaultTasks() {
   if (currentKid === 1) return [
@@ -794,6 +927,9 @@ window.onload = function() {
   initChat();
   renderQuiz();
   populateSubjectSelects();
+  // Load from cloud when Firebase is ready
+  window.addEventListener('firebaseReady', () => loadFromCloud(currentKid));
+  if (window.fbReady) loadFromCloud(currentKid);
 };
 
 function setDate() {
@@ -822,6 +958,7 @@ function switchKid(kid) {
   renderQuiz();
   populateSubjectSelects();
   initChat();
+  if (window.fbReady) loadFromCloud(kid);
 }
 
 // ══════════════════════════════════════════════
