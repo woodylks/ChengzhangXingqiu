@@ -1028,13 +1028,19 @@ function renderTaskList() {
     const colors = { high:'var(--red)', medium:'var(--accent)', low:'var(--green)' };
     const checkClass = t.done ? `checked-${currentKid}` : '';
     return `
-    <div class="task-item${t.done?' done':''}" onclick="toggleTask(${t.id})">
-      <div class="task-check ${checkClass}">${t.done?'✓':''}</div>
-      <div class="task-info">
-        <div class="task-name${t.done?' task-done-text':''}">${t.name}</div>
-        <div class="task-meta">${subj?.emoji||'📚'} ${subj?.name||t.subject} · ${t.due} · ${typeLabel(t.type)}</div>
+    <div class="task-item${t.done?' done':''}" style="position:relative;">
+      <div onclick="toggleTask(${t.id})" style="display:flex;align-items:flex-start;gap:12px;flex:1;cursor:pointer;">
+        <div class="task-check ${checkClass}">${t.done?'✓':''}</div>
+        <div class="task-info">
+          <div class="task-name${t.done?' task-done-text':''}">${t.name}</div>
+          <div class="task-meta">${subj?.emoji||'📚'} ${subj?.name||t.subject} · ${t.due} · ${typeLabel(t.type)}</div>
+        </div>
+        <div class="priority-dot" style="background:${colors[t.priority]||'var(--muted)'};margin-top:6px;flex-shrink:0;"></div>
       </div>
-      <div class="priority-dot" style="background:${colors[t.priority]||'var(--muted)'}"></div>
+      <div style="display:flex;gap:4px;margin-left:8px;flex-shrink:0;">
+        <button onclick="openEditTask(${t.id})" style="padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;">✏️</button>
+        <button onclick="deleteTask(${t.id})" style="padding:4px 8px;border-radius:8px;border:1px solid #FFE4E4;background:#FFF5F5;font-size:12px;cursor:pointer;">🗑️</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1050,6 +1056,32 @@ function toggleTask(id) {
   saveTasks(tasks);
   renderTaskList();
   renderGreeting();
+}
+
+function deleteTask(id) {
+  if (!confirm('確認刪除這個任務？')) return;
+  const tasks = getTasks().filter(t=>t.id!==id);
+  saveTasks(tasks);
+  renderTaskList();
+  renderGreeting();
+}
+
+let editingTaskId = null;
+function openEditTask(id) {
+  const tasks = getTasks();
+  const t = tasks.find(t=>t.id===id);
+  if (!t) return;
+  editingTaskId = id;
+  document.getElementById('new-task-name').value = t.name;
+  document.getElementById('new-task-subject').value = t.subject;
+  document.getElementById('new-task-type').value = t.type;
+  document.getElementById('new-task-priority').value = t.priority;
+  document.getElementById('new-task-due').value = t.due;
+  const btn = document.getElementById('add-task-confirm');
+  btn.textContent = '✅ 確認修改';
+  btn.className = `btn-primary${currentKid===2?' kid2':''}`;
+  document.querySelector('#task-modal .modal-title').textContent = '✏️ 編輯任務';
+  openModal('task-modal');
 }
 
 function renderProgressOverview() {
@@ -1533,25 +1565,51 @@ function closeModal(id) {
 }
 
 document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+  m.addEventListener('click', e => {
+    if (e.target===m) {
+      m.classList.remove('open');
+      if (m.id === 'task-modal') {
+        editingTaskId = null;
+        document.getElementById('add-task-confirm').textContent = '確認新增';
+        document.querySelector('#task-modal .modal-title').textContent = '➕ 新增任務';
+      }
+    }
+  });
 });
 
 function confirmAddTask() {
   const name = document.getElementById('new-task-name').value.trim();
   if (!name) return;
   const tasks = getTasks();
-  tasks.unshift({
-    id: Date.now(),
-    name,
-    subject: document.getElementById('new-task-subject').value,
-    type: document.getElementById('new-task-type').value,
-    priority: document.getElementById('new-task-priority').value,
-    due: document.getElementById('new-task-due').value,
-    done: false,
-  });
+  if (editingTaskId) {
+    // Edit mode
+    const t = tasks.find(t=>t.id===editingTaskId);
+    if (t) {
+      t.name = name;
+      t.subject = document.getElementById('new-task-subject').value;
+      t.type = document.getElementById('new-task-type').value;
+      t.priority = document.getElementById('new-task-priority').value;
+      t.due = document.getElementById('new-task-due').value;
+    }
+    editingTaskId = null;
+  } else {
+    // Add mode
+    tasks.unshift({
+      id: Date.now(),
+      name,
+      subject: document.getElementById('new-task-subject').value,
+      type: document.getElementById('new-task-type').value,
+      priority: document.getElementById('new-task-priority').value,
+      due: document.getElementById('new-task-due').value,
+      done: false,
+    });
+  }
   saveTasks(tasks);
   closeModal('task-modal');
   document.getElementById('new-task-name').value = '';
+  // Reset modal title and button
+  document.getElementById('add-task-confirm').textContent = '確認新增';
+  document.querySelector('#task-modal .modal-title').textContent = '➕ 新增任務';
   renderTaskList();
   renderGreeting();
 }
