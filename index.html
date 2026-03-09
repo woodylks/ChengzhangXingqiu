@@ -480,18 +480,28 @@ body {
   window.syncTrainingToCloud = async function(kid, training) {
     await fbSet(`data/kid${kid}/training/main`, { items: training, updatedAt: Date.now() });
   };
+  window.syncExamsToCloud = async function(kid, exams) {
+    await fbSet(`data/kid${kid}/exams/main`, { items: exams, updatedAt: Date.now() });
+  };
+  window.syncSyllabusesToCloud = async function(kid, syllabuses) {
+    await fbSet(`data/kid${kid}/syllabuses/main`, { items: syllabuses, updatedAt: Date.now() });
+  };
   window.loadAllFromCloud = async function(kid) {
-    const [tasks, notices, progress, training] = await Promise.all([
+    const [tasks, notices, progress, training, exams, syllabuses] = await Promise.all([
       fbGet(`data/kid${kid}/tasks/main`),
       fbGet(`data/kid${kid}/notices/main`),
       fbGet(`data/kid${kid}/progress/main`),
       fbGet(`data/kid${kid}/training/main`),
+      fbGet(`data/kid${kid}/exams/main`),
+      fbGet(`data/kid${kid}/syllabuses/main`),
     ]);
     return {
       tasks: tasks?.items || null,
       notices: notices?.items || null,
       progress: progress?.items || null,
       training: training?.items || null,
+      exams: exams?.items || null,
+      syllabuses: syllabuses?.items || null,
     };
   };
 
@@ -585,8 +595,11 @@ body {
     </div>
 
     <div class="card">
-      <div class="card-title"><span class="icon">📊</span> 學科進度一覽</div>
-      <div id="progress-overview"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="card-title" style="margin:0"><span class="icon">🎯</span> 考試複習進度</div>
+        <button onclick="openExamModal()" style="background:var(--kid1);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">+ 新增考試</button>
+      </div>
+      <div id="exam-overview"></div>
     </div>
 
     <div class="card">
@@ -612,9 +625,45 @@ body {
 
   <!-- ── 學業 ── -->
   <div class="section" id="sec-academic">
-    <div class="section-label">選擇科目</div>
-    <div class="subject-grid" id="subject-grid"></div>
-    <div id="subject-detail"></div>
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:8px;padding:0 4px 14px;">
+      <button id="atab-exam" onclick="switchAcademicTab('exam')"
+        style="flex:1;padding:10px;border-radius:20px;border:none;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;background:var(--kid1);color:white;">🎯 考試計劃</button>
+      <button id="atab-syllabus" onclick="switchAcademicTab('syllabus')"
+        style="flex:1;padding:10px;border-radius:20px;border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;background:white;color:var(--text);">📚 學習大綱</button>
+    </div>
+    <!-- Exam tab -->
+    <div id="sec-exam">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:13px;color:var(--muted);font-weight:700">即將到來的考試</div>
+        <button onclick="openExamModal(null)" style="background:var(--kid1);color:white;border:none;border-radius:20px;padding:8px 16px;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">+ 新增考試</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;" id="exam-subject-filter"></div>
+      <div id="exam-list"></div>
+    </div>
+    <!-- Syllabus tab -->
+    <div id="sec-syllabus" style="display:none;">
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title"><span class="icon">📄</span> 上傳學習大綱</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">上傳PDF，AI自動解析課次和複習範圍</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <select id="syllabus-subject" style="flex:1;min-width:120px;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:700;background:white;">
+            <option value="chinese">📖 中文</option>
+            <option value="math">📐 數學</option>
+            <option value="english">🔤 英語</option>
+            <option value="science">🔬 常識</option>
+            <option value="it">💻 IT</option>
+            <option value="other">📚 其他</option>
+          </select>
+          <label style="flex:1;min-width:120px;padding:10px;border-radius:var(--radius-sm);border:1.5px dashed var(--kid1);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;text-align:center;color:var(--kid1);">
+            📎 選擇PDF
+            <input type="file" accept=".pdf" id="syllabus-pdf-input" style="display:none" onchange="handleSyllabusPDF(this)">
+          </label>
+        </div>
+        <div id="syllabus-upload-status"></div>
+      </div>
+      <div id="syllabus-list"></div>
+    </div>
   </div>
 
   <!-- ── 體藝 ── -->
@@ -646,6 +695,80 @@ body {
   </div>
 
 
+</div>
+
+<!-- EXAM MODAL -->
+<div class="modal-overlay" id="exam-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="exam-modal-title">🎯 新增考試</div>
+    <div class="form-group">
+      <label class="form-label">考試名稱</label>
+      <input class="form-input" id="exam-name" placeholder="例：數學期中考">
+    </div>
+    <div style="display:flex;gap:10px;">
+      <div class="form-group" style="flex:1;">
+        <label class="form-label">學科</label>
+        <select class="form-input" id="exam-subject">
+          <option value="math">📐 數學</option>
+          <option value="chinese">📖 中文</option>
+          <option value="english">🔤 英語</option>
+          <option value="science">🔬 常識</option>
+          <option value="it">💻 IT</option>
+          <option value="other">📚 其他</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label class="form-label">類型</label>
+        <select class="form-input" id="exam-type">
+          <option value="quiz">📝 小測</option>
+          <option value="monthly">📋 統測</option>
+          <option value="midterm">📘 期中考</option>
+          <option value="final">🏆 期末考</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">考試日期</label>
+      <input class="form-input" id="exam-date" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">複習範圍 <button onclick="openSyllabusPickModal()" style="margin-left:8px;padding:2px 10px;border-radius:12px;border:1.5px solid var(--kid1);background:white;color:var(--kid1);font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">從大綱選取</button></label>
+      <textarea class="form-input" id="exam-topics" rows="5" placeholder="例：&#10;第22課 燕子&#10;第24課 砍、感激&#10;第25課 商店、剛好" style="resize:none;"></textarea>
+    </div>
+    <div id="exam-score-section" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">考試成績（考完後填寫）</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input class="form-input" id="exam-score" type="number" min="0" max="100" placeholder="分數" style="flex:1;">
+          <input class="form-input" id="exam-total" type="number" min="1" placeholder="滿分" style="flex:1;" value="100">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">老師評語</label>
+        <input class="form-input" id="exam-comment" placeholder="例：計算題需加強">
+      </div>
+    </div>
+    <input type="hidden" id="exam-editing-id">
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button onclick="closeModal('exam-modal')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">取消</button>
+      <button onclick="saveExam()" style="flex:2;padding:14px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">儲存考試</button>
+    </div>
+  </div>
+</div>
+
+<!-- SYLLABUS TOPICS MODAL -->
+<div class="modal-overlay" id="syllabus-pick-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📚 從大綱選取複習範圍</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="syllabus-pick-subject-label"></div>
+    <div id="syllabus-pick-list" style="max-height:45vh;overflow-y:auto;"></div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button onclick="closeModal('syllabus-pick-modal')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">取消</button>
+      <button onclick="confirmSyllabusPick()" style="flex:2;padding:14px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">加入複習範圍</button>
+    </div>
+  </div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -942,6 +1065,8 @@ async function loadFromCloud(kid) {
     if (data.notices) { saveData(`kid${kid}_notices`, data.notices); changed = true; }
     if (data.progress) { saveData(`kid${kid}_progress`, data.progress); changed = true; }
     if (data.training) { saveData(`kid${kid}_training`, data.training); changed = true; }
+    if (data.exams) { saveData(`kid${kid}_exams`, data.exams); changed = true; }
+    if (data.syllabuses) { saveData(`kid${kid}_syllabuses`, data.syllabuses); changed = true; }
     if (changed) {
       renderDashboard();
       renderSubjectGrid();
@@ -1084,7 +1209,7 @@ function updateNavActive() {
 function renderDashboard() {
   renderGreeting();
   renderTaskList();
-  renderProgressOverview();
+  renderExamOverview();
   renderNoticesPreview();
 }
 
@@ -1304,6 +1429,440 @@ function renderSubjectDetail() {
         </div>
       </div>`).join('') : '<div class="empty-state" style="padding:16px"><div class="emoji" style="font-size:24px">📋</div><p>暫無任務</p></div>'}
   </div>`;
+}
+
+// ══════════════════════════════════════════════
+//  EXAM & SYLLABUS
+// ══════════════════════════════════════════════
+let currentAcademicTab = 'exam';
+let examSubjectFilter = 'all';
+
+function getExams() { return loadData(kkey('exams'), []); }
+function saveExams(e) {
+  saveData(kkey('exams'), e);
+  if (window.fbReady) window.syncExamsToCloud(currentKid, e);
+}
+function getSyllabuses() { return loadData(kkey('syllabuses'), []); }
+function saveSyllabuses(s) {
+  saveData(kkey('syllabuses'), s);
+  if (window.fbReady) window.syncSyllabusesToCloud(currentKid, s);
+}
+
+function switchAcademicTab(tab) {
+  currentAcademicTab = tab;
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  document.getElementById('atab-exam').style.background = tab==='exam' ? kidColor : 'white';
+  document.getElementById('atab-exam').style.color = tab==='exam' ? 'white' : 'var(--text)';
+  document.getElementById('atab-exam').style.border = tab==='exam' ? 'none' : '1.5px solid var(--border)';
+  document.getElementById('atab-syllabus').style.background = tab==='syllabus' ? kidColor : 'white';
+  document.getElementById('atab-syllabus').style.color = tab==='syllabus' ? 'white' : 'var(--text)';
+  document.getElementById('atab-syllabus').style.border = tab==='syllabus' ? 'none' : '1.5px solid var(--border)';
+  document.getElementById('sec-exam').style.display = tab==='exam' ? '' : 'none';
+  document.getElementById('sec-syllabus').style.display = tab==='syllabus' ? '' : 'none';
+  if (tab==='exam') renderExamList();
+  else renderSyllabusList();
+}
+
+const EXAM_TYPES = { quiz:'📝 小測', monthly:'📋 統測', midterm:'📘 期中考', final:'🏆 期末考' };
+const SUBJ_MAP = { math:'📐 數學', chinese:'📖 中文', english:'🔤 英語', science:'🔬 常識', it:'💻 IT', other:'📚 其他' };
+
+function renderExamSubjectFilter() {
+  const el = document.getElementById('exam-subject-filter');
+  if (!el) return;
+  const all = ['all','math','chinese','english','science','it','other'];
+  const labels = { all:'全部', ...SUBJ_MAP };
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  el.innerHTML = all.map(s => `
+    <button onclick="setExamFilter('${s}')" style="padding:6px 12px;border-radius:16px;border:1.5px solid ${examSubjectFilter===s?kidColor:'var(--border)'};background:${examSubjectFilter===s?kidColor:'white'};color:${examSubjectFilter===s?'white':'var(--text)'};font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${labels[s]}</button>
+  `).join('');
+}
+
+function setExamFilter(s) {
+  examSubjectFilter = s;
+  renderExamSubjectFilter();
+  renderExamList();
+}
+
+function renderExamList() {
+  renderExamSubjectFilter();
+  const el = document.getElementById('exam-list');
+  if (!el) return;
+  let exams = getExams();
+  if (examSubjectFilter !== 'all') exams = exams.filter(e => e.subject === examSubjectFilter);
+  // Sort: upcoming first, then by date
+  const today = new Date(); today.setHours(0,0,0,0);
+  exams.sort((a,b) => new Date(a.date) - new Date(b.date));
+  const upcoming = exams.filter(e => new Date(e.date) >= today);
+  const past = exams.filter(e => new Date(e.date) < today);
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+
+  if (!exams.length) {
+    el.innerHTML = `<div class="empty-state"><div class="emoji">🎯</div><p>還沒有考試計劃</p><p style="font-size:12px;color:var(--muted)">點擊右上角新增</p></div>`;
+    return;
+  }
+
+  const renderExam = (e) => {
+    const examDate = new Date(e.date);
+    const diffDays = Math.ceil((examDate - today) / 86400000);
+    const isPast = diffDays < 0;
+    const topics = e.topics || [];
+    const done = topics.filter(t => t.done).length;
+    const total = topics.length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const hasScore = e.score !== undefined && e.score !== '';
+    const scoreColor = !hasScore ? 'var(--muted)' : e.score/e.total >= 0.8 ? 'var(--green)' : e.score/e.total >= 0.6 ? kidColor : 'var(--red)';
+
+    return `
+    <div class="card" style="margin-bottom:12px;${isPast?'opacity:0.85':''}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">
+        <div>
+          <div style="font-size:15px;font-weight:900;margin-bottom:3px;">${e.name}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;background:${kidColor}22;color:${kidColor};padding:2px 8px;border-radius:10px;font-weight:700;">${SUBJ_MAP[e.subject]||e.subject}</span>
+            <span style="font-size:11px;background:var(--accent-light);color:var(--text);padding:2px 8px;border-radius:10px;font-weight:700;">${EXAM_TYPES[e.type]||e.type}</span>
+            ${isPast ? `<span style="font-size:11px;background:#f0f0f0;color:var(--muted);padding:2px 8px;border-radius:10px;font-weight:700;">已完成</span>` :
+              diffDays===0 ? `<span style="font-size:11px;background:#fff0e0;color:var(--orange);padding:2px 8px;border-radius:10px;font-weight:700;">🔥 今天考試！</span>` :
+              `<span style="font-size:11px;background:#fff0e0;color:var(--orange);padding:2px 8px;border-radius:10px;font-weight:700;">⏰ 還有${diffDays}天</span>`}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="openExamModal('${e.id}')" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;">✏️</button>
+          <button onclick="deleteExam('${e.id}')" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;">🗑️</button>
+        </div>
+      </div>
+
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">📅 ${e.date.replace(/-/g,'/')}</div>
+
+      ${hasScore ? `
+      <div style="display:flex;align-items:center;gap:10px;background:${scoreColor}15;border-radius:10px;padding:10px;margin-bottom:10px;">
+        <div style="font-size:28px;font-weight:900;color:${scoreColor};font-family:'Nunito',sans-serif;">${e.score}</div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);">/ ${e.total||100} 分</div>
+          <div style="font-size:12px;font-weight:700;color:${scoreColor};">${e.score/e.total>=0.8?'優秀 🌟':e.score/e.total>=0.6?'良好 👍':'需加強 💪'}</div>
+          ${e.comment?`<div style="font-size:11px;color:var(--muted);margin-top:2px;">💬 ${e.comment}</div>`:''}
+        </div>
+        <button onclick="openExamModal('${e.id}')" style="margin-left:auto;padding:4px 10px;border-radius:12px;border:1.5px solid ${kidColor};background:white;color:${kidColor};font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">編輯成績</button>
+      </div>` : isPast ? `
+      <div style="margin-bottom:10px;">
+        <button onclick="openExamModal('${e.id}')" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px dashed ${kidColor};background:white;color:${kidColor};font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">📝 填寫成績</button>
+      </div>` : ''}
+
+      ${total ? `
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px;">
+          <span>複習進度</span>
+          <span style="color:${kidColor}">${done}/${total} (${pct}%)</span>
+        </div>
+        <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:8px;">
+          <div style="width:${pct}%;height:100%;background:${kidColor};border-radius:4px;transition:width 0.3s;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          ${topics.map((t,i) => `
+          <div onclick="toggleExamTopic('${e.id}',${i})" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:${t.done?kidColor+'15':'var(--bg)'};cursor:pointer;">
+            <div style="width:18px;height:18px;border-radius:50%;border:2px solid ${t.done?kidColor:'var(--border)'};background:${t.done?kidColor:'white'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              ${t.done?'<span style="color:white;font-size:11px;font-weight:900;">✓</span>':''}
+            </div>
+            <span style="font-size:13px;font-weight:600;${t.done?'text-decoration:line-through;color:var(--muted)':''};">${t.text}</span>
+          </div>`).join('')}
+        </div>
+      </div>` : `<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px;">暫無複習範圍</div>`}
+    </div>`;
+  };
+
+  let html = '';
+  if (upcoming.length) {
+    html += `<div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:8px;padding-left:2px;">即將到來</div>`;
+    html += upcoming.map(renderExam).join('');
+  }
+  if (past.length) {
+    html += `<div style="font-size:12px;font-weight:800;color:var(--muted);margin:12px 0 8px;padding-left:2px;">已完成</div>`;
+    html += past.map(renderExam).join('');
+  }
+  el.innerHTML = html;
+}
+
+function toggleExamTopic(examId, topicIdx) {
+  const exams = getExams();
+  const exam = exams.find(e => e.id === examId);
+  if (!exam || !exam.topics) return;
+  exam.topics[topicIdx].done = !exam.topics[topicIdx].done;
+  saveExams(exams);
+  renderExamList();
+  renderExamOverview();
+}
+
+function openExamModal(examId) {
+  const isEdit = !!examId;
+  document.getElementById('exam-modal-title').textContent = isEdit ? '✏️ 編輯考試' : '🎯 新增考試';
+  document.getElementById('exam-editing-id').value = examId || '';
+  // Set default date to today+7
+  const d = new Date(); d.setDate(d.getDate()+7);
+  document.getElementById('exam-date').value = d.toISOString().split('T')[0];
+  document.getElementById('exam-score-section').style.display = 'none';
+
+  if (isEdit) {
+    const exam = getExams().find(e => e.id === examId);
+    if (exam) {
+      document.getElementById('exam-name').value = exam.name;
+      document.getElementById('exam-subject').value = exam.subject;
+      document.getElementById('exam-type').value = exam.type;
+      document.getElementById('exam-date').value = exam.date;
+      document.getElementById('exam-topics').value = (exam.topics||[]).map(t=>t.text).join('\n');
+      // Show score section for past exams
+      const isPast = new Date(exam.date) < new Date();
+      document.getElementById('exam-score-section').style.display = isPast ? '' : 'none';
+      document.getElementById('exam-score').value = exam.score ?? '';
+      document.getElementById('exam-total').value = exam.total ?? 100;
+      document.getElementById('exam-comment').value = exam.comment ?? '';
+    }
+  } else {
+    document.getElementById('exam-name').value = '';
+    document.getElementById('exam-topics').value = '';
+    document.getElementById('exam-score').value = '';
+    document.getElementById('exam-total').value = 100;
+    document.getElementById('exam-comment').value = '';
+  }
+  openModal('exam-modal');
+}
+
+function saveExam() {
+  const name = document.getElementById('exam-name').value.trim();
+  const subject = document.getElementById('exam-subject').value;
+  const type = document.getElementById('exam-type').value;
+  const date = document.getElementById('exam-date').value;
+  const topicsRaw = document.getElementById('exam-topics').value.trim();
+  const editingId = document.getElementById('exam-editing-id').value;
+  const score = document.getElementById('exam-score').value;
+  const total = document.getElementById('exam-total').value || 100;
+  const comment = document.getElementById('exam-comment').value.trim();
+
+  if (!name) { alert('請輸入考試名稱'); return; }
+  if (!date) { alert('請選擇考試日期'); return; }
+
+  const exams = getExams();
+  const topicLines = topicsRaw ? topicsRaw.split('\n').map(l=>l.trim()).filter(Boolean) : [];
+
+  if (editingId) {
+    const idx = exams.findIndex(e => e.id === editingId);
+    if (idx >= 0) {
+      const existing = exams[idx];
+      // Preserve done state for existing topics
+      const newTopics = topicLines.map(text => {
+        const old = (existing.topics||[]).find(t=>t.text===text);
+        return { text, done: old ? old.done : false };
+      });
+      exams[idx] = { ...existing, name, subject, type, date, topics: newTopics,
+        score: score !== '' ? Number(score) : undefined,
+        total: Number(total), comment };
+    }
+  } else {
+    exams.unshift({
+      id: 'exam_' + Date.now(),
+      name, subject, type, date,
+      topics: topicLines.map(text => ({ text, done: false })),
+      score: undefined, total: Number(total), comment: '', createdAt: Date.now()
+    });
+  }
+  saveExams(exams);
+  closeModal('exam-modal');
+  renderExamList();
+  renderExamOverview();
+}
+
+function deleteExam(examId) {
+  if (!confirm('確定刪除這個考試？')) return;
+  const exams = getExams().filter(e => e.id !== examId);
+  saveExams(exams);
+  renderExamList();
+  renderExamOverview();
+}
+
+// ── Syllabus ──
+async function handleSyllabusPDF(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const subject = document.getElementById('syllabus-subject').value;
+  const status = document.getElementById('syllabus-upload-status');
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+
+  status.innerHTML = `<div style="padding:12px;background:${kidColor}15;border-radius:10px;font-size:13px;font-weight:700;color:${kidColor};">⏳ AI正在解析中，請稍等...</div>`;
+
+  // Convert PDF to base64
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+            { type: 'text', text: '請解析這份學習大綱，提取所有課次和學習內容。只返回JSON，格式：{"items":[{"month":"3月","lesson":"第24課","title":"砍、感激、走進..."},...]}, 不要其他文字。' }
+          ]
+        }]
+      })
+    });
+    const data = await response.json();
+    const text = data.content.map(c=>c.text||'').join('');
+    let parsed;
+    try {
+      const clean = text.replace(/```json|```/g,'').trim();
+      parsed = JSON.parse(clean);
+    } catch(e) {
+      throw new Error('解析失敗');
+    }
+
+    const items = parsed.items || [];
+    if (!items.length) throw new Error('未找到課次');
+
+    // Save to syllabuses
+    const syllabuses = getSyllabuses();
+    const existing = syllabuses.findIndex(s => s.subject === subject && s.kid === currentKid);
+    const entry = { subject, kid: currentKid, items, updatedAt: Date.now(), fileName: file.name };
+    if (existing >= 0) syllabuses[existing] = entry;
+    else syllabuses.push(entry);
+    saveSyllabuses(syllabuses);
+
+    status.innerHTML = `<div style="padding:12px;background:#e8f5e8;border-radius:10px;font-size:13px;font-weight:700;color:var(--green);">✅ 成功解析 ${items.length} 個課次！</div>`;
+    setTimeout(() => { status.innerHTML = ''; renderSyllabusList(); }, 1500);
+  } catch(e) {
+    status.innerHTML = `<div style="padding:12px;background:#fff0f0;border-radius:10px;font-size:13px;font-weight:700;color:var(--red);">❌ 解析失敗：${e.message}</div>`;
+  }
+  input.value = '';
+}
+
+function renderSyllabusList() {
+  const el = document.getElementById('syllabus-list');
+  if (!el) return;
+  const syllabuses = getSyllabuses().filter(s => s.kid === currentKid);
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+
+  if (!syllabuses.length) {
+    el.innerHTML = `<div class="empty-state"><div class="emoji">📚</div><p>還沒有學習大綱</p><p style="font-size:12px;color:var(--muted)">上傳PDF自動解析</p></div>`;
+    return;
+  }
+
+  el.innerHTML = syllabuses.map(s => {
+    const subj = SUBJ_MAP[s.subject] || s.subject;
+    return `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:900;">${subj}</div>
+          <div style="font-size:11px;color:var(--muted);">${s.fileName||''} · ${s.items.length}個課次</div>
+        </div>
+        <button onclick="deleteSyllabus('${s.subject}')" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;">🗑️</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        ${s.items.map(item => `
+        <div style="display:flex;gap:10px;padding:8px 10px;background:var(--bg);border-radius:8px;">
+          <span style="font-size:11px;color:${kidColor};font-weight:700;min-width:32px;">${item.month||''}</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;">${item.lesson||''}</div>
+            ${item.title?`<div style="font-size:11px;color:var(--muted);">${item.title}</div>`:''}
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteSyllabus(subject) {
+  if (!confirm('確定刪除這份大綱？')) return;
+  const syllabuses = getSyllabuses().filter(s => !(s.subject===subject && s.kid===currentKid));
+  saveSyllabuses(syllabuses);
+  renderSyllabusList();
+}
+
+// Pick topics from syllabus
+function openSyllabusPickModal() {
+  const subject = document.getElementById('exam-subject').value;
+  const syllabus = getSyllabuses().find(s => s.subject===subject && s.kid===currentKid);
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  const labelEl = document.getElementById('syllabus-pick-subject-label');
+  const listEl = document.getElementById('syllabus-pick-list');
+
+  if (!syllabus || !syllabus.items.length) {
+    alert(`${SUBJ_MAP[subject]}還沒有學習大綱，請先上傳PDF`);
+    return;
+  }
+  labelEl.textContent = `${SUBJ_MAP[subject]} · ${syllabus.items.length}個課次`;
+  listEl.innerHTML = syllabus.items.map((item,i) => `
+    <div onclick="this.dataset.sel=this.dataset.sel==='1'?'0':'1'; this.style.background=this.dataset.sel==='1'?'${kidColor}15':'var(--bg)'; this.querySelector('.pick-check').style.background=this.dataset.sel==='1'?'${kidColor}':'white'; this.querySelector('.pick-check').style.borderColor=this.dataset.sel==='1'?'${kidColor}':'var(--border)'; this.querySelector('.pick-check').innerHTML=this.dataset.sel==='1'?'<span style=color:white;font-size:11px;font-weight:900>✓</span>':'';"
+      data-sel="0" data-text="${item.lesson||''} ${item.title||''}".trim()
+      style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--bg);margin-bottom:4px;cursor:pointer;">
+      <div class="pick-check" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>
+      <div>
+        <div style="font-size:13px;font-weight:700;">${item.lesson||''}</div>
+        ${item.title?`<div style="font-size:11px;color:var(--muted);">${item.title}</div>`:''}
+      </div>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted);">${item.month||''}</span>
+    </div>
+  `).join('');
+  openModal('syllabus-pick-modal');
+}
+
+function confirmSyllabusPick() {
+  const items = document.querySelectorAll('#syllabus-pick-list [data-sel="1"]');
+  if (!items.length) { closeModal('syllabus-pick-modal'); return; }
+  const existing = document.getElementById('exam-topics').value.trim();
+  const newLines = Array.from(items).map(el => {
+    const lesson = el.querySelector('div div:first-child')?.textContent.trim() || '';
+    const title = el.querySelector('div div:last-child')?.textContent.trim() || '';
+    return lesson + (title && title!==lesson ? ' ' + title : '');
+  });
+  const combined = existing ? existing + '\n' + newLines.join('\n') : newLines.join('\n');
+  document.getElementById('exam-topics').value = combined;
+  closeModal('syllabus-pick-modal');
+}
+
+// ── Dashboard exam overview ──
+function renderExamOverview() {
+  const el = document.getElementById('exam-overview');
+  if (!el) return;
+  const exams = getExams();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = exams.filter(e => new Date(e.date) >= today).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+
+  if (!upcoming.length) {
+    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">暫無即將到來的考試<br><button onclick="switchTab('academic')" style="margin-top:8px;padding:6px 16px;border-radius:16px;border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">+ 新增考試計劃</button></div>`;
+    return;
+  }
+
+  el.innerHTML = upcoming.slice(0,3).map(e => {
+    const topics = e.topics || [];
+    const done = topics.filter(t=>t.done).length;
+    const total = topics.length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const diffDays = Math.ceil((new Date(e.date) - today) / 86400000);
+    return `
+    <div onclick="switchTab('academic')" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;">
+      <div style="width:42px;height:42px;border-radius:12px;background:${kidColor}20;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${SUBJ_MAP[e.subject]?.split(' ')[0]||'📚'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:800;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.name}</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${kidColor};border-radius:3px;"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:${kidColor};">${pct}%</span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:11px;font-weight:800;color:${diffDays<=3?'var(--red)':'var(--orange)'};">${diffDays===0?'今天':diffDays+'天後'}</div>
+        <div style="font-size:10px;color:var(--muted);">${e.date.slice(5).replace('-','/')}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════════
