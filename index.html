@@ -656,7 +656,8 @@ body {
             <option value="english">🔤 英語</option>
             <option value="science">🔬 常識</option>
             <option value="it">💻 IT</option>
-            <option value="other">📚 其他</option>
+          <option value="humanities">🌏 人文</option>
+          <option value="other">📚 其他</option>
           </select>
         </div>
 
@@ -1847,12 +1848,10 @@ function selectSyllabus(subject) {
 }
 
 function openPdfViewer(url, fileName) {
-  // Use raw URL for Google Docs viewer
+  // Convert github.com/blob/ to raw URL for direct PDF download/view
   const rawUrl = url.replace('github.com','raw.githubusercontent.com').replace('/blob/','/')  ;
-  const viewerUrl = 'https://docs.google.com/viewer?url=' + encodeURIComponent(rawUrl) + '&embedded=true';
-  document.getElementById('pdf-viewer-title').textContent = fileName || 'PDF文件';
-  document.getElementById('pdf-iframe').src = viewerUrl;
-  openModal('pdf-viewer-modal');
+  // Open in new tab - most reliable on mobile
+  window.open(rawUrl, '_blank');
 }
 
 function deleteSyllabus(subject) {
