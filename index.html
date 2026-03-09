@@ -595,22 +595,53 @@ function checkAutoArchive() {
   if (lastDate && lastDate !== today) {
     const tasks = getTasks();
     if (tasks.length > 0) {
-      // Auto-archive previous day silently
-      const weekdays = ['日','一','二','三','四','五','六'];
-      let prev;
-      try { prev = new Date(lastDate.replace(/\//g, '-')); } catch(e) { prev = new Date(); }
-      const history = getHistory();
-      const filtered = history.filter(h => h.dateKey !== lastDate);
-      filtered.unshift({
-        dateKey: lastDate,
-        dateLabel: `${lastDate} 週${weekdays[prev.getDay()]}`,
-        tasks: tasks.map(t => ({...t})),
-        doneCount: tasks.filter(t=>t.done).length,
-        totalCount: tasks.length,
+      // Separate tasks: archive expired/today ones, keep future ones
+      const todayDate = new Date();
+      todayDate.setHours(0,0,0,0);
+
+      const toArchive = [];
+      const toKeep = [];
+
+      tasks.forEach(t => {
+        // Parse due date - keep if it's a future date
+        let isFuture = false;
+        if (t.due && t.due !== '今天' && t.due !== '無截止日') {
+          // Try parse formats like "3/15", "2026/3/15", "3月15日"
+          const m1 = t.due.match(/(\d+)[\/\-](\d+)/);
+          const m2 = t.due.match(/(\d+)月(\d+)日/);
+          const match = m1 || m2;
+          if (match) {
+            const year = new Date().getFullYear();
+            const dueDate = new Date(year, parseInt(match[1])-1, parseInt(match[2]));
+            dueDate.setHours(0,0,0,0);
+            if (dueDate > todayDate) isFuture = true;
+          }
+        }
+        if (isFuture) {
+          toKeep.push(t);
+        } else {
+          toArchive.push(t);
+        }
       });
-      saveHistory(filtered);
-      // Clear tasks for new day
-      saveTasks([]);
+
+      if (toArchive.length > 0) {
+        const weekdays = ['日','一','二','三','四','五','六'];
+        let prev;
+        try { prev = new Date(lastDate.replace(/\//g, '-')); } catch(e) { prev = new Date(); }
+        const history = getHistory();
+        const filtered = history.filter(h => h.dateKey !== lastDate);
+        filtered.unshift({
+          dateKey: lastDate,
+          dateLabel: `${lastDate} 週${weekdays[prev.getDay()]}`,
+          tasks: toArchive.map(t => ({...t})),
+          doneCount: toArchive.filter(t=>t.done).length,
+          totalCount: toArchive.length,
+        });
+        saveHistory(filtered);
+      }
+
+      // Only keep future tasks
+      saveTasks(toKeep);
     }
   }
   saveData(kkey('lastDate'), today);
@@ -738,10 +769,10 @@ function navTap(e, tab) {
   </div>
   <div class="kid-switcher">
     <button class="kid-tab active-1" id="kidBtn1" onclick="switchKid(1)">
-      <span class="kid-avatar">🦁</span> 大寶（小3）
+      <span class="kid-avatar">🦁</span> 添樂（小3）
     </button>
     <button class="kid-tab" id="kidBtn2" onclick="switchKid(2)">
-      <span class="kid-avatar">🐰</span> 細寶（小1）
+      <span class="kid-avatar">🐰</span> 悅琳（小1）
     </button>
   </div>
 </div>
@@ -754,7 +785,7 @@ function navTap(e, tab) {
     <div id="greeting-banner" class="card" style="background: linear-gradient(135deg, var(--kid1-light), var(--accent-light)); border-color: var(--kid1-mid);">
       <div style="font-size:22px; margin-bottom:6px;" id="greeting-emoji">☀️</div>
       <div style="font-size:17px; font-weight:900;" id="greeting-text">早晨！今天繼續加油！</div>
-      <div style="font-size:13px; color:var(--muted); margin-top:4px;" id="greeting-sub">大寶有 <strong id="pending-count">0</strong> 項任務待完成</div>
+      <div style="font-size:13px; color:var(--muted); margin-top:4px;" id="greeting-sub">添樂有 <strong id="pending-count">0</strong> 項任務待完成</div>
     </div>
 
     <!-- 📸 黑板功課導入 -->
@@ -1095,8 +1126,8 @@ let isAiTyping = false;
 let currentTrainingArts = null;
 
 const KIDS = {
-  1: { name: '大寶', grade: '小學3年級', avatar: '🦁', color: 'var(--kid1)', light: 'var(--kid1-light)' },
-  2: { name: '細寶', grade: '小學1年級', avatar: '🐰', color: 'var(--kid2)', light: 'var(--kid2-light)' }
+  1: { name: '添樂', grade: '小學3年級', avatar: '🦁', color: 'var(--kid1)', light: 'var(--kid1-light)' },
+  2: { name: '悅琳', grade: '小學1年級', avatar: '🐰', color: 'var(--kid2)', light: 'var(--kid2-light)' }
 };
 
 const SUBJECTS = [
@@ -2289,22 +2320,53 @@ function checkAutoArchive() {
   if (lastDate && lastDate !== today) {
     const tasks = getTasks();
     if (tasks.length > 0) {
-      // Auto-archive previous day silently
-      const weekdays = ['日','一','二','三','四','五','六'];
-      let prev;
-      try { prev = new Date(lastDate.replace(/\//g, '-')); } catch(e) { prev = new Date(); }
-      const history = getHistory();
-      const filtered = history.filter(h => h.dateKey !== lastDate);
-      filtered.unshift({
-        dateKey: lastDate,
-        dateLabel: `${lastDate} 週${weekdays[prev.getDay()]}`,
-        tasks: tasks.map(t => ({...t})),
-        doneCount: tasks.filter(t=>t.done).length,
-        totalCount: tasks.length,
+      // Separate tasks: archive expired/today ones, keep future ones
+      const todayDate = new Date();
+      todayDate.setHours(0,0,0,0);
+
+      const toArchive = [];
+      const toKeep = [];
+
+      tasks.forEach(t => {
+        // Parse due date - keep if it's a future date
+        let isFuture = false;
+        if (t.due && t.due !== '今天' && t.due !== '無截止日') {
+          // Try parse formats like "3/15", "2026/3/15", "3月15日"
+          const m1 = t.due.match(/(\d+)[\/\-](\d+)/);
+          const m2 = t.due.match(/(\d+)月(\d+)日/);
+          const match = m1 || m2;
+          if (match) {
+            const year = new Date().getFullYear();
+            const dueDate = new Date(year, parseInt(match[1])-1, parseInt(match[2]));
+            dueDate.setHours(0,0,0,0);
+            if (dueDate > todayDate) isFuture = true;
+          }
+        }
+        if (isFuture) {
+          toKeep.push(t);
+        } else {
+          toArchive.push(t);
+        }
       });
-      saveHistory(filtered);
-      // Clear tasks for new day
-      saveTasks([]);
+
+      if (toArchive.length > 0) {
+        const weekdays = ['日','一','二','三','四','五','六'];
+        let prev;
+        try { prev = new Date(lastDate.replace(/\//g, '-')); } catch(e) { prev = new Date(); }
+        const history = getHistory();
+        const filtered = history.filter(h => h.dateKey !== lastDate);
+        filtered.unshift({
+          dateKey: lastDate,
+          dateLabel: `${lastDate} 週${weekdays[prev.getDay()]}`,
+          tasks: toArchive.map(t => ({...t})),
+          doneCount: toArchive.filter(t=>t.done).length,
+          totalCount: toArchive.length,
+        });
+        saveHistory(filtered);
+      }
+
+      // Only keep future tasks
+      saveTasks(toKeep);
     }
   }
   saveData(kkey('lastDate'), today);
