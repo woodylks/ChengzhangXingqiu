@@ -428,7 +428,15 @@ body {
 
   // ── Firebase helpers ──
   async function fbSet(path, data) {
-    try { await setDoc(doc(db, path), data); return true; } catch(e) { console.error('fbSet error', e); return false; }
+    try { 
+      console.log('fbSet writing to:', path);
+      await setDoc(doc(db, path), data); 
+      console.log('fbSet success:', path);
+      return true; 
+    } catch(e) { 
+      console.error('fbSet error at path:', path, e); 
+      return false; 
+    }
   }
   async function fbGet(path) {
     try { const d = await getDoc(doc(db, path)); return d.exists() ? d.data() : null; } catch(e) { return null; }
@@ -942,6 +950,7 @@ async function loadFromCloud(kid) {
     showCloudStatus('✅ 雲端資料已同步');
     setTimeout(hideCloudStatus, 2000);
   } catch(e) {
+    console.error('Cloud sync error:', e);
     showCloudStatus('⚠️ 雲端同步失敗，使用本地資料');
     setTimeout(hideCloudStatus, 3000);
   }
