@@ -583,14 +583,9 @@ function archiveTodayTasks() {
   });
 
   saveHistory(filtered);
-
-  // Clear today's tasks (move to history)
-  saveTasks([]);
-  renderTaskList();
-  renderGreeting();
   renderHistory();
 
-  alert(`✅ 已歸檔 ${tasks.length} 項功課到歷史記錄！\n今日任務清單已清空，準備好迎接明天！`);
+  alert(`✅ 已歸檔今日 ${tasks.length} 項功課！\n任務清單保持不變，明天開App會自動清空。`);
 }
 
 // Auto-archive when day changes
@@ -600,9 +595,10 @@ function checkAutoArchive() {
   if (lastDate && lastDate !== today) {
     const tasks = getTasks();
     if (tasks.length > 0) {
-      // silently archive previous day
-      const prev = new Date(lastDate.replace(/\//g, '-'));
+      // Auto-archive previous day silently
       const weekdays = ['日','一','二','三','四','五','六'];
+      let prev;
+      try { prev = new Date(lastDate.replace(/\//g, '-')); } catch(e) { prev = new Date(); }
       const history = getHistory();
       const filtered = history.filter(h => h.dateKey !== lastDate);
       filtered.unshift({
@@ -613,6 +609,7 @@ function checkAutoArchive() {
         totalCount: tasks.length,
       });
       saveHistory(filtered);
+      // Clear tasks for new day
       saveTasks([]);
     }
   }
@@ -2280,14 +2277,9 @@ function archiveTodayTasks() {
   });
 
   saveHistory(filtered);
-
-  // Clear today's tasks (move to history)
-  saveTasks([]);
-  renderTaskList();
-  renderGreeting();
   renderHistory();
 
-  alert(`✅ 已歸檔 ${tasks.length} 項功課到歷史記錄！\n今日任務清單已清空，準備好迎接明天！`);
+  alert(`✅ 已歸檔今日 ${tasks.length} 項功課！\n任務清單保持不變，明天開App會自動清空。`);
 }
 
 // Auto-archive when day changes
@@ -2297,9 +2289,10 @@ function checkAutoArchive() {
   if (lastDate && lastDate !== today) {
     const tasks = getTasks();
     if (tasks.length > 0) {
-      // silently archive previous day
-      const prev = new Date(lastDate.replace(/\//g, '-'));
+      // Auto-archive previous day silently
       const weekdays = ['日','一','二','三','四','五','六'];
+      let prev;
+      try { prev = new Date(lastDate.replace(/\//g, '-')); } catch(e) { prev = new Date(); }
       const history = getHistory();
       const filtered = history.filter(h => h.dateKey !== lastDate);
       filtered.unshift({
@@ -2310,6 +2303,7 @@ function checkAutoArchive() {
         totalCount: tasks.length,
       });
       saveHistory(filtered);
+      // Clear tasks for new day
       saveTasks([]);
     }
   }
