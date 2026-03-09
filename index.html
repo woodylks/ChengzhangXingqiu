@@ -381,6 +381,29 @@ body {
 .file-name { flex: 1; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .file-date { font-size: 10px; color: var(--muted); }
 
+/* ── HISTORY ── */
+.hist-day-group { margin-bottom: 16px; }
+.hist-day-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: var(--text); color: white;
+  border-radius: var(--radius-sm); margin-bottom: 8px; font-weight: 800; font-size: 13px;
+}
+.hist-day-header .day-stats { font-size: 11px; opacity: 0.7; font-weight: 600; }
+.hist-task {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--card); border-radius: var(--radius-sm);
+  border: 1px solid var(--border); margin-bottom: 6px;
+}
+.hist-task .done-badge {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900;
+}
+.hist-task .done-badge.done { background: var(--green); color: white; }
+.hist-task .done-badge.undone { background: var(--border); color: var(--muted); }
+.active-filter { background: var(--kid1) !important; color: white !important; border-color: var(--kid1) !important; }
+.active-subj { background: var(--text) !important; color: white !important; border-color: var(--text) !important; }
+
+/* ── EMPTY STATE ── */
 /* ── EMPTY STATE ── */
 .empty-state { text-align: center; padding: 32px 16px; color: var(--muted); }
 .empty-state .emoji { font-size: 40px; margin-bottom: 10px; }
@@ -466,6 +489,234 @@ body {
 
   console.log('Firebase ready ✅');
   window.dispatchEvent(new Event('firebaseReady'));
+
+// ══════════════════════════════════════════════
+//  PASTE IMPORT FEATURE
+// ══════════════════════════════════════════════
+function showHowTo() {
+  openModal('howto-modal');
+}
+
+function importFromPaste() {
+  const raw = document.getElementById('paste-input').value.trim();
+  if (!raw) { alert('請先貼上功課代碼'); return; }
+
+  const lines = raw.split('\n').filter(l => l.trim().startsWith('HOMEWORK::'));
+  if (lines.length === 0) {
+    alert('找不到功課代碼，請確認格式正確\n格式：HOMEWORK::功課名稱::科目::優先級');
+    return;
+  }
+
+  const tasks = getTasks();
+  const today = new Date().toLocaleDateString('zh-HK');
+  let added = 0;
+
+  lines.forEach((line, i) => {
+    const parts = line.split('::');
+    if (parts.length < 3) return;
+    const name = parts[1]?.trim();
+    const subject = parts[2]?.trim() || 'other';
+    const priority = parts[3]?.trim() || 'medium';
+    if (!name) return;
+    tasks.unshift({
+      id: Date.now() + i,
+      name,
+      subject,
+      type: 'homework',
+      priority,
+      due: '今天',
+      done: false,
+    });
+    added++;
+  });
+
+  saveTasks(tasks);
+  closeModal('paste-modal');
+  document.getElementById('paste-input').value = '';
+  renderTaskList();
+  renderGreeting();
+
+  const status = document.getElementById('import-status');
+  status.style.display = 'block';
+  status.innerHTML = `✅ 成功導入 ${added} 項功課！`;
+  setTimeout(() => { status.style.display = 'none'; }, 3000);
+}
+
+
+// ══════════════════════════════════════════════
+//  HISTORY FEATURE
+// ══════════════════════════════════════════════
+let historyFilter = 'all';
+let historySubjectFilter = 'all';
+
+function getHistory() {
+  return loadData(kkey('history'), []);
+}
+function saveHistory(h) {
+  saveData(kkey('history'), h);
+  if (window.fbReady) window.fbSet(`data/kid${currentKid}/history`, { items: h, updatedAt: Date.now() });
+}
+
+// Archive today's tasks to history
+function archiveTodayTasks() {
+  const tasks = getTasks();
+  if (!tasks.length) { alert('今天還沒有任何任務！'); return; }
+
+  const today = new Date();
+  const dateKey = today.toLocaleDateString('zh-HK');
+  const dateLabel = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+  const weekdays = ['日','一','二','三','四','五','六'];
+  const dayLabel = `週${weekdays[today.getDay()]}`;
+
+  const history = getHistory();
+
+  // Remove existing entry for today if any
+  const filtered = history.filter(h => h.dateKey !== dateKey);
+
+  // Add today's snapshot
+  filtered.unshift({
+    dateKey,
+    dateLabel: `${dateLabel} ${dayLabel}`,
+    tasks: tasks.map(t => ({...t})),
+    doneCount: tasks.filter(t=>t.done).length,
+    totalCount: tasks.length,
+  });
+
+  saveHistory(filtered);
+
+  // Clear today's tasks (move to history)
+  saveTasks([]);
+  renderTaskList();
+  renderGreeting();
+  renderHistory();
+
+  alert(`✅ 已歸檔 ${tasks.length} 項功課到歷史記錄！\n今日任務清單已清空，準備好迎接明天！`);
+}
+
+// Auto-archive when day changes
+function checkAutoArchive() {
+  const lastDate = loadData(kkey('lastDate'), '');
+  const today = new Date().toLocaleDateString('zh-HK');
+  if (lastDate && lastDate !== today) {
+    const tasks = getTasks();
+    if (tasks.length > 0) {
+      // silently archive previous day
+      const prev = new Date(lastDate.replace(/\//g, '-'));
+      const weekdays = ['日','一','二','三','四','五','六'];
+      const history = getHistory();
+      const filtered = history.filter(h => h.dateKey !== lastDate);
+      filtered.unshift({
+        dateKey: lastDate,
+        dateLabel: `${lastDate} 週${weekdays[prev.getDay()]}`,
+        tasks: tasks.map(t => ({...t})),
+        doneCount: tasks.filter(t=>t.done).length,
+        totalCount: tasks.length,
+      });
+      saveHistory(filtered);
+      saveTasks([]);
+    }
+  }
+  saveData(kkey('lastDate'), today);
+}
+
+function filterHistory(f) {
+  historyFilter = f;
+  document.querySelectorAll('.hist-filter').forEach(b => {
+    b.classList.toggle('active-filter', b.dataset.filter === f);
+    b.style.background = b.dataset.filter === f ? 'var(--kid1)' : 'white';
+    b.style.color = b.dataset.filter === f ? 'white' : 'var(--text)';
+  });
+  renderHistory();
+}
+
+function filterHistorySubject(s) {
+  historySubjectFilter = s;
+  document.querySelectorAll('.subj-filter').forEach(b => {
+    b.classList.toggle('active-subj', b.dataset.subj === s);
+    b.style.background = b.dataset.subj === s ? 'var(--text)' : 'white';
+    b.style.color = b.dataset.subj === s ? 'white' : 'var(--text)';
+  });
+  renderHistory();
+}
+
+function renderHistory() {
+  // Populate subject filter buttons
+  const subjBtns = document.getElementById('subject-filter-btns');
+  if (subjBtns) {
+    const allS = [...SUBJECTS, ...ARTS];
+    subjBtns.innerHTML = `<button onclick="filterHistorySubject('all')" class="subj-filter" data-subj="all" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:${historySubjectFilter==='all'?'var(--text)':'white'};color:${historySubjectFilter==='all'?'white':'var(--text)'};font-size:12px;font-weight:700;cursor:pointer;">全部</button>`
+    + allS.map(s => `<button onclick="filterHistorySubject('${s.id}')" class="subj-filter" data-subj="${s.id}" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:${historySubjectFilter===s.id?'var(--text)':'white'};color:${historySubjectFilter===s.id?'white':'var(--text)'};font-size:12px;font-weight:700;cursor:pointer;">${s.emoji} ${s.name}</button>`).join('');
+  }
+
+  let history = getHistory();
+  if (!history.length) {
+    document.getElementById('history-list').innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">📭</div>
+        <p>還沒有歷史記錄</p>
+        <p style="font-size:11px;margin-top:4px;">每天完成功課後點「歸檔今日」</p>
+      </div>`;
+    return;
+  }
+
+  // Date filter
+  const now = new Date();
+  if (historyFilter === 'week') {
+    const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+    history = history.filter(h => new Date(h.dateKey.replace(/\//g,'-')) >= weekAgo);
+  } else if (historyFilter === 'month') {
+    const monthAgo = new Date(now); monthAgo.setMonth(now.getMonth() - 1);
+    history = history.filter(h => new Date(h.dateKey.replace(/\//g,'-')) >= monthAgo);
+  }
+
+  const kidColor = currentKid===1 ? 'var(--kid1)' : 'var(--kid2)';
+
+  document.getElementById('history-list').innerHTML = history.map(day => {
+    let tasks = day.tasks || [];
+    // Subject filter
+    if (historySubjectFilter !== 'all') {
+      tasks = tasks.filter(t => t.subject === historySubjectFilter);
+    }
+    if (!tasks.length) return '';
+
+    const doneCount = tasks.filter(t=>t.done).length;
+    const pct = Math.round(doneCount/tasks.length*100);
+
+    return `
+    <div class="hist-day-group">
+      <div class="hist-day-header" style="background:${kidColor};">
+        <span>${day.dateLabel}</span>
+        <span class="day-stats">✅ ${doneCount}/${tasks.length} 完成 · ${pct}%</span>
+      </div>
+      ${tasks.map(t => {
+        const subj = ALL_SUBJECTS.find(s=>s.id===t.subject);
+        return `<div class="hist-task">
+          <div class="done-badge ${t.done?'done':'undone'}">${t.done?'✓':'○'}</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;${t.done?'text-decoration:line-through;opacity:0.6':''}">${t.name}</div>
+            <div style="font-size:11px;color:var(--muted);">${subj?.emoji||'📚'} ${subj?.name||t.subject}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).filter(Boolean).join('') || '<div class="empty-state"><div class="emoji">🔍</div><p>此篩選條件下沒有記錄</p></div>';
+}
+
+// Override switchTab to render history when needed
+const _origSwitchTab = switchTab;
+function switchTab(tab) {
+  _origSwitchTab(tab);
+  if (tab === 'history') renderHistory();
+}
+
+// Update nav to include history
+const _origUpdateNav = updateNavActive;
+function updateNavActive() {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active','active-2'));
+  const activeClass = currentKid === 1 ? 'active' : 'active-2';
+  document.getElementById(`nav-${currentTab}`)?.classList.add(activeClass);
+}
+
 </script>
 </head>
 <body>
@@ -506,21 +757,21 @@ body {
       <div style="font-size:13px; color:var(--muted); margin-top:4px;" id="greeting-sub">大寶有 <strong id="pending-count">0</strong> 項任務待完成</div>
     </div>
 
-    <!-- 📸 拍照識別黑板 -->
+    <!-- 📸 黑板功課導入 -->
     <div class="card" style="border: 2px solid var(--accent); background: var(--accent-light);">
-      <div class="card-title" style="margin-bottom:8px;"><span class="icon">📸</span> 拍黑板自動新增功課</div>
-      <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">上傳黑板照片，AI自動識別今天的功課並新增到任務清單</div>
-      <input type="file" accept="image/*" capture="environment" id="blackboard-camera" style="display:none" onchange="scanBlackboard(this)">
-      <input type="file" accept="image/*" id="blackboard-gallery" style="display:none" onchange="scanBlackboard(this)">
-      <div style="display:flex;gap:10px;">
-        <button onclick="checkApiKeyAndScan('camera')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,#F7C948,#FF6B35);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
-          📷 拍照
+      <div class="card-title" style="margin-bottom:4px;"><span class="icon">📋</span> 今日功課一鍵導入</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:12px; line-height:1.6;">
+        把黑板照片發給 Claude，Claude 識別後給你一段代碼，貼在這裡即可自動更新所有功課 ✨
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;">
+        <button onclick="openModal('paste-modal')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,#F7C948,#FF6B35);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">
+          📋 貼上功課代碼
         </button>
-        <button onclick="checkApiKeyAndScan('gallery')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,#4FACDE,#8B5CF6);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
-          🖼️ 相冊
+        <button onclick="showHowTo()" style="padding:14px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">
+          ❓ 怎麼用
         </button>
       </div>
-      <div id="scan-status" style="margin-top:10px;font-size:13px;text-align:center;color:var(--muted);display:none;"></div>
+      <div id="import-status" style="font-size:13px;text-align:center;color:var(--muted);display:none;"></div>
     </div>
 
     <div class="stats-row">
@@ -598,6 +849,35 @@ body {
     <div id="quiz-content"></div>
   </div>
 
+
+  <!-- ── 歷史記錄 ── -->
+  <div class="section" id="sec-history">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h2 style="font-size:20px;font-weight:900;margin:0;">📅 功課歷史記錄</h2>
+      <button onclick="archiveTodayTasks()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--green);color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">📦 歸檔今日</button>
+    </div>
+
+    <!-- Date filter -->
+    <div class="card" style="margin-bottom:14px;padding:14px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="history-filter-btns">
+        <button onclick="filterHistory('all')" class="hist-filter active-filter" data-filter="all" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--kid1);color:white;font-size:12px;font-weight:700;cursor:pointer;">全部</button>
+        <button onclick="filterHistory('week')" class="hist-filter" data-filter="week" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;cursor:pointer;">本週</button>
+        <button onclick="filterHistory('month')" class="hist-filter" data-filter="month" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;cursor:pointer;">本月</button>
+      </div>
+    </div>
+
+    <!-- Subject filter -->
+    <div class="card" style="margin-bottom:14px;padding:14px;">
+      <div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">按科目篩選</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="subject-filter-btns">
+        <button onclick="filterHistorySubject('all')" class="subj-filter" data-subj="all" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--text);color:white;font-size:12px;font-weight:700;cursor:pointer;">全部</button>
+      </div>
+    </div>
+
+    <!-- History list -->
+    <div id="history-list"></div>
+  </div>
+
 </div>
 
 <!-- BOTTOM NAV -->
@@ -616,6 +896,9 @@ body {
   </button>
   <button class="nav-btn" id="nav-quiz" onclick="switchTab('quiz')">
     <span class="nav-icon">✏️</span>練習
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
+    <span class="nav-icon">📅</span>歷史
   </button>
 </nav>
 
@@ -700,6 +983,54 @@ body {
       </div>
     </div>
     <button class="btn-primary" id="add-notice-confirm" onclick="confirmAddNotice()">確認新增</button>
+  </div>
+</div>
+
+<!-- PASTE IMPORT MODAL -->
+<div class="modal-overlay" id="paste-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📋 貼上功課代碼</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+      把 Claude 給你的功課代碼貼在下方，系統會自動識別並新增所有功課
+    </div>
+    <div class="form-group">
+      <label class="form-label">功課代碼</label>
+      <textarea class="form-input" id="paste-input" rows="6" placeholder='貼上 Claude 給你的代碼，格式例如：
+HOMEWORK::數學::math::high
+HOMEWORK::語文默書::chinese::high
+HOMEWORK::英語閱讀::english::medium' style="resize:none;font-family:monospace;font-size:12px;"></textarea>
+    </div>
+    <button class="btn-primary" onclick="importFromPaste()">✅ 確認導入</button>
+  </div>
+</div>
+
+<!-- HOWTO MODAL -->
+<div class="modal-overlay" id="howto-modal">
+  <div class="modal-sheet" style="max-height:85vh;overflow-y:auto;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">❓ 怎麼用</div>
+    <div style="font-size:14px;line-height:1.8;color:var(--text);">
+      <div style="background:var(--kid1-light);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;border-left:4px solid var(--kid1);">
+        <strong>第一步：拍黑板照片</strong><br>
+        拍下學校黑板的功課通知
+      </div>
+      <div style="background:var(--kid2-light);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;border-left:4px solid var(--kid2);">
+        <strong>第二步：發給 Claude</strong><br>
+        打開 claude.ai，把照片發給 Claude，說：<br>
+        <span style="font-family:monospace;font-size:12px;background:white;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px;">「請幫我識別黑板功課，用HOMEWORK格式輸出」</span>
+      </div>
+      <div style="background:var(--green-light);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;border-left:4px solid var(--green);">
+        <strong>第三步：複製代碼</strong><br>
+        Claude 會給你這樣的代碼：<br>
+        <span style="font-family:monospace;font-size:11px;background:white;padding:6px 8px;border-radius:6px;display:block;margin-top:4px;line-height:1.8;">HOMEWORK::數學練習::math::high<br>HOMEWORK::語文默書::chinese::high<br>HOMEWORK::英語閱讀::english::medium</span>
+      </div>
+      <div style="background:var(--accent-light);border-radius:var(--radius-sm);padding:14px;border-left:4px solid var(--accent);">
+        <strong>第四步：貼上導入</strong><br>
+        回到成長星球，點「貼上功課代碼」，貼上後點確認，所有功課自動新增！
+      </div>
+    </div>
+    <button onclick="closeModal('howto-modal')" style="width:100%;margin-top:16px;padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">明白了</button>
   </div>
 </div>
 
@@ -921,6 +1252,7 @@ function getDefaultTraining() {
 // ══════════════════════════════════════════════
 window.onload = function() {
   setDate();
+  checkAutoArchive();
   renderDashboard();
   renderSubjectGrid();
   renderArtsGrid();
@@ -1864,6 +2196,234 @@ function confirmScanTasks() {
   status.style.display = 'block';
   status.innerHTML = `✅ 已成功新增 ${added} 項功課到任務清單！`;
   setTimeout(() => { status.style.display = 'none'; }, 3000);
+}
+
+
+// ══════════════════════════════════════════════
+//  PASTE IMPORT FEATURE
+// ══════════════════════════════════════════════
+function showHowTo() {
+  openModal('howto-modal');
+}
+
+function importFromPaste() {
+  const raw = document.getElementById('paste-input').value.trim();
+  if (!raw) { alert('請先貼上功課代碼'); return; }
+
+  const lines = raw.split('\n').filter(l => l.trim().startsWith('HOMEWORK::'));
+  if (lines.length === 0) {
+    alert('找不到功課代碼，請確認格式正確\n格式：HOMEWORK::功課名稱::科目::優先級');
+    return;
+  }
+
+  const tasks = getTasks();
+  const today = new Date().toLocaleDateString('zh-HK');
+  let added = 0;
+
+  lines.forEach((line, i) => {
+    const parts = line.split('::');
+    if (parts.length < 3) return;
+    const name = parts[1]?.trim();
+    const subject = parts[2]?.trim() || 'other';
+    const priority = parts[3]?.trim() || 'medium';
+    if (!name) return;
+    tasks.unshift({
+      id: Date.now() + i,
+      name,
+      subject,
+      type: 'homework',
+      priority,
+      due: '今天',
+      done: false,
+    });
+    added++;
+  });
+
+  saveTasks(tasks);
+  closeModal('paste-modal');
+  document.getElementById('paste-input').value = '';
+  renderTaskList();
+  renderGreeting();
+
+  const status = document.getElementById('import-status');
+  status.style.display = 'block';
+  status.innerHTML = `✅ 成功導入 ${added} 項功課！`;
+  setTimeout(() => { status.style.display = 'none'; }, 3000);
+}
+
+
+// ══════════════════════════════════════════════
+//  HISTORY FEATURE
+// ══════════════════════════════════════════════
+let historyFilter = 'all';
+let historySubjectFilter = 'all';
+
+function getHistory() {
+  return loadData(kkey('history'), []);
+}
+function saveHistory(h) {
+  saveData(kkey('history'), h);
+  if (window.fbReady) window.fbSet(`data/kid${currentKid}/history`, { items: h, updatedAt: Date.now() });
+}
+
+// Archive today's tasks to history
+function archiveTodayTasks() {
+  const tasks = getTasks();
+  if (!tasks.length) { alert('今天還沒有任何任務！'); return; }
+
+  const today = new Date();
+  const dateKey = today.toLocaleDateString('zh-HK');
+  const dateLabel = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+  const weekdays = ['日','一','二','三','四','五','六'];
+  const dayLabel = `週${weekdays[today.getDay()]}`;
+
+  const history = getHistory();
+
+  // Remove existing entry for today if any
+  const filtered = history.filter(h => h.dateKey !== dateKey);
+
+  // Add today's snapshot
+  filtered.unshift({
+    dateKey,
+    dateLabel: `${dateLabel} ${dayLabel}`,
+    tasks: tasks.map(t => ({...t})),
+    doneCount: tasks.filter(t=>t.done).length,
+    totalCount: tasks.length,
+  });
+
+  saveHistory(filtered);
+
+  // Clear today's tasks (move to history)
+  saveTasks([]);
+  renderTaskList();
+  renderGreeting();
+  renderHistory();
+
+  alert(`✅ 已歸檔 ${tasks.length} 項功課到歷史記錄！\n今日任務清單已清空，準備好迎接明天！`);
+}
+
+// Auto-archive when day changes
+function checkAutoArchive() {
+  const lastDate = loadData(kkey('lastDate'), '');
+  const today = new Date().toLocaleDateString('zh-HK');
+  if (lastDate && lastDate !== today) {
+    const tasks = getTasks();
+    if (tasks.length > 0) {
+      // silently archive previous day
+      const prev = new Date(lastDate.replace(/\//g, '-'));
+      const weekdays = ['日','一','二','三','四','五','六'];
+      const history = getHistory();
+      const filtered = history.filter(h => h.dateKey !== lastDate);
+      filtered.unshift({
+        dateKey: lastDate,
+        dateLabel: `${lastDate} 週${weekdays[prev.getDay()]}`,
+        tasks: tasks.map(t => ({...t})),
+        doneCount: tasks.filter(t=>t.done).length,
+        totalCount: tasks.length,
+      });
+      saveHistory(filtered);
+      saveTasks([]);
+    }
+  }
+  saveData(kkey('lastDate'), today);
+}
+
+function filterHistory(f) {
+  historyFilter = f;
+  document.querySelectorAll('.hist-filter').forEach(b => {
+    b.classList.toggle('active-filter', b.dataset.filter === f);
+    b.style.background = b.dataset.filter === f ? 'var(--kid1)' : 'white';
+    b.style.color = b.dataset.filter === f ? 'white' : 'var(--text)';
+  });
+  renderHistory();
+}
+
+function filterHistorySubject(s) {
+  historySubjectFilter = s;
+  document.querySelectorAll('.subj-filter').forEach(b => {
+    b.classList.toggle('active-subj', b.dataset.subj === s);
+    b.style.background = b.dataset.subj === s ? 'var(--text)' : 'white';
+    b.style.color = b.dataset.subj === s ? 'white' : 'var(--text)';
+  });
+  renderHistory();
+}
+
+function renderHistory() {
+  // Populate subject filter buttons
+  const subjBtns = document.getElementById('subject-filter-btns');
+  if (subjBtns) {
+    const allS = [...SUBJECTS, ...ARTS];
+    subjBtns.innerHTML = `<button onclick="filterHistorySubject('all')" class="subj-filter" data-subj="all" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:${historySubjectFilter==='all'?'var(--text)':'white'};color:${historySubjectFilter==='all'?'white':'var(--text)'};font-size:12px;font-weight:700;cursor:pointer;">全部</button>`
+    + allS.map(s => `<button onclick="filterHistorySubject('${s.id}')" class="subj-filter" data-subj="${s.id}" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:${historySubjectFilter===s.id?'var(--text)':'white'};color:${historySubjectFilter===s.id?'white':'var(--text)'};font-size:12px;font-weight:700;cursor:pointer;">${s.emoji} ${s.name}</button>`).join('');
+  }
+
+  let history = getHistory();
+  if (!history.length) {
+    document.getElementById('history-list').innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">📭</div>
+        <p>還沒有歷史記錄</p>
+        <p style="font-size:11px;margin-top:4px;">每天完成功課後點「歸檔今日」</p>
+      </div>`;
+    return;
+  }
+
+  // Date filter
+  const now = new Date();
+  if (historyFilter === 'week') {
+    const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+    history = history.filter(h => new Date(h.dateKey.replace(/\//g,'-')) >= weekAgo);
+  } else if (historyFilter === 'month') {
+    const monthAgo = new Date(now); monthAgo.setMonth(now.getMonth() - 1);
+    history = history.filter(h => new Date(h.dateKey.replace(/\//g,'-')) >= monthAgo);
+  }
+
+  const kidColor = currentKid===1 ? 'var(--kid1)' : 'var(--kid2)';
+
+  document.getElementById('history-list').innerHTML = history.map(day => {
+    let tasks = day.tasks || [];
+    // Subject filter
+    if (historySubjectFilter !== 'all') {
+      tasks = tasks.filter(t => t.subject === historySubjectFilter);
+    }
+    if (!tasks.length) return '';
+
+    const doneCount = tasks.filter(t=>t.done).length;
+    const pct = Math.round(doneCount/tasks.length*100);
+
+    return `
+    <div class="hist-day-group">
+      <div class="hist-day-header" style="background:${kidColor};">
+        <span>${day.dateLabel}</span>
+        <span class="day-stats">✅ ${doneCount}/${tasks.length} 完成 · ${pct}%</span>
+      </div>
+      ${tasks.map(t => {
+        const subj = ALL_SUBJECTS.find(s=>s.id===t.subject);
+        return `<div class="hist-task">
+          <div class="done-badge ${t.done?'done':'undone'}">${t.done?'✓':'○'}</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;${t.done?'text-decoration:line-through;opacity:0.6':''}">${t.name}</div>
+            <div style="font-size:11px;color:var(--muted);">${subj?.emoji||'📚'} ${subj?.name||t.subject}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).filter(Boolean).join('') || '<div class="empty-state"><div class="emoji">🔍</div><p>此篩選條件下沒有記錄</p></div>';
+}
+
+// Override switchTab to render history when needed
+const _origSwitchTab = switchTab;
+function switchTab(tab) {
+  _origSwitchTab(tab);
+  if (tab === 'history') renderHistory();
+}
+
+// Update nav to include history
+const _origUpdateNav = updateNavActive;
+function updateNavActive() {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active','active-2'));
+  const activeClass = currentKid === 1 ? 'active' : 'active-2';
+  document.getElementById(`nav-${currentTab}`)?.classList.add(activeClass);
 }
 
 </script>
