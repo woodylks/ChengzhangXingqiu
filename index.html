@@ -2838,7 +2838,7 @@ function navTap(e, tab) {
 // ══════════════════════════════════════════════
 //  HOMEWORK PHOTO
 // ══════════════════════════════════════════════
-const GITHUB_PHOTO_BASE = 'https://raw.githubusercontent.com/woodylks/ChengzhangXingqiu/main/photos/';
+const GITHUB_PHOTO_BASE = 'https://raw.githubusercontent.com/woodylks/ChengzhangXingqiu/main/Photos/';
 
 function getHwPhotos() { return loadData('hw_photos', {}); }
 function saveHwPhotos(p) { saveData('hw_photos', p); }
@@ -2851,7 +2851,8 @@ function getDayKey() {
 function openHomeworkPhotoModal() {
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
   const dayKey = getDayKey();
-  const suggested = dayKey + '-kid' + currentKid + '.jpg';
+    const dotDate = dayKey.replace(/-/g, '.');
+  const suggested = dotDate + '-kid' + currentKid + '.jpeg';
   document.getElementById('suggested-filename').textContent = suggested;
   document.getElementById('hw-photo-filename').value = suggested;
   const photos = getHwPhotos();
