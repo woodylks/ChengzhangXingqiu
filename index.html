@@ -1816,18 +1816,16 @@ function renderSyllabusList() {
     if (s) {
       detailHtml = `
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div>
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <div style="font-size:15px;font-weight:900;">${SUBJ_MAP[s.subject]||s.subject}</div>
-            <div style="font-size:11px;color:var(--muted);">${s.fileName||''}</div>
+            <button onclick="deleteSyllabus('${s.subject}')" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>
           </div>
-          <div style="display:flex;gap:6px;">
-            ${s.pdfUrl ? `
-  <button onclick="openPdfViewer('${s.pdfUrl}','${(s.fileName||'').replace(/'/g,'')}')" style="padding:6px 10px;border-radius:16px;border:1.5px solid ${kidColor};background:white;color:${kidColor};font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">👁️ 預覽</button>
-  <button onclick="downloadPdf('${s.pdfUrl}','${(s.fileName||'').replace(/'/g,'')}')" style="padding:6px 10px;border-radius:16px;border:1.5px solid var(--border);background:white;color:var(--text);font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">⬇️ 下載</button>
-` : ''}
-            <button onclick="deleteSyllabus('${s.subject}')" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;">🗑️</button>
-          </div>
+          <div style="font-size:11px;color:var(--muted);word-break:break-all;margin-bottom:8px;">${s.fileName||''}</div>
+          ${s.pdfUrl ? `<div style="display:flex;gap:8px;">
+            <button onclick="openPdfViewer('${s.pdfUrl}','${(s.fileName||'').replace(/'/g,'')}')" style="flex:1;padding:8px;border-radius:12px;border:1.5px solid ${kidColor};background:white;color:${kidColor};font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">👁️ 預覽</button>
+            <button onclick="downloadPdf('${s.pdfUrl}','${(s.fileName||'').replace(/'/g,'')}')" style="flex:1;padding:8px;border-radius:12px;border:1.5px solid var(--border);background:white;color:var(--text);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">⬇️ 下載</button>
+          </div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;">
           ${s.items.length ? s.items.map(item => `
