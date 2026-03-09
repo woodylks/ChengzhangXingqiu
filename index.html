@@ -1094,12 +1094,12 @@ function renderGreeting() {
   const greets = h < 12 ? '早晨！今天繼續加油！' : h < 18 ? '下午好！繼續努力！' : '晚上好！辛苦了！';
   const tasks = getTasks();
   const pending = tasks.filter(t => !t.done && t.due === '今天').length;
-  document.getElementById('greeting-emoji').textContent = emojis;
-  document.getElementById('greeting-text').textContent = greets;
-  document.getElementById('pending-count').textContent = pending;
-  document.getElementById('greeting-sub').textContent =
-    `${KIDS[currentKid].name} 今天有 ${pending} 項任務待完成`;
+  const ge = document.getElementById('greeting-emoji'); if(ge) ge.textContent = emojis;
+  const gt = document.getElementById('greeting-text'); if(gt) gt.textContent = greets;
+  const pc = document.getElementById('pending-count'); if(pc) pc.textContent = pending;
+  const gs = document.getElementById('greeting-sub'); if(gs) gs.textContent = `${KIDS[currentKid].name} 今天有 ${pending} 項任務待完成`;
   const banner = document.getElementById('greeting-banner');
+  if (!banner) return;
   banner.style.borderColor = currentKid===1 ? 'var(--kid1-mid)' : 'var(--kid2-mid)';
   banner.style.background = currentKid===1
     ? 'linear-gradient(135deg, var(--kid1-light), var(--accent-light))'
@@ -1122,6 +1122,7 @@ function renderGreeting() {
 function renderTaskList() {
   const tasks = getTasks();
   const el = document.getElementById('task-list');
+  if (!el) return;
   if (!tasks.length) { el.innerHTML = '<div class="empty-state"><div class="emoji">📋</div><p>暫無任務，點擊下方新增</p></div>'; return; }
   el.innerHTML = tasks.map(t => {
     const subj = ALL_SUBJECTS.find(s=>s.id===t.subject);
@@ -1187,6 +1188,7 @@ function openEditTask(id) {
 function renderProgressOverview() {
   const prog = getProgress();
   const el = document.getElementById('progress-overview');
+  if (!el) return;
   el.innerHTML = SUBJECTS.map(s => {
     const v = prog[s.id]||0;
     const color = v>=80?'var(--green)':v>=60?currentKid===1?'var(--kid1)':'var(--kid2)':'var(--red)';
