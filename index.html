@@ -1101,7 +1101,7 @@ async function loadFromCloud(kid) {
     if (data.syllabuses) { saveData(`kid${kid}_syllabuses`, data.syllabuses); changed = true; }
     if (changed) {
       renderDashboard();
-      renderSubjectGrid();
+      renderExamList();
       renderArtsGrid();
     }
     showCloudStatus('✅ 雲端資料已同步');
@@ -1179,7 +1179,7 @@ window.onload = function() {
   setDate();
   checkAutoArchive();
   renderDashboard();
-  renderSubjectGrid();
+  renderExamList();
   renderArtsGrid();
   initChat();
   renderQuiz();
@@ -1208,9 +1208,9 @@ function switchKid(kid) {
   // update nav active class
   updateNavActive();
   renderDashboard();
-  renderSubjectGrid();
+  renderExamList();
   renderArtsGrid();
-  renderSubjectDetail();
+  
   renderArtsDetail();
   renderQuiz();
   populateSubjectSelects();
@@ -1376,91 +1376,6 @@ function renderNoticesPreview() {
       <div class="notice-body">${n.body}</div>
     </div>`;
   }).join('');
-}
-
-// ══════════════════════════════════════════════
-//  SUBJECT GRID
-// ══════════════════════════════════════════════
-function renderSubjectGrid() {
-  const prog = getProgress();
-  const el = document.getElementById('subject-grid');
-  const color = currentKid===1?'var(--kid1)':'var(--kid2)';
-  el.innerHTML = SUBJECTS.map(s => {
-    const v = prog[s.id]||0;
-    const sel = selectedSubject===s.id;
-    return `
-    <div class="subject-card${sel?(currentKid===1?' selected':' selected-2'):''}" onclick="selectSubject('${s.id}')">
-      <div class="subject-emoji">${s.emoji}</div>
-      <div class="subject-name">${s.name}</div>
-      <div class="subject-score" style="color:${sel?color:'var(--muted)'}">${v}%</div>
-    </div>`;
-  }).join('');
-}
-
-function selectSubject(id) {
-  selectedSubject = selectedSubject===id?null:id;
-  renderSubjectGrid();
-  renderSubjectDetail();
-}
-
-function renderSubjectDetail() {
-  const el = document.getElementById('subject-detail');
-  if (!selectedSubject) { el.innerHTML=''; return; }
-  const subj = SUBJECTS.find(s=>s.id===selectedSubject);
-  const prog = getProgress();
-  const notices = getNotices().filter(n=>n.subject===selectedSubject);
-  const tasks = getTasks().filter(t=>t.subject===selectedSubject);
-  const v = prog[selectedSubject]||0;
-  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
-  const kidLight = currentKid===1?'var(--kid1-light)':'var(--kid2-light)';
-
-  el.innerHTML = `
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:32px">${subj.emoji}</span>
-        <div>
-          <div style="font-size:18px;font-weight:900">${subj.name}</div>
-          <div style="font-size:12px;color:var(--muted);font-weight:600">${KIDS[currentKid].name} · ${KIDS[currentKid].grade}</div>
-        </div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-family:'Nunito',sans-serif;font-size:32px;font-weight:900;color:${kidColor}">${v}%</div>
-        <div style="font-size:11px;color:var(--muted)">${v>=80?'優秀':v>=60?'良好':'需加強'}</div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:8px;">
-      <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden">
-        <div style="width:${v}%;height:100%;background:${kidColor};border-radius:5px"></div>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-      <button onclick="switchTab('quiz');startQuizFor('${selectedSubject}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:none;background:${kidColor};color:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">✏️ 開始練習</button>
-      <button onclick="openAddNotice('${selectedSubject}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">📢 新增通知</button>
-      <button onclick="openProgressEdit('${selectedSubject}')" style="padding:10px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">📊 更新進度</button>
-    </div>
-
-    <div class="section-label">📢 學校通知 (${notices.length})</div>
-    ${notices.length ? notices.map(n=>`
-      <div class="notice-item${currentKid===2?' kid2':''}">
-        <div class="notice-date">${n.date}</div>
-        <div class="notice-title">${n.title}</div>
-        <div class="notice-body">${n.body}</div>
-        ${n.file?`<div style="margin-top:6px;font-size:12px;color:var(--kid2)">📎 ${n.file}</div>`:''}
-      </div>`).join('') : '<div class="empty-state" style="padding:16px"><div class="emoji" style="font-size:24px">📭</div><p>暫無通知</p></div>'}
-
-    <div class="section-label" style="margin-top:14px">📋 相關任務 (${tasks.length})</div>
-    ${tasks.length ? tasks.map(t=>`
-      <div class="task-item${t.done?' done':''}" onclick="toggleTask(${t.id});renderSubjectDetail();">
-        <div class="task-check${t.done?' checked-'+currentKid:''}">${t.done?'✓':''}</div>
-        <div class="task-info">
-          <div class="task-name${t.done?' task-done-text':''}">${t.name}</div>
-          <div class="task-meta">${t.due} · ${typeLabel(t.type)}</div>
-        </div>
-      </div>`).join('') : '<div class="empty-state" style="padding:16px"><div class="emoji" style="font-size:24px">📋</div><p>暫無任務</p></div>'}
-  </div>`;
 }
 
 // ══════════════════════════════════════════════
@@ -2388,7 +2303,7 @@ function confirmAddNotice() {
   document.getElementById('new-notice-title').value = '';
   document.getElementById('new-notice-body').value = '';
   renderNoticesPreview();
-  renderSubjectDetail();
+  
   renderGreeting();
 }
 
@@ -2424,9 +2339,9 @@ function openProgressEdit(subjectId) {
   prog[subjectId] = n;
   saveProgress(prog);
   renderProgressOverview();
-  renderSubjectGrid();
+  renderExamList();
   renderArtsGrid();
-  renderSubjectDetail();
+  
   renderArtsDetail();
   renderGreeting();
 }
