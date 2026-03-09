@@ -644,10 +644,13 @@ body {
     <!-- Syllabus tab -->
     <div id="sec-syllabus" style="display:none;">
       <div class="card" style="margin-bottom:12px;">
-        <div class="card-title"><span class="icon">📄</span> 上傳學習大綱</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">上傳PDF，AI自動解析課次和複習範圍</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-          <select id="syllabus-subject" style="flex:1;min-width:120px;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:700;background:white;">
+        <div class="card-title"><span class="icon">📄</span> 導入學習大綱</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">解析課次內容 + 保存PDF原檔到GitHub</div>
+
+        <!-- Step 1: Subject -->
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">學科</label>
+          <select id="syllabus-subject" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:700;background:white;">
             <option value="chinese">📖 中文</option>
             <option value="math">📐 數學</option>
             <option value="english">🔤 英語</option>
@@ -655,12 +658,28 @@ body {
             <option value="it">💻 IT</option>
             <option value="other">📚 其他</option>
           </select>
-          <label style="flex:1;min-width:120px;padding:10px;border-radius:var(--radius-sm);border:1.5px dashed var(--kid1);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;text-align:center;color:var(--kid1);">
-            📎 選擇PDF
-            <input type="file" accept=".pdf" id="syllabus-pdf-input" style="display:none" onchange="handleSyllabusPDF(this)">
-          </label>
         </div>
-        <div id="syllabus-upload-status"></div>
+
+        <!-- Step 2: PDF name for GitHub -->
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">PDF檔案名稱（上傳到GitHub後填寫）</label>
+          <div style="display:flex;gap:8px;">
+            <input id="syllabus-pdf-name" class="form-input" placeholder="例：悅琳_中文_第三學段.pdf" style="flex:1;">
+            <button onclick="savePdfLink()" style="padding:10px 14px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">💾 保存連結</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">直接填PDF文件名，例：第三學段學習大綱.pdf</div>
+        </div>
+
+        <!-- Step 3: Paste code -->
+        <div style="background:var(--accent-light);border-radius:10px;padding:12px;margin-bottom:10px;font-size:12px;line-height:1.8;">
+          <div style="font-weight:800;margin-bottom:4px;">📋 解析課次步驟：</div>
+          <div>1️⃣ 把PDF發給 Claude（claude.ai）</div>
+          <div>2️⃣ 說：「解析這份學習大綱，用SYLLABUS格式輸出」</div>
+          <div>3️⃣ 複製代碼，點下方「貼上代碼」</div>
+        </div>
+        <button onclick="openSyllabusImport()" style="width:100%;padding:12px;border-radius:var(--radius-sm);border:1.5px dashed var(--kid1);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;background:white;color:var(--kid1);">📋 貼上課次代碼</button>
+
+        <div id="syllabus-upload-status" style="margin-top:8px;"></div>
       </div>
       <div id="syllabus-list"></div>
     </div>
@@ -1677,67 +1696,68 @@ function deleteExam(examId) {
   renderExamOverview();
 }
 
-// ── Syllabus ──
-async function handleSyllabusPDF(input) {
-  const file = input.files[0];
-  if (!file) return;
+// ── Syllabus import ──
+const GITHUB_PDF_BASE = 'https://raw.githubusercontent.com/woodylks/ChengzhangXingqiu/main/';
+
+function savePdfLink() {
+  const subject = document.getElementById('syllabus-subject').value;
+  const fileName = document.getElementById('syllabus-pdf-name').value.trim();
+  const status = document.getElementById('syllabus-upload-status');
+  if (!fileName) { alert('請輸入PDF檔案名稱'); return; }
+
+  const syllabuses = getSyllabuses();
+  const existing = syllabuses.find(s => s.subject === subject && s.kid === currentKid);
+  const pdfUrl = GITHUB_PDF_BASE + encodeURIComponent(fileName);
+
+  if (existing) {
+    existing.pdfUrl = pdfUrl;
+    existing.fileName = fileName;
+  } else {
+    syllabuses.push({ subject, kid: currentKid, items: [], updatedAt: Date.now(), fileName, pdfUrl });
+  }
+  saveSyllabuses(syllabuses);
+  document.getElementById('syllabus-pdf-name').value = '';
+  status.innerHTML = `<div style="padding:10px;background:#e8f5e8;border-radius:10px;font-size:13px;font-weight:700;color:var(--green);">✅ PDF連結已保存！</div>`;
+  setTimeout(() => { status.innerHTML = ''; renderSyllabusList(); }, 1500);
+}
+
+function openSyllabusImport() {
+  const code = prompt('請貼上從Claude獲取的SYLLABUS代碼：');
+  if (!code) return;
+  importSyllabusCode(code.trim());
+}
+
+function importSyllabusCode(code) {
   const subject = document.getElementById('syllabus-subject').value;
   const status = document.getElementById('syllabus-upload-status');
-  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
-
-  status.innerHTML = `<div style="padding:12px;background:${kidColor}15;border-radius:10px;font-size:13px;font-weight:700;color:${kidColor};">⏳ AI正在解析中，請稍等...</div>`;
-
-  // Convert PDF to base64
-  const base64 = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-            { type: 'text', text: '請解析這份學習大綱，提取所有課次和學習內容。只返回JSON，格式：{"items":[{"month":"3月","lesson":"第24課","title":"砍、感激、走進..."},...]}, 不要其他文字。' }
-          ]
-        }]
-      })
-    });
-    const data = await response.json();
-    const text = data.content.map(c=>c.text||'').join('');
-    let parsed;
-    try {
-      const clean = text.replace(/```json|```/g,'').trim();
-      parsed = JSON.parse(clean);
-    } catch(e) {
-      throw new Error('解析失敗');
+    // Format: SYLLABUS::subject::JSON or just JSON
+    let items = [];
+    let fileName = '手動導入';
+    if (code.startsWith('SYLLABUS::')) {
+      const parts = code.split('::');
+      fileName = parts[1] || fileName;
+      const jsonStr = parts.slice(2).join('::');
+      const parsed = JSON.parse(jsonStr);
+      items = parsed.items || parsed;
+    } else {
+      const parsed = JSON.parse(code);
+      items = parsed.items || parsed;
     }
+    if (!Array.isArray(items) || !items.length) throw new Error('格式錯誤');
 
-    const items = parsed.items || [];
-    if (!items.length) throw new Error('未找到課次');
-
-    // Save to syllabuses
     const syllabuses = getSyllabuses();
     const existing = syllabuses.findIndex(s => s.subject === subject && s.kid === currentKid);
-    const entry = { subject, kid: currentKid, items, updatedAt: Date.now(), fileName: file.name };
+    const entry = { subject, kid: currentKid, items, updatedAt: Date.now(), fileName };
     if (existing >= 0) syllabuses[existing] = entry;
     else syllabuses.push(entry);
     saveSyllabuses(syllabuses);
 
-    status.innerHTML = `<div style="padding:12px;background:#e8f5e8;border-radius:10px;font-size:13px;font-weight:700;color:var(--green);">✅ 成功解析 ${items.length} 個課次！</div>`;
-    setTimeout(() => { status.innerHTML = ''; renderSyllabusList(); }, 1500);
+    status.innerHTML = `<div style="padding:12px;background:#e8f5e8;border-radius:10px;font-size:13px;font-weight:700;color:var(--green);">✅ 成功導入 ${items.length} 個課次！</div>`;
+    setTimeout(() => { status.innerHTML = ''; renderSyllabusList(); }, 2000);
   } catch(e) {
-    status.innerHTML = `<div style="padding:12px;background:#fff0f0;border-radius:10px;font-size:13px;font-weight:700;color:var(--red);">❌ 解析失敗：${e.message}</div>`;
+    status.innerHTML = `<div style="padding:12px;background:#fff0f0;border-radius:10px;font-size:13px;font-weight:700;color:var(--red);">❌ 格式錯誤，請確認代碼正確</div>`;
   }
-  input.value = '';
 }
 
 function renderSyllabusList() {
@@ -1755,12 +1775,15 @@ function renderSyllabusList() {
     const subj = SUBJ_MAP[s.subject] || s.subject;
     return `
     <div class="card" style="margin-bottom:12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div>
           <div style="font-size:15px;font-weight:900;">${subj}</div>
           <div style="font-size:11px;color:var(--muted);">${s.fileName||''} · ${s.items.length}個課次</div>
         </div>
-        <button onclick="deleteSyllabus('${s.subject}')" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;">🗑️</button>
+        <div style="display:flex;gap:6px;">
+          ${s.pdfUrl ? `<a href="${s.pdfUrl}" target="_blank" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--kid1);background:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;">📄</a>` : ''}
+          <button onclick="deleteSyllabus('${s.subject}')" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;">🗑️</button>
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;">
         ${s.items.map(item => `
