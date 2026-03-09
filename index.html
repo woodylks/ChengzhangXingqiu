@@ -703,11 +703,7 @@ function renderHistory() {
 }
 
 // Override switchTab to render history when needed
-const _origSwitchTab = switchTab;
-function switchTab(tab) {
-  _origSwitchTab(tab);
-  if (tab === 'history') renderHistory();
-}
+
 
 // Update nav to include history
 const _origUpdateNav = updateNavActive;
@@ -857,34 +853,6 @@ function navTap(e, tab) {
   </div>
 
 
-  <!-- ── 歷史記錄 ── -->
-  <div class="section" id="sec-history">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <h2 style="font-size:20px;font-weight:900;margin:0;">📅 功課歷史記錄</h2>
-      <button onclick="archiveTodayTasks()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--green);color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">📦 歸檔今日</button>
-    </div>
-
-    <!-- Date filter -->
-    <div class="card" style="margin-bottom:14px;padding:14px;">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="history-filter-btns">
-        <button onclick="filterHistory('all')" class="hist-filter active-filter" data-filter="all" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--kid1);color:white;font-size:12px;font-weight:700;cursor:pointer;">全部</button>
-        <button onclick="filterHistory('week')" class="hist-filter" data-filter="week" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;cursor:pointer;">本週</button>
-        <button onclick="filterHistory('month')" class="hist-filter" data-filter="month" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;cursor:pointer;">本月</button>
-      </div>
-    </div>
-
-    <!-- Subject filter -->
-    <div class="card" style="margin-bottom:14px;padding:14px;">
-      <div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">按科目篩選</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="subject-filter-btns">
-        <button onclick="filterHistorySubject('all')" class="subj-filter" data-subj="all" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--text);color:white;font-size:12px;font-weight:700;cursor:pointer;">全部</button>
-      </div>
-    </div>
-
-    <!-- History list -->
-    <div id="history-list"></div>
-  </div>
-
 </div>
 
 <!-- BOTTOM NAV -->
@@ -904,9 +872,7 @@ function navTap(e, tab) {
   <div class="nav-btn" id="nav-quiz" ontouchend="navTap(event,'quiz')" onclick="switchTab('quiz')">
     <span class="nav-icon">✏️</span>練習
   </div>
-  <div class="nav-btn" id="nav-history" ontouchend="navTap(event,'history')" onclick="switchTab('history')">
-    <span class="nav-icon">📅</span>歷史
-  </div>
+
 </div>
 
 <!-- ADD TASK MODAL -->
@@ -2419,11 +2385,7 @@ function renderHistory() {
 }
 
 // Override switchTab to render history when needed
-const _origSwitchTab = switchTab;
-function switchTab(tab) {
-  _origSwitchTab(tab);
-  if (tab === 'history') renderHistory();
-}
+
 
 // Update nav to include history
 const _origUpdateNav = updateNavActive;
