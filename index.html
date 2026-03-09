@@ -404,10 +404,74 @@ body {
 .active-subj { background: var(--text) !important; color: white !important; border-color: var(--text) !important; }
 
 /* ── EMPTY STATE ── */
-/* ── EMPTY STATE ── */
 .empty-state { text-align: center; padding: 32px 16px; color: var(--muted); }
 .empty-state .emoji { font-size: 40px; margin-bottom: 10px; }
 .empty-state p { font-size: 14px; font-weight: 600; }
+
+/* ── AI CATEGORY TABS ── */
+.ai-cat-tab {
+  flex: 1; padding: 9px 6px; border-radius: 12px; border: 2px solid var(--border);
+  background: white; font-family: 'Noto Sans TC', sans-serif; font-size: 12px; font-weight: 800;
+  cursor: pointer; text-align: center; transition: all 0.2s; color: var(--muted);
+}
+.ai-cat-tab.active { background: var(--text); color: white; border-color: var(--text); }
+
+/* ── DIFFICULTY BUTTONS ── */
+.diff-btn {
+  flex: 1; padding: 9px 4px; border-radius: 10px; border: 2px solid var(--border);
+  background: white; font-family: 'Noto Sans TC', sans-serif; font-size: 12px; font-weight: 800;
+  cursor: pointer; text-align: center; transition: all 0.2s;
+}
+.diff-btn.sel-easy { background: var(--green-light); border-color: var(--green); color: var(--green); }
+.diff-btn.sel-med  { background: var(--accent-light); border-color: var(--accent); color: #B45309; }
+.diff-btn.sel-hard { background: #FEE2E2; border-color: var(--red); color: var(--red); }
+
+/* ── SUBJECT PILL BUTTONS ── */
+.subj-pill {
+  padding: 6px 14px; border-radius: 20px; border: 2px solid var(--border);
+  background: white; font-family: 'Noto Sans TC', sans-serif; font-size: 12px; font-weight: 800;
+  cursor: pointer; transition: all 0.2s; color: var(--text);
+}
+.subj-pill.active { background: var(--text); color: white; border-color: var(--text); }
+
+/* ── WRONG QUESTION ITEMS ── */
+.wrong-q-item { padding: 10px 12px; background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: var(--radius-sm); margin-bottom: 6px; }
+.wrong-q-item .wq-q { font-size: 12px; font-weight: 700; margin-bottom: 3px; color: var(--text); }
+.wrong-q-item .wq-meta { font-size: 11px; color: var(--red); font-weight: 600; }
+
+/* ── MUSIC MODE BUTTONS ── */
+.music-mode-btn {
+  flex: 1; padding: 8px 2px; border-radius: 10px; border: 2px solid var(--border);
+  background: white; font-family: 'Noto Sans TC', sans-serif; font-size: 11px; font-weight: 800;
+  cursor: pointer; text-align: center; transition: all 0.2s; color: var(--muted);
+}
+.music-mode-btn.active { background: var(--text); color: white; border-color: var(--text); }
+
+/* ── MUSIC ANSWER CHOICES ── */
+.note-opt {
+  padding: 11px 4px; border-radius: 12px; border: 2px solid var(--border);
+  background: white; font-size: 13px; font-weight: 800; cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif; transition: all 0.18s; text-align: center;
+}
+.note-opt:active { transform: scale(0.95); }
+.note-opt.correct { background: var(--green-light); border-color: var(--green); color: var(--green); }
+.note-opt.wrong   { background: #FEE2E2; border-color: var(--red); color: var(--red); }
+
+/* ── INSTRUMENT TABS ── */
+.instr-tab {
+  flex: 1; padding: 8px 4px; border-radius: 10px; border: 2px solid var(--border);
+  background: white; font-family: 'Noto Sans TC', sans-serif; font-size: 12px; font-weight: 800;
+  cursor: pointer; text-align: center; transition: all 0.2s; color: var(--muted);
+}
+.instr-tab.active { color: white; border-color: transparent; }
+
+/* ── PRACTICE LOG ── */
+.log-entry { padding: 10px 12px; background: white; border-radius: var(--radius-sm); border: 1.5px solid var(--border); margin-bottom: 6px; }
+.log-entry .log-date { font-size: 11px; color: var(--muted); font-weight: 700; margin-bottom: 3px; }
+.log-entry .log-note { font-size: 12px; font-weight: 600; line-height: 1.5; }
+
+/* ── YOUTUBE EMBED ── */
+.yt-frame { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); border: none; margin-top: 8px; }
 </style>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -699,17 +763,117 @@ body {
 
   <!-- ── AI助手 ── -->
   <div class="section" id="sec-ai">
-    <div class="card" style="margin-bottom:10px;">
-      <div class="card-title"><span class="icon">🤖</span> AI學習助手</div>
-      <div style="font-size:12px; color:var(--muted); margin-top:-8px; margin-bottom:10px;">根據孩子學習狀況，智能分析 · 自動出題 · 陪練輔導</div>
-      <div class="chat-quick-btns" id="quick-btns"></div>
+
+    <!-- AI 分類 Tab -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="ai-cat-tab active" id="ai-cat-chat" onclick="switchAiCat('chat')">🤖 AI對話</button>
+      <button class="ai-cat-tab" id="ai-cat-academic" onclick="switchAiCat('academic')">📚 學術</button>
+      <button class="ai-cat-tab" id="ai-cat-arts" onclick="switchAiCat('arts')">🎵 藝術</button>
     </div>
-    <div class="card" style="padding: 14px;">
-      <div class="chat-area" id="chat-area"></div>
-      <div class="chat-input-row">
-        <input class="chat-input" id="chat-input" placeholder="問我任何學習問題…" onkeydown="if(event.key==='Enter')sendMsg()">
-        <button class="chat-send" id="chat-send" onclick="sendMsg()">➤</button>
+
+    <!-- ① AI 對話 (原有) -->
+    <div id="ai-panel-chat">
+      <div class="card" style="margin-bottom:10px;">
+        <div class="card-title"><span class="icon">🤖</span> AI學習助手</div>
+        <div style="font-size:12px; color:var(--muted); margin-top:-8px; margin-bottom:10px;">根據孩子學習狀況，智能分析 · 自動出題 · 陪練輔導</div>
+        <div class="chat-quick-btns" id="quick-btns"></div>
       </div>
+      <div class="card" style="padding: 14px;">
+        <div class="chat-area" id="chat-area"></div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" placeholder="問我任何學習問題…" onkeydown="if(event.key==='Enter')sendMsg()">
+          <button class="chat-send" id="chat-send" onclick="sendMsg()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 學術 -->
+    <div id="ai-panel-academic" style="display:none;">
+      <!-- 難度 + 學科 -->
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title"><span class="icon">📚</span> AI學術助手</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="academic-kid-label"></div>
+        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:6px;">🎯 難度</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="diff-btn active-med" id="diff-easy" onclick="setAcadDiff('easy')">😊 易</button>
+          <button class="diff-btn active-med" id="diff-med" onclick="setAcadDiff('med')">🤔 中</button>
+          <button class="diff-btn active-med" id="diff-hard" onclick="setAcadDiff('hard')">🔥 難</button>
+        </div>
+        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:6px;">📖 學科</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;" id="acad-subject-btns"></div>
+        <button onclick="startAcadAI(false)" id="acad-gen-btn" style="width:100%;padding:13px;border-radius:var(--radius-sm);border:none;color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;margin-bottom:8px;">🤖 AI即時出題</button>
+        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:6px;">📷 試卷連結（可選）</div>
+        <input class="form-input" id="exam-paper-url" placeholder="GitHub raw 圖片連結，AI會根據試卷出題" style="margin-bottom:8px;">
+        <button onclick="startAcadAI(true)" style="width:100%;padding:13px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,var(--purple),var(--kid2));color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">📄 根據試卷出題</button>
+      </div>
+      <!-- 錯題庫 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="card-title" style="margin-bottom:0;"><span class="icon">❌</span> 錯題庫</div>
+          <button onclick="clearWrongQ()" style="font-size:11px;padding:4px 10px;border-radius:20px;border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-weight:700;cursor:pointer;">清空</button>
+        </div>
+        <div id="wrong-q-list"></div>
+        <button id="retry-wrong-btn" onclick="retryWrongQ()" style="display:none;width:100%;padding:12px;border-radius:var(--radius-sm);border:none;background:var(--red);color:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;margin-top:8px;">🔁 錯題重做</button>
+      </div>
+    </div>
+
+    <!-- ③ 藝術 -->
+    <div id="ai-panel-arts" style="display:none;">
+
+      <!-- 🎵 五線譜識譜訓練 -->
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title"><span class="icon">🎵</span> 五線譜識譜訓練</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">音符 · 時值 · 升降記號 · 節拍拍子</div>
+        <!-- Mode tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <button class="music-mode-btn active" id="mmode-note" onclick="setMusicMode('note')">🎵 音符</button>
+          <button class="music-mode-btn" id="mmode-duration" onclick="setMusicMode('duration')">⏱ 時值</button>
+          <button class="music-mode-btn" id="mmode-accidental" onclick="setMusicMode('accidental')">♯ 升降</button>
+          <button class="music-mode-btn" id="mmode-beat" onclick="setMusicMode('beat')">🥁 節拍</button>
+        </div>
+        <!-- Score bar -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <div style="flex:1;height:6px;border-radius:3px;background:var(--border);overflow:hidden;"><div id="music-score-bar" style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),var(--accent));width:0%;transition:width 0.4s;"></div></div>
+          <div id="music-score-text" style="font-size:12px;font-weight:800;color:var(--muted);">0/0</div>
+          <div id="music-streak" style="font-size:12px;font-weight:800;color:var(--kid1);">🔥0</div>
+        </div>
+        <!-- Question area -->
+        <div id="music-q-area"></div>
+      </div>
+
+      <!-- 🎼 陪練功能 -->
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title"><span class="icon">🎼</span> 陪練功能</div>
+        <!-- Instrument tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;" id="instr-tabs"></div>
+        <!-- Piece + score image -->
+        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">🎶 今日曲目</div>
+        <input class="form-input" id="piece-name" placeholder="例：小星星、卡農…" style="margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">🖼 樂譜圖片（GitHub raw連結）</div>
+        <input class="form-input" id="score-img-url" placeholder="https://raw.githubusercontent.com/…" style="margin-bottom:6px;">
+        <div id="score-img-preview" style="margin-bottom:8px;"></div>
+        <!-- YouTube -->
+        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">▶️ YouTube示範連結</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <input class="form-input" id="yt-url" placeholder="https://youtu.be/…" style="flex:1;">
+          <button onclick="savePracticeInfo()" style="padding:0 14px;border-radius:var(--radius-sm);border:none;background:var(--green);color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">保存</button>
+        </div>
+        <div id="yt-embed-area"></div>
+        <!-- Practice log -->
+        <div style="font-size:12px;font-weight:800;color:var(--muted);margin:10px 0 4px;">📓 練習日誌</div>
+        <textarea class="form-input" id="practice-log-input" rows="2" placeholder="今天練習內容、老師要求、進步點…" style="resize:none;margin-bottom:6px;"></textarea>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <select class="form-input" id="practice-rating" style="flex:1;">
+            <option value="5">⭐⭐⭐⭐⭐ 超棒</option>
+            <option value="4" selected>⭐⭐⭐⭐ 不錯</option>
+            <option value="3">⭐⭐⭐ 一般</option>
+            <option value="2">⭐⭐ 需加強</option>
+          </select>
+          <button onclick="addPracticeLog()" id="practice-log-btn" style="padding:0 16px;border-radius:var(--radius-sm);border:none;color:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">記錄</button>
+        </div>
+        <div id="practice-log-list"></div>
+      </div>
+
     </div>
   </div>
 
@@ -2908,6 +3072,350 @@ function renderHwPhotoPreview() {
 function viewFullImage(url) {
   document.getElementById('img-viewer-src').src = url;
   openModal('img-viewer-modal');
+}
+
+// ══════════════════════════════════════════════
+//  AI CATEGORY TABS
+// ══════════════════════════════════════════════
+let currentAiCat = 'chat';
+
+function switchAiCat(cat) {
+  currentAiCat = cat;
+  ['chat','academic','arts'].forEach(c => {
+    document.getElementById('ai-panel-' + c).style.display = c === cat ? '' : 'none';
+    const btn = document.getElementById('ai-cat-' + c);
+    if (btn) btn.classList.toggle('active', c === cat);
+  });
+  if (cat === 'academic') renderAcademic();
+  if (cat === 'arts') renderArts();
+}
+
+// ══════════════════════════════════════════════
+//  📚 ACADEMIC AI
+// ══════════════════════════════════════════════
+let acadState = { diff: 'med', subject: 'math' };
+
+function getAcadData() { return loadData('acad_ai', { wrong: [] }); }
+function saveAcadData(d) { saveData('acad_ai', d); }
+
+function renderAcademic() {
+  const kidColor = currentKid === 1 ? 'var(--kid1)' : 'var(--kid2)';
+  const kidName = KIDS[currentKid].name;
+
+  // Label
+  const lbl = document.getElementById('academic-kid-label');
+  if (lbl) lbl.textContent = kidName + ' · ' + KIDS[currentKid].grade + ' · 根據試卷出題 · 錯題分析';
+
+  // Difficulty buttons
+  ['easy','med','hard'].forEach(d => {
+    const btn = document.getElementById('diff-' + d);
+    if (!btn) return;
+    btn.className = 'diff-btn';
+    if (acadState.diff === d) btn.classList.add(d === 'easy' ? 'sel-easy' : d === 'med' ? 'sel-med' : 'sel-hard');
+  });
+
+  // Subject pills
+  const sbEl = document.getElementById('acad-subject-btns');
+  if (sbEl) sbEl.innerHTML = SUBJECTS.map(s =>
+    `<button class="subj-pill ${acadState.subject === s.id ? 'active' : ''}" onclick="setAcadSubj('${s.id}')">${s.emoji} ${s.name}</button>`
+  ).join('');
+
+  // Generate button colour
+  const genBtn = document.getElementById('acad-gen-btn');
+  if (genBtn) genBtn.style.background = kidColor;
+
+  // Wrong questions
+  renderWrongList();
+}
+
+function setAcadDiff(d) { acadState.diff = d; renderAcademic(); }
+function setAcadSubj(s) { acadState.subject = s; renderAcademic(); }
+
+function startAcadAI(fromPaper) {
+  const subjectName = SUBJECTS.find(s => s.id === acadState.subject)?.name || acadState.subject;
+  const diffMap = { easy: '簡單（小學1-2年級）', med: '中等（小學3-4年級）', hard: '挑戰（高難度）' };
+  const kidName = KIDS[currentKid].name;
+  const grade = KIDS[currentKid].grade;
+  let prompt;
+  if (fromPaper) {
+    const url = document.getElementById('exam-paper-url')?.value?.trim();
+    prompt = url
+      ? `這是${kidName}的${subjectName}試卷圖片：${url}\n請根據試卷內容，出5道相似題（${diffMap[acadState.diff]}），每題附ABCD選項和正確答案，最後給解題思路。`
+      : `請幫${kidName}（${grade}）出5道${subjectName}練習題（${diffMap[acadState.diff]}），包含選擇題，附選項、答案和引導式解題思路。`;
+  } else {
+    prompt = `請幫${kidName}（${grade}）出5道${subjectName}練習題，難度：${diffMap[acadState.diff]}。每題附ABCD選項、正確答案，最後用引導式提示幫助孩子理解，不要直接給出步驟，先問孩子怎麼想。`;
+  }
+  switchAiCat('chat');
+  quickAsk(prompt);
+}
+
+function renderWrongList() {
+  const data = getAcadData();
+  const list = (data.wrong || []).filter(q => q.kid === currentKid);
+  const el = document.getElementById('wrong-q-list');
+  const btn = document.getElementById('retry-wrong-btn');
+  if (!el) return;
+  if (list.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:13px;">暫無錯題記錄 💪</div>';
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+  if (btn) { btn.style.display = ''; }
+  el.innerHTML = [...list].reverse().slice(0, 8).map(q => `
+    <div class="wrong-q-item">
+      <div class="wq-q">${q.question || '(AI練習題)'}</div>
+      <div class="wq-meta">${q.subject || ''} · ${q.date}</div>
+    </div>`).join('');
+}
+
+function retryWrongQ() {
+  const data = getAcadData();
+  const list = (data.wrong || []).filter(q => q.kid === currentKid).slice(-5);
+  if (!list.length) return;
+  const topics = list.map(q => q.question || q.subject || '練習').join('；');
+  switchAiCat('chat');
+  quickAsk(`${KIDS[currentKid].name}之前做錯了這些題目：${topics}。請針對這些錯誤重新出相似題，用引導式提問幫助理解，先問孩子怎麼想，再一步步引導，不要直接說答案。`);
+}
+
+function clearWrongQ() {
+  const data = getAcadData();
+  data.wrong = (data.wrong || []).filter(q => q.kid !== currentKid);
+  saveAcadData(data);
+  renderWrongList();
+}
+
+// ══════════════════════════════════════════════
+//  🎵 ARTS: MUSIC TRAINING + PRACTICE
+// ══════════════════════════════════════════════
+const KID_INSTRUMENTS = {
+  1: [{ id: 'trumpet', name: '小號', emoji: '🎺' }],
+  2: [{ id: 'flute', name: '長笛', emoji: '🎵' }, { id: 'choir', name: '合唱團', emoji: '🎶' }],
+};
+
+const NOTES_DATA = [
+  { label: 'C (Do)', pos: 6 }, { label: 'D (Re)', pos: 5.5 }, { label: 'E (Mi)', pos: 5 },
+  { label: 'F (Fa)', pos: 4.5 }, { label: 'G (Sol)', pos: 4 }, { label: 'A (La)', pos: 3.5 },
+  { label: 'B (Si)', pos: 3 }, { label: 'C高 (Do)', pos: 2.5 }, { label: 'D高 (Re)', pos: 2 },
+  { label: 'E高 (Mi)', pos: 1.5 },
+];
+const DUR_DATA = [
+  { label: '全音符', sym: '○', beats: '4拍' }, { label: '二分音符', sym: '𝅗𝅥', beats: '2拍' },
+  { label: '四分音符', sym: '♩', beats: '1拍' }, { label: '八分音符', sym: '♪', beats: '½拍' },
+];
+const ACC_DATA = [
+  { label: '升記號 ♯', sym: '♯' }, { label: '降記號 ♭', sym: '♭' },
+  { label: '還原記號 ♮', sym: '♮' }, { label: '無記號', sym: '—' },
+];
+const BEAT_DATA = [
+  { sig: '4/4', desc: '每小節4拍，四分音符為1拍' },
+  { sig: '3/4', desc: '每小節3拍，四分音符為1拍' },
+  { sig: '2/4', desc: '每小節2拍，四分音符為1拍' },
+  { sig: '6/8', desc: '每小節6拍，八分音符為1拍' },
+];
+
+let musicMode = 'note';
+let musicScore = 0, musicTotal = 0, musicStreak = 0;
+let currentInstr = null;
+
+function getPracticeData() { return loadData('practice_v2', {}); }
+function savePracticeData(d) { saveData('practice_v2', d); }
+
+function renderArts() {
+  const kidColor = currentKid === 1 ? 'var(--kid1)' : 'var(--kid2)';
+  // Instrument tabs
+  const instrs = KID_INSTRUMENTS[currentKid] || [];
+  if (!currentInstr || !instrs.find(i => i.id === currentInstr)) currentInstr = instrs[0]?.id;
+  const tabsEl = document.getElementById('instr-tabs');
+  if (tabsEl) tabsEl.innerHTML = instrs.map(inst =>
+    `<button class="instr-tab ${currentInstr === inst.id ? 'active' : ''}"
+      style="${currentInstr === inst.id ? 'background:' + kidColor + ';' : ''}"
+      onclick="switchInstr('${inst.id}')">${inst.emoji} ${inst.name}</button>`
+  ).join('');
+
+  // Practice log button colour
+  const logBtn = document.getElementById('practice-log-btn');
+  if (logBtn) logBtn.style.background = kidColor;
+
+  loadPracticeInfo();
+  renderPracticeLog();
+  renderMusicQ();
+}
+
+function switchInstr(id) {
+  currentInstr = id;
+  renderArts();
+}
+
+// ── Music question engine ──
+function setMusicMode(mode) {
+  musicMode = mode;
+  ['note','duration','accidental','beat'].forEach(m => {
+    const btn = document.getElementById('mmode-' + m);
+    if (btn) btn.classList.toggle('active', m === mode);
+  });
+  renderMusicQ();
+}
+
+function renderMusicQ() {
+  const area = document.getElementById('music-q-area');
+  if (!area) return;
+  const shuffled = arr => [...arr].sort(() => Math.random() - 0.5);
+
+  if (musicMode === 'note') {
+    const correct = NOTES_DATA[Math.floor(Math.random() * NOTES_DATA.length)];
+    const opts = shuffled([correct, ...shuffled(NOTES_DATA.filter(n => n.label !== correct.label)).slice(0, 3)]);
+    const ci = opts.indexOf(correct);
+    area.innerHTML = `
+      <div style="margin-bottom:10px;font-size:13px;font-weight:800;text-align:center;">這個音符是？</div>
+      ${drawStaffSVG(correct.pos)}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+        ${opts.map((o, i) => `<button class="note-opt" id="nopt-${i}" onclick="answerMusic(${i},${ci},'${correct.label}')">${o.label}</button>`).join('')}
+      </div>`;
+
+  } else if (musicMode === 'duration') {
+    const correct = DUR_DATA[Math.floor(Math.random() * DUR_DATA.length)];
+    const opts = shuffled([correct, ...shuffled(DUR_DATA.filter(d => d.label !== correct.label)).slice(0, 3)]);
+    const ci = opts.indexOf(correct);
+    area.innerHTML = `
+      <div style="margin-bottom:6px;font-size:13px;font-weight:800;text-align:center;">這個音符時值是？</div>
+      <div style="text-align:center;font-size:72px;margin:12px 0;line-height:1;">${correct.sym}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${opts.map((o, i) => `<button class="note-opt" id="nopt-${i}" onclick="answerMusic(${i},${ci},'${correct.label}（${correct.beats}）')">${o.label}<br><span style="font-size:10px;opacity:0.6;">${o.beats}</span></button>`).join('')}
+      </div>`;
+
+  } else if (musicMode === 'accidental') {
+    const correct = ACC_DATA[Math.floor(Math.random() * ACC_DATA.length)];
+    const opts = shuffled([correct, ...shuffled(ACC_DATA.filter(a => a.label !== correct.label)).slice(0, 3)]);
+    const ci = opts.indexOf(correct);
+    area.innerHTML = `
+      <div style="margin-bottom:6px;font-size:13px;font-weight:800;text-align:center;">這個記號叫什麼？</div>
+      <div style="text-align:center;font-size:80px;margin:12px 0;line-height:1;font-family:serif;">${correct.sym}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${opts.map((o, i) => `<button class="note-opt" id="nopt-${i}" onclick="answerMusic(${i},${ci},'${correct.label}')">${o.label}</button>`).join('')}
+      </div>`;
+
+  } else if (musicMode === 'beat') {
+    const correct = BEAT_DATA[Math.floor(Math.random() * BEAT_DATA.length)];
+    const opts = shuffled([correct, ...shuffled(BEAT_DATA.filter(b => b.sig !== correct.sig)).slice(0, 3)]);
+    const ci = opts.indexOf(correct);
+    area.innerHTML = `
+      <div style="margin-bottom:6px;font-size:13px;font-weight:800;text-align:center;">這個拍子記號的意思是？</div>
+      <div style="text-align:center;font-size:56px;font-weight:900;margin:12px 0;line-height:1;font-family:'Nunito',sans-serif;">${correct.sig}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${opts.map((o, i) => `<button class="note-opt" style="font-size:11px;padding:10px 4px;" id="nopt-${i}" onclick="answerMusic(${i},${ci},'${correct.sig} — ${correct.desc}')">${o.desc}</button>`).join('')}
+      </div>`;
+  }
+}
+
+function drawStaffSVG(pos) {
+  // pos: 1=top line, 6=ledger below (C4)
+  const W = 280, lineGap = 14, top = 18, noteX = W * 0.55;
+  const lineY = n => top + (n - 1) * lineGap; // n=1 top staff line, n=5 bottom
+  const noteY = top + (pos - 1) * lineGap;
+  let lines = '';
+  for (let i = 1; i <= 5; i++) lines += `<line x1="40" y1="${lineY(i)}" x2="${W-20}" y2="${lineY(i)}" stroke="#999" stroke-width="1.5"/>`;
+  // Ledger line if C4 (pos=6)
+  if (pos >= 5.8) lines += `<line x1="${noteX-14}" y1="${lineY(6)}" x2="${noteX+14}" y2="${lineY(6)}" stroke="#555" stroke-width="1.8"/>`;
+  // Treble clef
+  lines += `<text x="14" y="${lineY(1)+26}" font-size="48" font-family="serif" fill="#666" dominant-baseline="middle">𝄞</text>`;
+  // Note head + stem
+  lines += `<ellipse cx="${noteX}" cy="${noteY}" rx="8" ry="6" fill="#1a1a1a" transform="rotate(-12,${noteX},${noteY})"/>`;
+  lines += `<line x1="${noteX+7}" y1="${noteY}" x2="${noteX+7}" y2="${noteY-36}" stroke="#1a1a1a" stroke-width="2"/>`;
+  return `<svg viewBox="0 0 ${W} ${top + 6*lineGap + 10}" style="width:100%;height:110px;background:white;border-radius:8px;border:1.5px solid var(--border);display:block;">${lines}</svg>`;
+}
+
+function answerMusic(chosen, correct, correctLabel) {
+  document.querySelectorAll('.note-opt').forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === correct) btn.classList.add('correct');
+    else if (i === chosen && chosen !== correct) btn.classList.add('wrong');
+  });
+  const isRight = chosen === correct;
+  musicTotal++;
+  if (isRight) { musicScore++; musicStreak++; }
+  else { musicStreak = 0; }
+  // Update bar + text
+  const pct = musicTotal > 0 ? Math.round(musicScore / musicTotal * 100) : 0;
+  const bar = document.getElementById('music-score-bar');
+  const txt = document.getElementById('music-score-text');
+  const streak = document.getElementById('music-streak');
+  if (bar) bar.style.width = pct + '%';
+  if (txt) txt.textContent = musicScore + '/' + musicTotal;
+  if (streak) streak.textContent = '🔥' + musicStreak;
+  // Save session
+  const data = loadData('music_sessions', []);
+  data.push({ date: getDayKey(), kid: currentKid, mode: musicMode, correct: isRight, label: correctLabel });
+  saveData('music_sessions', data);
+  // Next question
+  setTimeout(renderMusicQ, 1100);
+}
+
+// ── Practice info save/load ──
+function instrKey() { return `kid${currentKid}_${currentInstr}`; }
+
+function loadPracticeInfo() {
+  const data = getPracticeData();
+  const d = data[instrKey()] || {};
+  const pn = document.getElementById('piece-name');
+  const su = document.getElementById('score-img-url');
+  const yu = document.getElementById('yt-url');
+  if (pn) pn.value = d.pieceName || '';
+  if (su) su.value = d.scoreImg || '';
+  if (yu) yu.value = d.ytUrl || '';
+  // Preview score image
+  const imgEl = document.getElementById('score-img-preview');
+  if (imgEl) imgEl.innerHTML = d.scoreImg
+    ? `<img src="${d.scoreImg}" style="width:100%;border-radius:8px;border:1.5px solid var(--border);" onerror="this.style.display='none'">`
+    : '';
+  // YouTube embed
+  const ytEl = document.getElementById('yt-embed-area');
+  if (ytEl) ytEl.innerHTML = d.ytUrl
+    ? `<iframe class="yt-frame" src="${ytEmbedUrl(d.ytUrl)}" allowfullscreen></iframe>`
+    : '';
+}
+
+function savePracticeInfo() {
+  const data = getPracticeData();
+  if (!data[instrKey()]) data[instrKey()] = { logs: [] };
+  data[instrKey()].pieceName = document.getElementById('piece-name')?.value?.trim() || '';
+  data[instrKey()].scoreImg = document.getElementById('score-img-url')?.value?.trim() || '';
+  data[instrKey()].ytUrl = document.getElementById('yt-url')?.value?.trim() || '';
+  savePracticeData(data);
+  loadPracticeInfo();
+}
+
+function ytEmbedUrl(url) {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}` : '';
+}
+
+function addPracticeLog() {
+  const text = document.getElementById('practice-log-input')?.value?.trim();
+  const rating = parseInt(document.getElementById('practice-rating')?.value || '4');
+  if (!text) return;
+  const data = getPracticeData();
+  if (!data[instrKey()]) data[instrKey()] = { logs: [] };
+  data[instrKey()].logs = data[instrKey()].logs || [];
+  data[instrKey()].logs.push({ date: getDayKey(), text, rating });
+  savePracticeData(data);
+  document.getElementById('practice-log-input').value = '';
+  renderPracticeLog();
+}
+
+function renderPracticeLog() {
+  const el = document.getElementById('practice-log-list');
+  if (!el) return;
+  const data = getPracticeData();
+  const logs = (data[instrKey()]?.logs || []);
+  if (logs.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:8px;color:var(--muted);font-size:12px;">還沒有記錄，開始練習吧！</div>';
+    return;
+  }
+  el.innerHTML = [...logs].reverse().slice(0, 8).map(log => `
+    <div class="log-entry">
+      <div class="log-date">${log.date} ${'⭐'.repeat(log.rating || 4)}</div>
+      <div class="log-note">${log.text}</div>
+    </div>`).join('');
 }
 </script>
 </body>
