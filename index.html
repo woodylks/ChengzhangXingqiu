@@ -1720,7 +1720,8 @@ function savePdfLink() {
 
   const syllabuses = getSyllabuses();
   const existing = syllabuses.find(s => s.subject === subject && s.kid === currentKid);
-  const pdfUrl = GITHUB_PDF_BASE + encodeURIComponent(fileName);
+  // Store raw URL directly for reliable access
+  const pdfUrl = 'https://raw.githubusercontent.com/woodylks/ChengzhangXingqiu/main/pdfs/' + encodeURIComponent(fileName);
 
   if (existing) {
     existing.pdfUrl = pdfUrl;
@@ -1848,9 +1849,11 @@ function selectSyllabus(subject) {
 }
 
 function openPdfViewer(url, fileName) {
-  // Convert github.com/blob/ to raw URL for direct PDF download/view
-  const rawUrl = url.replace('github.com','raw.githubusercontent.com').replace('/blob/','/')  ;
-  // Open in new tab - most reliable on mobile
+  // url is like: https://github.com/woodylks/ChengzhangXingqiu/blob/main/pdfs/filename.pdf
+  // Convert to raw URL: https://raw.githubusercontent.com/woodylks/ChengzhangXingqiu/main/pdfs/filename.pdf
+  const rawUrl = url
+    .replace('https://github.com/', 'https://raw.githubusercontent.com/')
+    .replace('/blob/', '/');
   window.open(rawUrl, '_blank');
 }
 
