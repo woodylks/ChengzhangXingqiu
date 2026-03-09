@@ -734,6 +734,7 @@ body {
           <option value="english">🔤 英語</option>
           <option value="science">🔬 常識</option>
           <option value="it">💻 IT</option>
+          <option value="humanities">🌏 人文</option>
           <option value="other">📚 其他</option>
         </select>
       </div>
@@ -1494,12 +1495,12 @@ function switchAcademicTab(tab) {
 }
 
 const EXAM_TYPES = { quiz:'📝 小測', monthly:'📋 統測', midterm:'📘 期中考', final:'🏆 期末考' };
-const SUBJ_MAP = { math:'📐 數學', chinese:'📖 中文', english:'🔤 英語', science:'🔬 常識', it:'💻 IT', other:'📚 其他' };
+const SUBJ_MAP = { math:'📐 數學', chinese:'📖 中文', english:'🔤 英語', science:'🔬 常識', it:'💻 IT', humanities:'🌏 人文', other:'📚 其他' };
 
 function renderExamSubjectFilter() {
   const el = document.getElementById('exam-subject-filter');
   if (!el) return;
-  const all = ['all','math','chinese','english','science','it','other'];
+  const all = ['all','math','chinese','english','science','it','humanities','other'];
   const labels = { all:'全部', ...SUBJ_MAP };
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
   el.innerHTML = all.map(s => `
@@ -1779,7 +1780,7 @@ function renderSyllabusList() {
   const syllabuses = getSyllabuses().filter(s => s.kid === currentKid);
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
 
-  const SUBJ_EMOJI = { math:'📐', chinese:'📖', english:'🔤', science:'🔬', it:'💻', other:'📚' };
+  const SUBJ_EMOJI = { math:'📐', chinese:'📖', english:'🔤', science:'🔬', it:'💻', humanities:'🌏', other:'📚' };
 
   if (!syllabuses.length) {
     el.innerHTML = `<div class="empty-state"><div class="emoji">📚</div><p>還沒有學習大綱</p><p style="font-size:12px;color:var(--muted)">上傳PDF自動解析</p></div>`;
@@ -1846,9 +1847,11 @@ function selectSyllabus(subject) {
 }
 
 function openPdfViewer(url, fileName) {
-  const modal = document.getElementById('pdf-viewer-modal');
+  // Use raw URL for Google Docs viewer
+  const rawUrl = url.replace('github.com','raw.githubusercontent.com').replace('/blob/','/')  ;
+  const viewerUrl = 'https://docs.google.com/viewer?url=' + encodeURIComponent(rawUrl) + '&embedded=true';
   document.getElementById('pdf-viewer-title').textContent = fileName || 'PDF文件';
-  document.getElementById('pdf-iframe').src = url + '?raw=true';
+  document.getElementById('pdf-iframe').src = viewerUrl;
   openModal('pdf-viewer-modal');
 }
 
