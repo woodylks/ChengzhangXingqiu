@@ -668,7 +668,7 @@ body {
             <input id="syllabus-pdf-name" class="form-input" placeholder="例：悅琳_中文_第三學段.pdf" style="flex:1;">
             <button onclick="savePdfLink()" style="padding:10px 14px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">💾 保存連結</button>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">直接填PDF文件名，例：第三學段學習大綱.pdf</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">只填文件名，例：第三學段學習大綱-中文科.pdf</div>
         </div>
 
         <!-- Step 3: Paste code -->
@@ -1710,7 +1710,7 @@ function deleteExam(examId) {
 }
 
 // ── Syllabus import ──
-const GITHUB_PDF_BASE = 'https://github.com/woodylks/ChengzhangXingqiu/blob/main/';
+const GITHUB_PDF_BASE = 'https://github.com/woodylks/ChengzhangXingqiu/blob/main/pdfs/';
 
 function savePdfLink() {
   const subject = document.getElementById('syllabus-subject').value;
