@@ -457,27 +457,27 @@ body {
 
   // ── Sync functions ──
   window.syncTasksToCloud = async function(kid, tasks) {
-    await fbSet(`data/kid${kid}/tasks`, { items: tasks, updatedAt: Date.now() });
+    await fbSet(`data/kid${kid}/tasks/main`, { items: tasks, updatedAt: Date.now() });
   };
   window.syncNoticesFromCloud = async function(kid) {
-    const d = await fbGet(`data/kid${kid}/notices`);
+    const d = await fbGet(`data/kid${kid}/notices/main`);
     return d ? d.items : null;
   };
   window.syncNoticesToCloud = async function(kid, notices) {
-    await fbSet(`data/kid${kid}/notices`, { items: notices, updatedAt: Date.now() });
+    await fbSet(`data/kid${kid}/notices/main`, { items: notices, updatedAt: Date.now() });
   };
   window.syncProgressToCloud = async function(kid, progress) {
-    await fbSet(`data/kid${kid}/progress`, { items: progress, updatedAt: Date.now() });
+    await fbSet(`data/kid${kid}/progress/main`, { items: progress, updatedAt: Date.now() });
   };
   window.syncTrainingToCloud = async function(kid, training) {
-    await fbSet(`data/kid${kid}/training`, { items: training, updatedAt: Date.now() });
+    await fbSet(`data/kid${kid}/training/main`, { items: training, updatedAt: Date.now() });
   };
   window.loadAllFromCloud = async function(kid) {
     const [tasks, notices, progress, training] = await Promise.all([
-      fbGet(`data/kid${kid}/tasks`),
-      fbGet(`data/kid${kid}/notices`),
-      fbGet(`data/kid${kid}/progress`),
-      fbGet(`data/kid${kid}/training`),
+      fbGet(`data/kid${kid}/tasks/main`),
+      fbGet(`data/kid${kid}/notices/main`),
+      fbGet(`data/kid${kid}/progress/main`),
+      fbGet(`data/kid${kid}/training/main`),
     ]);
     return {
       tasks: tasks?.items || null,
@@ -2022,7 +2022,7 @@ function getHistory() {
 }
 function saveHistory(h) {
   saveData(kkey('history'), h);
-  if (window.fbReady) window.fbSet(`data/kid${currentKid}/history`, { items: h, updatedAt: Date.now() });
+  if (window.fbReady) window.fbSet(`data/kid${currentKid}/history/main`, { items: h, updatedAt: Date.now() });
 }
 
 // Archive today's tasks to history
