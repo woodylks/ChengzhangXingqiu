@@ -815,6 +815,21 @@ function navTap(e, tab) {
       <div class="card-title"><span class="icon">📢</span> 最新學校通知</div>
       <div id="notices-preview"></div>
     </div>
+
+    <!-- 📅 歷史記錄 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="card-title" style="margin:0;"><span class="icon">📅</span> 功課歷史記錄</div>
+        <button onclick="archiveTodayTasks()" style="padding:6px 12px;border-radius:20px;border:none;background:var(--green);color:white;font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">📦 歸檔今日</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+        <button onclick="filterHistory('all')" class="hist-filter" data-filter="all" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--kid1);color:white;font-size:11px;font-weight:700;cursor:pointer;">全部</button>
+        <button onclick="filterHistory('week')" class="hist-filter" data-filter="week" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:11px;font-weight:700;cursor:pointer;">本週</button>
+        <button onclick="filterHistory('month')" class="hist-filter" data-filter="month" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:11px;font-weight:700;cursor:pointer;">本月</button>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;" id="subject-filter-btns"></div>
+      <div id="history-list"></div>
+    </div>
   </div>
 
   <!-- ── 學業 ── -->
