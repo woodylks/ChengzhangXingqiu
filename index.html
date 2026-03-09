@@ -717,6 +717,13 @@ function updateNavActive() {
   document.getElementById(`nav-${currentTab}`)?.classList.add(activeClass);
 }
 
+
+function navTap(e, tab) {
+  e.preventDefault();
+  e.stopPropagation();
+  switchTab(tab);
+}
+
 </script>
 </head>
 <body>
@@ -881,26 +888,26 @@ function updateNavActive() {
 </div>
 
 <!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-  <button class="nav-btn active" id="nav-dashboard" onclick="switchTab('dashboard')">
+<div class="bottom-nav" id="bottom-nav">
+  <div class="nav-btn active" id="nav-dashboard" ontouchend="navTap(event,'dashboard')" onclick="switchTab('dashboard')">
     <span class="nav-icon">🏠</span>總覽
-  </button>
-  <button class="nav-btn" id="nav-academic" onclick="switchTab('academic')">
+  </div>
+  <div class="nav-btn" id="nav-academic" ontouchend="navTap(event,'academic')" onclick="switchTab('academic')">
     <span class="nav-icon">📚</span>學業
-  </button>
-  <button class="nav-btn" id="nav-arts" onclick="switchTab('arts')">
+  </div>
+  <div class="nav-btn" id="nav-arts" ontouchend="navTap(event,'arts')" onclick="switchTab('arts')">
     <span class="nav-icon">🎨</span>體藝
-  </button>
-  <button class="nav-btn" id="nav-ai" onclick="switchTab('ai')">
+  </div>
+  <div class="nav-btn" id="nav-ai" ontouchend="navTap(event,'ai')" onclick="switchTab('ai')">
     <span class="nav-icon">🤖</span>AI助手
-  </button>
-  <button class="nav-btn" id="nav-quiz" onclick="switchTab('quiz')">
+  </div>
+  <div class="nav-btn" id="nav-quiz" ontouchend="navTap(event,'quiz')" onclick="switchTab('quiz')">
     <span class="nav-icon">✏️</span>練習
-  </button>
-  <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
+  </div>
+  <div class="nav-btn" id="nav-history" ontouchend="navTap(event,'history')" onclick="switchTab('history')">
     <span class="nav-icon">📅</span>歷史
-  </button>
-</nav>
+  </div>
+</div>
 
 <!-- ADD TASK MODAL -->
 <div class="modal-overlay" id="task-modal">
@@ -2424,6 +2431,13 @@ function updateNavActive() {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active','active-2'));
   const activeClass = currentKid === 1 ? 'active' : 'active-2';
   document.getElementById(`nav-${currentTab}`)?.classList.add(activeClass);
+}
+
+
+function navTap(e, tab) {
+  e.preventDefault();
+  e.stopPropagation();
+  switchTab(tab);
 }
 
 </script>
