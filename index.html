@@ -1822,7 +1822,10 @@ function renderSyllabusList() {
             <div style="font-size:11px;color:var(--muted);">${s.fileName||''}</div>
           </div>
           <div style="display:flex;gap:6px;">
-            ${s.pdfUrl ? `<button onclick="openPdfViewer('${s.pdfUrl}','${(s.fileName||'').replace(/'/g,'')}')" style="padding:6px 12px;border-radius:16px;border:1.5px solid ${kidColor};background:white;color:${kidColor};font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">📄 查看PDF</button>` : ''}
+            ${s.pdfUrl ? `
+  <button onclick="openPdfViewer('${s.pdfUrl}','${(s.fileName||'').replace(/'/g,'')}')" style="padding:6px 10px;border-radius:16px;border:1.5px solid ${kidColor};background:white;color:${kidColor};font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">👁️ 預覽</button>
+  <button onclick="downloadPdf('${s.pdfUrl}','${(s.fileName||'').replace(/'/g,'')}')" style="padding:6px 10px;border-radius:16px;border:1.5px solid var(--border);background:white;color:var(--text);font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">⬇️ 下載</button>
+` : ''}
             <button onclick="deleteSyllabus('${s.subject}')" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;">🗑️</button>
           </div>
         </div>
@@ -1848,13 +1851,19 @@ function selectSyllabus(subject) {
   renderSyllabusList();
 }
 
-function openPdfViewer(url, fileName) {
-  // url is like: https://github.com/woodylks/ChengzhangXingqiu/blob/main/pdfs/filename.pdf
-  // Convert to raw URL: https://raw.githubusercontent.com/woodylks/ChengzhangXingqiu/main/pdfs/filename.pdf
-  const rawUrl = url
-    .replace('https://github.com/', 'https://raw.githubusercontent.com/')
-    .replace('/blob/', '/');
-  window.open(rawUrl, '_blank');
+function openPdfViewer(rawUrl, fileName) {
+  // Preview via Google Docs Viewer (no download)
+  const previewUrl = 'https://docs.google.com/viewer?url=' + encodeURIComponent(rawUrl) + '&embedded=false';
+  window.open(previewUrl, '_blank');
+}
+
+function downloadPdf(rawUrl, fileName) {
+  // Direct download
+  const a = document.createElement('a');
+  a.href = rawUrl;
+  a.download = fileName || 'document.pdf';
+  a.target = '_blank';
+  a.click();
 }
 
 function deleteSyllabus(subject) {
