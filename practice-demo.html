@@ -2253,19 +2253,23 @@ async function analyzeUploadedAudio() {
 
   try {
     const arrayBuf = await uploadedAudioFile.arrayBuffer();
-    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+    // Decode at lower sample rate to speed up processing
+    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 22050 });
     const audioBuf = await actx.decodeAudioData(arrayBuf);
     await actx.close();
 
-    document.getElementById('rep-loading-msg').textContent = '正在提取音符...';
-    const rawLog = extractPitchFromAudioBuffer(audioBuf);
+    document.getElementById('rep-loading-msg').textContent = `正在提取音符... 0%`;
+    // Async batched extraction — yields to UI every 20 frames
+    const rawLog = await extractPitchAsync(audioBuf, pct => {
+      document.getElementById('rep-loading-msg').textContent = `正在提取音符... ${pct}%`;
+    });
 
     pendingDemoBlob = uploadedAudioFile;
     const totalT = rawLog[rawLog.length-1]?.t || 1;
-    pendingDemoContour = rawLog.filter(p=>p.freq).map(p=>({t:p.t/totalT,freq:p.freq}));
+    pendingDemoContour = rawLog.filter(p=>p.freq).map(p=>({t:p.t/totalT, freq:p.freq}));
 
     repNotes = extractNotesFromPitchLog(rawLog);
-    if (!repNotes.length) throw new Error('未能識別到音符，請使用清晰的單聲道錄音');
+    if (!repNotes.length) throw new Error('未能識別到音符，請使用清晰的單旋律錄音');
 
     const avgBeatMs = estimateBpm(rawLog);
     if (avgBeatMs) {
@@ -2279,34 +2283,58 @@ async function analyzeUploadedAudio() {
     document.getElementById('rep-note-count').textContent = `${repNotes.length} 個音符`;
   } catch (e) {
     alert('分析失敗：' + e.message);
+    console.error(e);
   } finally {
     document.getElementById('rep-loading').style.display = 'none';
     document.getElementById('audio-analyze-btn').disabled = false;
   }
 }
 
-// Offline pitch extraction from AudioBuffer
-function extractPitchFromAudioBuffer(audioBuf) {
-  const sr = audioBuf.sampleRate;
-  const data = audioBuf.getChannelData(0); // mono
-  const frameSize = 8192;
-  const hopSize = Math.floor(sr * 0.05); // 50ms hops
-  const log = [];
+// Async pitch extraction — processes in batches, yields UI between batches
+function extractPitchAsync(audioBuf, onProgress) {
+  return new Promise(resolve => {
+    const sr = audioBuf.sampleRate;
+    const data = audioBuf.getChannelData(0);
+    const frameSize = 4096;                     // smaller frame = faster
+    const hopSize = Math.floor(sr * 0.1);       // 100ms hops (was 50ms)
+    const totalFrames = Math.floor((data.length - frameSize) / hopSize);
+    const BATCH = 20;                           // frames per batch before yielding
+    const log = [];
+    let frameIdx = 0;
 
-  for (let offset = 0; offset + frameSize < data.length; offset += hopSize) {
-    const frame = data.slice(offset, offset + frameSize);
-    const t = Math.round((offset / sr) * 1000);
-    let rms = 0; for (let i = 0; i < frame.length; i++) rms += frame[i] * frame[i];
-    rms = Math.sqrt(rms / frame.length);
-    if (rms > 0.01) {
-      const freq = autoCorrelate(frame, sr);
-      if (freq > 60 && freq < 2500) {
-        const r = findClosest(freq);
-        log.push({ t, freq, note: r?.note.name || null });
-      } else { log.push({ t, freq: null, note: null }); }
-    } else { log.push({ t, freq: null, note: null }); }
-  }
-  return log;
+    function processBatch() {
+      const end = Math.min(frameIdx + BATCH, totalFrames);
+      for (; frameIdx < end; frameIdx++) {
+        const offset = frameIdx * hopSize;
+        const t = Math.round((offset / sr) * 1000);
+        // Compute RMS without slice() — avoids allocations
+        let rms = 0;
+        for (let i = offset; i < offset + frameSize; i++) rms += data[i] * data[i];
+        rms = Math.sqrt(rms / frameSize);
+        if (rms > 0.012) {
+          // Pass subarray view instead of slice
+          const frame = data.subarray(offset, offset + frameSize);
+          const freq = autoCorrelate(frame, sr);
+          if (freq > 60 && freq < 2500) {
+            const r = findClosest(freq);
+            log.push({ t, freq, note: r?.note.name || null });
+          } else {
+            log.push({ t, freq: null, note: null });
+          }
+        } else {
+          log.push({ t, freq: null, note: null });
+        }
+      }
+      if (frameIdx < totalFrames) {
+        onProgress(Math.round(frameIdx / totalFrames * 100));
+        setTimeout(processBatch, 0);  // yield to browser
+      } else {
+        onProgress(100);
+        resolve(log);
+      }
+    }
+    processBatch();
+  });
 }
 
 // ── Note editor ──
@@ -2499,17 +2527,32 @@ function startRepPitchChart(item){
   stopPitchChart('rep');
   const canvasEl=document.getElementById('rep-canvas'); if(!canvasEl) return;
   const dpr=window.devicePixelRatio||1;
-  const cw=canvasEl.offsetWidth||340,ch=160;
+  const cw=canvasEl.offsetWidth||340, ch=160;
   canvasEl.width=cw*dpr; canvasEl.height=ch*dpr;
   const ctx2d=canvasEl.getContext('2d'); ctx2d.scale(dpr,dpr);
-  const CW=cw,CH=ch;
+  const CW=cw, CH=ch;
   const inst=INSTRUMENTS[currentKid]; const noteObjs=inst.notes;
   const freqs=item.notes.map(n=>noteObjs.find(x=>x.name===n.full)?.cf).filter(Boolean);
   if(!freqs.length) return;
-  const fMin=Math.min(...freqs)*Math.pow(2,-3/12),fMax=Math.max(...freqs)*Math.pow(2,4/12);
+  const fMin=Math.min(...freqs)*Math.pow(2,-3/12), fMax=Math.max(...freqs)*Math.pow(2,4/12);
   const toY=f=>CH-8-((Math.log2(f)-Math.log2(fMin))/(Math.log2(fMax)-Math.log2(fMin)))*(CH-16);
-  const total=item.notes.reduce((s,n)=>s+(DUR_BEATS[n.dur]||1),0);
-  const history=[];
+
+  // Build note timeline: each note has absolute start/end time in ms
+  const beatMs = 60000 / (item.bpm || 80);
+  const noteTimeline = []; // {note, startMs, endMs, freq}
+  let cursor = 0;
+  item.notes.forEach(n => {
+    const dur = (DUR_BEATS[n.dur] || 1) * beatMs;
+    const obj = noteObjs.find(o => o.name === n.full);
+    noteTimeline.push({ note: n.full, startMs: cursor, endMs: cursor + dur, freq: obj?.cf || null });
+    cursor += dur;
+  });
+  const totalMs = cursor; // full piece duration in ms
+
+  // Window = 2 bars = 8 beats
+  const WINDOW_MS = beatMs * 8;
+  const history = [];
+
   navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})
     .then(stream=>{
       const actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
@@ -2518,56 +2561,102 @@ function startRepPitchChart(item){
       const buf=new Float32Array(analyser.fftSize);
       pitchChartState['rep']={actx,stream,rafId:null};
       let startT=null;
+
       function frame(){
-        const now=Date.now(); if(!startT) startT=now; const elapsed=now-startT;
+        const now=Date.now();
+        if(!startT) startT=now;
+        const elapsed=now-startT;
+
+        // Mic input
         analyser.getFloatTimeDomainData(buf);
         let rms=0; for(let i=0;i<buf.length;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/buf.length);
-        if(rms>0.012){const freq=autoCorrelate(buf,actx.sampleRate); if(freq>60&&freq<2500){const r=findClosest(freq);if(r) history.push({t:elapsed,freq,cents:r.cents});}}
+        if(rms>0.012){
+          const freq=autoCorrelate(buf,actx.sampleRate);
+          if(freq>60&&freq<2500){const r=findClosest(freq);if(r) history.push({t:elapsed,freq,cents:r.cents});}
+        }
+
+        // Scrolling window: keep current note near center (70% from left)
+        // Window starts so that elapsed is at 70% of window width
+        const CURSOR_POS = 0.7; // current time sits at 70% of screen
+        const winStart = elapsed - WINDOW_MS * CURSOR_POS;
+        const winEnd   = winStart + WINDOW_MS;
+        const tToX = t => ((t - winStart) / WINDOW_MS) * CW;
+
         ctx2d.fillStyle='#0d0d14'; ctx2d.fillRect(0,0,CW,CH);
-        // Grid lines
+
+        // Pitch grid lines (horizontal)
         noteObjs.forEach(n=>{
-          if(n.cf<fMin*0.95||n.cf>fMax*1.05) return;
+          if(n.cf<fMin*0.92||n.cf>fMax*1.08) return;
           const y=toY(n.cf); const isC=n.name.startsWith('C');
-          ctx2d.strokeStyle=isC?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.04)'; ctx2d.lineWidth=isC?1:0.5;
+          ctx2d.strokeStyle=isC?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.04)';
+          ctx2d.lineWidth=isC?1:0.5;
           ctx2d.beginPath(); ctx2d.moveTo(0,y); ctx2d.lineTo(CW,y); ctx2d.stroke();
-          ctx2d.fillStyle='rgba(255,255,255,0.3)'; ctx2d.font='8px monospace'; ctx2d.textAlign='left';
+          ctx2d.fillStyle='rgba(255,255,255,0.25)'; ctx2d.font='8px monospace'; ctx2d.textAlign='left';
           ctx2d.fillText(n.name,2,y-2);
         });
-        // Target lanes
-        let xc=0;
-        item.notes.forEach((n,ni)=>{
-          const obj=noteObjs.find(o=>o.name===n.full);
-          const w=((DUR_BEATS[n.dur]||1)/total)*CW;
-          if(obj){
-            const y=toY(obj.cf),yU=toY(obj.cf*Math.pow(2,25/1200)),yD=toY(obj.cf*Math.pow(2,-25/1200));
-            const isCur=ni===repMetroStep%item.notes.length;
-            ctx2d.fillStyle=isCur?'rgba(255,107,53,0.15)':'rgba(255,107,53,0.05)'; ctx2d.fillRect(xc,yU,w,yD-yU);
-            ctx2d.strokeStyle=isCur?'rgba(255,107,53,0.9)':'rgba(255,107,53,0.3)';
-            ctx2d.lineWidth=isCur?2.5:1.5; ctx2d.setLineDash([5,3]);
-            ctx2d.beginPath(); ctx2d.moveTo(xc+2,y); ctx2d.lineTo(xc+w-2,y); ctx2d.stroke(); ctx2d.setLineDash([]);
-            ctx2d.fillStyle=isCur?'rgba(255,107,53,1)':'rgba(255,107,53,0.4)';
+
+        // Beat grid lines (vertical, subtle)
+        for(let b=0; b<totalMs; b+=beatMs){
+          const x=tToX(b);
+          if(x<0||x>CW) continue;
+          const isBar=(b % (beatMs*4))<1;
+          ctx2d.strokeStyle=isBar?'rgba(255,255,255,0.12)':'rgba(255,255,255,0.04)';
+          ctx2d.lineWidth=isBar?1:0.5;
+          ctx2d.beginPath(); ctx2d.moveTo(x,0); ctx2d.lineTo(x,CH); ctx2d.stroke();
+        }
+
+        // Target note lanes (time-based width)
+        noteTimeline.forEach(n=>{
+          if(!n.freq) return;
+          const x1=tToX(n.startMs), x2=tToX(n.endMs);
+          if(x2<0||x1>CW) return; // out of view
+          const xA=Math.max(0,x1), xB=Math.min(CW,x2), w=xB-xA;
+          const y=toY(n.freq);
+          const yU=toY(n.freq*Math.pow(2,25/1200)), yD=toY(n.freq*Math.pow(2,-25/1200));
+          // Is this the "current" note (elapsed falls within it)?
+          const isCur=elapsed>=n.startMs&&elapsed<n.endMs;
+          // Is this upcoming (in the future)?
+          const isUpcoming=n.startMs>elapsed;
+          ctx2d.fillStyle=isCur?'rgba(255,107,53,0.18)':isUpcoming?'rgba(255,107,53,0.06)':'rgba(255,107,53,0.03)';
+          ctx2d.fillRect(xA,yU,w,Math.max(1,yD-yU));
+          ctx2d.strokeStyle=isCur?'rgba(255,107,53,0.95)':isUpcoming?'rgba(255,107,53,0.35)':'rgba(255,107,53,0.15)';
+          ctx2d.lineWidth=isCur?2.5:1.2;
+          ctx2d.setLineDash(isCur?[]:[4,3]);
+          ctx2d.beginPath(); ctx2d.moveTo(xA+1,y); ctx2d.lineTo(xB-1,y); ctx2d.stroke();
+          ctx2d.setLineDash([]);
+          // Note label
+          if(w>14){
+            ctx2d.fillStyle=isCur?'rgba(255,107,53,1)':isUpcoming?'rgba(255,107,53,0.5)':'rgba(255,107,53,0.25)';
             ctx2d.font=`bold ${isCur?10:8}px monospace`; ctx2d.textAlign='center';
-            ctx2d.fillText(n.full,xc+w/2,y-4);
+            ctx2d.fillText(n.note, xA+w/2, y-4);
           }
-          xc+=w;
         });
-        // Actual pitch
-        const WINDOW_MS=10000;
-        const cutoff=elapsed-WINDOW_MS; while(history.length&&history[0].t<cutoff) history.shift();
+
+        // Playhead (current time cursor)
+        const px=tToX(elapsed);
+        ctx2d.strokeStyle='rgba(255,255,255,0.35)'; ctx2d.lineWidth=1.5; ctx2d.setLineDash([4,3]);
+        ctx2d.beginPath(); ctx2d.moveTo(px,0); ctx2d.lineTo(px,CH); ctx2d.stroke(); ctx2d.setLineDash([]);
+
+        // Actual pitch trace
+        const cutoff=winStart-200; // keep a tiny bit before window for smooth entry
+        while(history.length&&history[0].t<cutoff) history.shift();
         if(history.length>1){
           for(let i=1;i<history.length;i++){
-            const p=history[i],pp=history[i-1];
-            const x1=((pp.t-(elapsed-WINDOW_MS))/WINDOW_MS)*CW, x2=((p.t-(elapsed-WINDOW_MS))/WINDOW_MS)*CW;
+            const p=history[i], pp=history[i-1];
+            const x1=tToX(pp.t), x2=tToX(p.t);
+            if(x2<0||x1>CW) continue;
             const col=Math.abs(p.cents)<=10?'#00ff88':Math.abs(p.cents)<=25?'#ffcc00':'#ff4466';
-            ctx2d.strokeStyle=col; ctx2d.lineWidth=2.5; ctx2d.shadowColor=col; ctx2d.shadowBlur=4;
+            ctx2d.strokeStyle=col; ctx2d.lineWidth=2.5; ctx2d.shadowColor=col; ctx2d.shadowBlur=5;
             ctx2d.beginPath(); ctx2d.moveTo(x1,toY(pp.freq)); ctx2d.lineTo(x2,toY(p.freq)); ctx2d.stroke();
           }
           ctx2d.shadowBlur=0;
           const last=history[history.length-1];
           const dotC=Math.abs(last.cents)<=10?'#00ff88':Math.abs(last.cents)<=25?'#ffcc00':'#ff4466';
-          ctx2d.fillStyle=dotC; ctx2d.shadowColor=dotC; ctx2d.shadowBlur=10;
-          ctx2d.beginPath(); ctx2d.arc(CW-4,toY(last.freq),4,0,Math.PI*2); ctx2d.fill(); ctx2d.shadowBlur=0;
+          ctx2d.fillStyle=dotC; ctx2d.shadowColor=dotC; ctx2d.shadowBlur=12;
+          ctx2d.beginPath(); ctx2d.arc(tToX(last.t),toY(last.freq),4,0,Math.PI*2); ctx2d.fill();
+          ctx2d.shadowBlur=0;
         }
+
         pitchChartState['rep'].rafId=requestAnimationFrame(frame);
       }
       frame();
