@@ -2986,9 +2986,16 @@ function openHomeworkPhotoModal() {
   const currentUrl = photos[photoKey];
   const currentEl = document.getElementById('hw-photo-current');
   if (currentUrl) {
-    currentEl.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">今日已上傳截圖：</div>' +
-      '<img src="' + currentUrl + '" style="width:100%;border-radius:10px;cursor:pointer;object-fit:cover;max-height:160px;" onclick="viewFullImage(\'' + currentUrl + '\'">' +
-      '<div style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center;">可重新上傳替換</div>';
+    currentEl.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">今日已上傳截圖：</div>';
+    const _mi = document.createElement('img');
+    _mi.src = currentUrl;
+    _mi.style.cssText = 'width:100%;border-radius:10px;cursor:pointer;object-fit:cover;max-height:160px;';
+    _mi.addEventListener('click', () => viewFullImage(currentUrl));
+    currentEl.appendChild(_mi);
+    const _mh = document.createElement('div');
+    _mh.style.cssText = 'font-size:12px;color:var(--muted);margin-top:4px;text-align:center;';
+    _mh.textContent = '可重新上傳替換';
+    currentEl.appendChild(_mh);
   } else {
     currentEl.innerHTML = '';
   }
@@ -3099,10 +3106,19 @@ function renderHwPhotoPreview() {
     if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'white'; }
     return;
   }
-  el.innerHTML = '<div style="position:relative;margin-bottom:10px;" onclick="viewFullImage(\'' + imgUrl + '\'">' +
-    '<img src="' + imgUrl + '" style="width:100%;max-height:140px;object-fit:cover;border-radius:10px;cursor:pointer;border:2px solid ' + kidColor + '30;">' +
-    '<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.5);color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;">🔍 點擊放大</div>' +
-    '</div>';
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:relative;margin-bottom:10px;cursor:pointer;';
+  wrapper.addEventListener('click', () => viewFullImage(imgUrl));
+  const imgEl = document.createElement('img');
+  imgEl.src = imgUrl;
+  imgEl.style.cssText = 'width:100%;max-height:140px;object-fit:cover;border-radius:10px;border:2px solid ' + kidColor + '30;';
+  const badge = document.createElement('div');
+  badge.textContent = '🔍 點擊放大';
+  badge.style.cssText = 'position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.5);color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;';
+  wrapper.appendChild(imgEl);
+  wrapper.appendChild(badge);
+  el.innerHTML = '';
+  el.appendChild(wrapper);
   if (btn) { btn.style.borderColor = kidColor; btn.style.background = kidColor + '15'; }
 }
 
