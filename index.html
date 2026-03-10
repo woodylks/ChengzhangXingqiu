@@ -849,8 +849,19 @@ body {
         <!-- Piece + score image -->
         <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">🎶 今日曲目</div>
         <input class="form-input" id="piece-name" placeholder="例：小星星、卡農…" style="margin-bottom:8px;">
-        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">🖼 樂譜圖片（GitHub raw連結）</div>
-        <input class="form-input" id="score-img-url" placeholder="https://raw.githubusercontent.com/…" style="margin-bottom:6px;">
+        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">🖼 樂譜圖片</div>
+        <input type="file" id="score-img-file" accept="image/*" style="display:none;" onchange="uploadScoreImg(event)">
+        <div id="score-img-upload-area" onclick="document.getElementById('score-img-file').click()"
+          style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:6px;">
+          <div style="font-size:22px;margin-bottom:2px;">📷</div>
+          <div style="font-size:12px;font-weight:700;color:var(--muted);">點擊選擇照片上傳</div>
+        </div>
+        <div id="score-upload-progress" style="display:none;margin-bottom:6px;">
+          <div style="height:5px;border-radius:3px;background:var(--border);overflow:hidden;">
+            <div id="score-upload-bar" style="height:100%;border-radius:3px;background:var(--green);width:0%;transition:width 0.2s;"></div>
+          </div>
+          <div id="score-upload-pct" style="font-size:11px;color:var(--muted);text-align:center;margin-top:2px;">上傳中…</div>
+        </div>
         <div id="score-img-preview" style="margin-bottom:8px;"></div>
         <!-- YouTube -->
         <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">▶️ YouTube示範連結</div>
@@ -976,27 +987,28 @@ body {
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">📷 今日黑板截圖</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">上傳圖片到GitHub後填入文件名，即可在任務清單預覽</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">直接上傳截圖，自動保存到雲端</div>
 
-    <div style="background:var(--accent-light);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.8;">
-      <div style="font-weight:800;margin-bottom:4px;">📋 使用步驟：</div>
-      <div>1️⃣ 把黑板截圖上傳到GitHub的 <b>photos/</b> 文件夾</div>
-      <div>2️⃣ 建議文件名：<b id="suggested-filename"></b></div>
-      <div>3️⃣ 填入文件名，點「保存」</div>
+    <!-- Current photo preview -->
+    <div id="hw-photo-current" style="margin-bottom:12px;"></div>
+
+    <!-- Upload area -->
+    <input type="file" id="hw-photo-file" accept="image/*" style="display:none;" onchange="handleHwPhotoUpload(event)">
+    <div id="hw-upload-area" onclick="document.getElementById('hw-photo-file').click()"
+      style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:12px;">
+      <div style="font-size:32px;margin-bottom:6px;">📸</div>
+      <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:2px;">點擊上傳黑板截圖</div>
+      <div style="font-size:12px;color:var(--muted);">支援 JPG / PNG</div>
+    </div>
+    <!-- Upload progress -->
+    <div id="hw-upload-progress" style="display:none;margin-bottom:12px;">
+      <div style="height:6px;border-radius:3px;background:var(--border);overflow:hidden;">
+        <div id="hw-upload-bar" style="height:100%;border-radius:3px;background:var(--kid1);width:0%;transition:width 0.2s;"></div>
+      </div>
+      <div id="hw-upload-pct" style="font-size:12px;color:var(--muted);text-align:center;margin-top:4px;">上傳中…</div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">圖片文件名</label>
-      <input class="form-input" id="hw-photo-filename" placeholder="例：2026-03-09-kid1.jpg">
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">只填文件名，系統自動補全路徑</div>
-    </div>
-
-    <div id="hw-photo-current" style="margin-bottom:14px;"></div>
-
-    <div style="display:flex;gap:10px;">
-      <button onclick="closeModal('hw-photo-modal')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">取消</button>
-      <button onclick="saveHomeworkPhoto()" style="flex:2;padding:14px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">💾 保存</button>
-    </div>
+    <button onclick="closeModal('hw-photo-modal')" style="width:100%;padding:14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">關閉</button>
   </div>
 </div>
 
@@ -2231,19 +2243,20 @@ async function sendMsg() {
 你可以：出練習題（附解題步驟）、分析進度、制定計劃、提供體藝訓練建議。
 請用溫暖鼓勵的語氣，回覆簡潔有用，適當使用emoji，用繁體中文回覆。`;
 
+  const NVIDIA_KEY = 'N3Q4Z2xna2Q2ZTJvczA2b3Q3OW5pY2U0Mmg6MDBjMGZlZjQtZDliYi00ZjRlLWExMjItNTQyZTAwYWNmMGMx';
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + NVIDIA_KEY },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'moonshotai/kimi-k2.5',
         max_tokens: 1000,
-        system: systemPrompt,
-        messages: chatHistory
+        messages: [{ role: 'system', content: systemPrompt }, ...chatHistory]
       })
     });
     const data = await res.json();
-    const reply = data.content?.[0]?.text || '抱歉，暫時無法回應，請稍後再試。';
+    const reply = data.choices?.[0]?.message?.content || '抱歉，暫時無法回應，請稍後再試。';
     removeTyping();
     appendMsg('ai', reply);
     chatHistory.push({ role:'assistant', content: reply });
@@ -2558,8 +2571,79 @@ function handleFileUpload(input) {
 }
 
 // ══════════════════════════════════════════════
-//  PHOTO SCAN FEATURE
+//  ☁️ CLOUDINARY CONFIG
 // ══════════════════════════════════════════════
+const CLOUDINARY = {
+  cloudName: 'dfaap5ur8',
+  apiKey: '218559677796586',
+  uploadPreset: 'chengzhang',
+  uploadUrl: 'https://api.cloudinary.com/v1_1/dfaap5ur8/image/upload',
+};
+
+async function uploadToCloudinary(file, folder, onProgress) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUDINARY.uploadPreset);
+  fd.append('folder', folder);
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', CLOUDINARY.uploadUrl);
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round(e.loaded / e.total * 100));
+    };
+    xhr.onload = () => {
+      const res = JSON.parse(xhr.responseText);
+      if (res.secure_url) resolve(res.secure_url);
+      else reject(res.error?.message || '上傳失敗');
+    };
+    xhr.onerror = () => reject('網絡錯誤');
+    xhr.send(fd);
+  });
+}
+
+// ── 樂譜圖片上傳 ──
+async function uploadScoreImg(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  const kidColor = currentKid === 1 ? 'var(--kid1)' : 'var(--kid2)';
+  const prog = document.getElementById('score-upload-progress');
+  const bar = document.getElementById('score-upload-bar');
+  const pct = document.getElementById('score-upload-pct');
+  const area = document.getElementById('score-img-upload-area');
+  prog.style.display = 'block';
+  area.style.pointerEvents = 'none';
+  try {
+    const folder = `chengzhang/scores/kid${currentKid}`;
+    const url = await uploadToCloudinary(file, folder, p => {
+      bar.style.width = p + '%';
+      pct.textContent = p + '% 上傳中…';
+    });
+    // Save URL to practice data
+    const data = getPracticeData();
+    if (!data[instrKey()]) data[instrKey()] = { logs: [] };
+    data[instrKey()].scoreImg = url;
+    savePracticeData(data);
+    prog.style.display = 'none';
+    bar.style.width = '0%';
+    area.style.pointerEvents = '';
+    // Show preview
+    const preview = document.getElementById('score-img-preview');
+    preview.innerHTML = `<img src="${url}" style="width:100%;border-radius:8px;border:1.5px solid ${kidColor}30;">`;
+    area.innerHTML = '<div style="font-size:22px;margin-bottom:2px;">✅</div><div style="font-size:12px;font-weight:700;color:var(--green);">上傳成功！點擊更換</div>';
+  } catch(err) {
+    prog.style.display = 'none';
+    area.style.pointerEvents = '';
+    alert('上傳失敗：' + err);
+  }
+}
+
+// ── 黑板截圖 Cloudinary 上傳 ──
+async function uploadHomeworkPhoto(file) {
+  const folder = `chengzhang/homework/kid${currentKid}`;
+  const url = await uploadToCloudinary(file, folder, null);
+  return url;
+}
 let pendingScanTasks = [];
 
 function getApiKey() {
@@ -2584,8 +2668,8 @@ function triggerScanInput(mode) {
 
 function saveApiKey() {
   const key = document.getElementById('apikey-input').value.trim();
-  if (!key.startsWith('sk-ant-')) {
-    alert('API Key 格式不正確，請重新輸入（應以 sk-ant- 開頭）');
+  if (!key.startsWith('nvapi-') && !key.startsWith('sk-ant-') && key.length < 20) {
+    alert('API Key 格式不正確，請重新輸入');
     return;
   }
   localStorage.setItem('anthropic_api_key', key);
@@ -2627,21 +2711,20 @@ async function scanBlackboard(input) {
   const dateStr = `${today.getMonth()+1}月${today.getDate()}日`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const NVIDIA_KEY = 'N3Q4Z2xna2Q2ZTJvczA2b3Q3OW5pY2U0Mmg6MDBjMGZlZjQtZDliYi00ZjRlLWExMjItNTQyZTAwYWNmMGMx';
+    const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': getApiKey(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Authorization': 'Bearer ' + NVIDIA_KEY
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'moonshotai/kimi-k2.5',
         max_tokens: 1000,
         messages: [{
           role: 'user',
           content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } },
             { type: 'text', text: '這是一張學校黑板的功課照片（' + dateStr + '）。請識別所有科目的功課，用JSON格式回應，格式如下：\n{"tasks":[{"name":"功課名稱","subject":"math或chinese或english或science或it或other","priority":"high或medium或low"}]}\n科目對應：中文/語文/普通話=chinese，英文/英語=english，數學=math，常識/科學=science，IT=it，其他=other。\n只回JSON，不要其他文字，不要markdown。' }
           ]
         }]
@@ -2652,16 +2735,11 @@ async function scanBlackboard(input) {
 
     if (data.error) {
       const errMsg = data.error.message || '';
-      if (errMsg.includes('api') || errMsg.includes('auth') || data.error.type === 'authentication_error') {
-        status.innerHTML = '❌ API Key 無效，請長按刪除後重新輸入';
-        localStorage.removeItem('anthropic_api_key');
-      } else {
-        status.innerHTML = '❌ 錯誤：' + errMsg;
-      }
+      status.innerHTML = '❌ 錯誤：' + errMsg;
       return;
     }
 
-    const text = data.content[0].text.replace(/```json|```/g,'').trim();
+    const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g,'').trim();
     let json;
     try {
       json = JSON.parse(text);
@@ -3015,35 +3093,61 @@ function getDayKey() {
 function openHomeworkPhotoModal() {
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
   const dayKey = getDayKey();
-    const dotDate = dayKey.replace(/-/g, '.');
-  const suggested = dotDate + '-kid' + currentKid + '.jpeg';
-  document.getElementById('suggested-filename').textContent = suggested;
-  document.getElementById('hw-photo-filename').value = suggested;
-  const photos = getHwPhotos();
   const photoKey = dayKey + '_kid' + currentKid;
-  const current = photos[photoKey];
+  const photos = getHwPhotos();
+  const currentUrl = photos[photoKey];
   const currentEl = document.getElementById('hw-photo-current');
-  if (current) {
-    const imgUrl = GITHUB_PHOTO_BASE + encodeURIComponent(current);
-    currentEl.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">目前已存截圖：</div>' +
-      '<img src="' + imgUrl + '" style="width:100%;border-radius:10px;cursor:pointer;object-fit:cover;max-height:160px;" onclick="viewFullImage(\'' + imgUrl + '\')" onerror="this.parentElement.innerHTML=\'<div style=padding:10px;color:var(--muted);font-size:12px;>⚠️ 圖片未找到</div>\'">';
+  if (currentUrl) {
+    currentEl.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">今日已上傳截圖：</div>' +
+      '<img src="' + currentUrl + '" style="width:100%;border-radius:10px;cursor:pointer;object-fit:cover;max-height:160px;" onclick="viewFullImage('' + currentUrl + '')">' +
+      '<div style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center;">可重新上傳替換</div>';
   } else {
     currentEl.innerHTML = '';
   }
+  const uploadArea = document.getElementById('hw-upload-area');
+  if (uploadArea) uploadArea.innerHTML = '<div style="font-size:32px;margin-bottom:6px;">📸</div><div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:2px;">點擊上傳黑板截圖</div><div style="font-size:12px;color:var(--muted);">支援 JPG / PNG</div>';
+  document.getElementById('hw-upload-progress').style.display = 'none';
   document.getElementById('hw-photo-btn').style.borderColor = kidColor;
   openModal('hw-photo-modal');
 }
 
-function saveHomeworkPhoto() {
-  const filename = document.getElementById('hw-photo-filename').value.trim();
-  if (!filename) { alert('請輸入文件名'); return; }
-  const dayKey = getDayKey();
-  const photoKey = dayKey + '_kid' + currentKid;
-  const photos = getHwPhotos();
-  photos[photoKey] = filename;
-  saveHwPhotos(photos);
-  closeModal('hw-photo-modal');
-  renderHwPhotoPreview();
+async function handleHwPhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  const prog = document.getElementById('hw-upload-progress');
+  const bar = document.getElementById('hw-upload-bar');
+  const pct = document.getElementById('hw-upload-pct');
+  const area = document.getElementById('hw-upload-area');
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  prog.style.display = 'block';
+  bar.style.background = kidColor;
+  area.style.pointerEvents = 'none';
+  try {
+    const folder = 'chengzhang/homework/kid' + currentKid;
+    const url = await uploadToCloudinary(file, folder, p => {
+      bar.style.width = p + '%';
+      pct.textContent = p + '% 上傳中…';
+    });
+    // Save Cloudinary URL
+    const dayKey = getDayKey();
+    const photoKey = dayKey + '_kid' + currentKid;
+    const photos = getHwPhotos();
+    photos[photoKey] = url;
+    saveHwPhotos(photos);
+    prog.style.display = 'none';
+    bar.style.width = '0%';
+    area.style.pointerEvents = '';
+    area.innerHTML = '<div style="font-size:32px;margin-bottom:6px;">✅</div><div style="font-size:14px;font-weight:800;color:var(--green);">上傳成功！</div>';
+    document.getElementById('hw-photo-current').innerHTML =
+      '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">今日已上傳截圖：</div>' +
+      '<img src="' + url + '" style="width:100%;border-radius:10px;object-fit:cover;max-height:160px;cursor:pointer;" onclick="viewFullImage('' + url + '')">';
+    renderHwPhotoPreview();
+  } catch(err) {
+    prog.style.display = 'none';
+    area.style.pointerEvents = '';
+    alert('上傳失敗：' + err);
+  }
 }
 
 function renderHwPhotoPreview() {
@@ -3052,18 +3156,16 @@ function renderHwPhotoPreview() {
   const dayKey = getDayKey();
   const photoKey = dayKey + '_kid' + currentKid;
   const photos = getHwPhotos();
-  const filename = photos[photoKey];
+  const imgUrl = photos[photoKey];
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
   const btn = document.getElementById('hw-photo-btn');
-  if (!filename) {
+  if (!imgUrl) {
     el.innerHTML = '';
     if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'white'; }
     return;
   }
-  const imgUrl = GITHUB_PHOTO_BASE + encodeURIComponent(filename);
-  el.innerHTML = '<div style="position:relative;margin-bottom:10px;" onclick="viewFullImage(\'' + imgUrl + '\')">' +
-    '<img src="' + imgUrl + '" style="width:100%;max-height:140px;object-fit:cover;border-radius:10px;cursor:pointer;border:2px solid ' + kidColor + '30;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
-    '<div style="display:none;align-items:center;justify-content:center;gap:6px;padding:12px;background:var(--bg);border-radius:10px;border:1.5px dashed var(--border);"><span style="font-size:20px;">📷</span><span style="font-size:12px;color:var(--muted);">圖片載入中，請確認已上傳到GitHub</span></div>' +
+  el.innerHTML = '<div style="position:relative;margin-bottom:10px;" onclick="viewFullImage('' + imgUrl + '')">' +
+    '<img src="' + imgUrl + '" style="width:100%;max-height:140px;object-fit:cover;border-radius:10px;cursor:pointer;border:2px solid ' + kidColor + '30;">' +
     '<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.5);color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;">🔍 點擊放大</div>' +
     '</div>';
   if (btn) { btn.style.borderColor = kidColor; btn.style.background = kidColor + '15'; }
@@ -3356,38 +3458,38 @@ function instrKey() { return `kid${currentKid}_${currentInstr}`; }
 function loadPracticeInfo() {
   const data = getPracticeData();
   const d = data[instrKey()] || {};
-  const pn = document.getElementById('piece-name');
-  const su = document.getElementById('score-img-url');
-  const yu = document.getElementById('yt-url');
-  if (pn) pn.value = d.pieceName || '';
-  if (su) su.value = d.scoreImg || '';
-  if (yu) yu.value = d.ytUrl || '';
-  // Preview score image
-  const imgEl = document.getElementById('score-img-preview');
+  const pn = document.getElementById("piece-name");
+  const yu = document.getElementById("yt-url");
+  if (pn) pn.value = d.pieceName || "";
+  if (yu) yu.value = d.ytUrl || "";
+  const imgEl = document.getElementById("score-img-preview");
+  const uploadArea = document.getElementById("score-img-upload-area");
   if (imgEl) imgEl.innerHTML = d.scoreImg
     ? `<img src="${d.scoreImg}" style="width:100%;border-radius:8px;border:1.5px solid var(--border);" onerror="this.style.display='none'">`
-    : '';
-  // YouTube embed
-  const ytEl = document.getElementById('yt-embed-area');
+    : "";
+  if (uploadArea) uploadArea.innerHTML = d.scoreImg
+    ? "<div style="font-size:22px;margin-bottom:2px;">✅</div><div style="font-size:12px;font-weight:700;color:var(--green);">已有樂譜，點擊更換</div>"
+    : "<div style="font-size:22px;margin-bottom:2px;">📷</div><div style="font-size:12px;font-weight:700;color:var(--muted);">點擊選擇照片上傳</div>";
+  const ytEl = document.getElementById("yt-embed-area");
   if (ytEl) ytEl.innerHTML = d.ytUrl
     ? `<iframe class="yt-frame" src="${ytEmbedUrl(d.ytUrl)}" allowfullscreen></iframe>`
-    : '';
+    : "";
 }
 
 function savePracticeInfo() {
   const data = getPracticeData();
   if (!data[instrKey()]) data[instrKey()] = { logs: [] };
-  data[instrKey()].pieceName = document.getElementById('piece-name')?.value?.trim() || '';
-  data[instrKey()].scoreImg = document.getElementById('score-img-url')?.value?.trim() || '';
-  data[instrKey()].ytUrl = document.getElementById('yt-url')?.value?.trim() || '';
+  data[instrKey()].pieceName = document.getElementById("piece-name")?.value?.trim() || "";
+  data[instrKey()].ytUrl = document.getElementById("yt-url")?.value?.trim() || "";
   savePracticeData(data);
   loadPracticeInfo();
 }
 
 function ytEmbedUrl(url) {
-  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}` : '';
+  const m = url.match(/(?:youtube.com/watch?v=|youtu.be/)([a-zA-Z0-9_-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}` : "";
 }
+
 
 function addPracticeLog() {
   const text = document.getElementById('practice-log-input')?.value?.trim();
@@ -3411,11 +3513,44 @@ function renderPracticeLog() {
     el.innerHTML = '<div style="text-align:center;padding:8px;color:var(--muted);font-size:12px;">還沒有記錄，開始練習吧！</div>';
     return;
   }
-  el.innerHTML = [...logs].reverse().slice(0, 8).map(log => `
-    <div class="log-entry">
-      <div class="log-date">${log.date} ${'⭐'.repeat(log.rating || 4)}</div>
-      <div class="log-note">${log.text}</div>
-    </div>`).join('');
+
+  // Group by YYYY-MM
+  const groups = {};
+  [...logs].reverse().forEach(log => {
+    const month = (log.date || '').slice(0, 7); // "2026-03"
+    if (!groups[month]) groups[month] = [];
+    groups[month].push(log);
+  });
+
+  const monthNames = { '01':'1月','02':'2月','03':'3月','04':'4月','05':'5月','06':'6月','07':'7月','08':'8月','09':'9月','10':'10月','11':'11月','12':'12月' };
+  const kidColor = currentKid === 1 ? 'var(--kid1)' : 'var(--kid2)';
+
+  el.innerHTML = Object.entries(groups).map(([ym, entries]) => {
+    const [year, mon] = ym.split('-');
+    const label = `${year}年 ${monthNames[mon] || mon}`;
+    const total = entries.length;
+    const avgRating = (entries.reduce((s, e) => s + (e.rating || 4), 0) / total).toFixed(1);
+
+    const rows = entries.map(log => {
+      const day = (log.date || '').slice(8, 10); // "09"
+      return `
+      <div class="log-entry">
+        <div class="log-date">${parseInt(day)}日 ${'⭐'.repeat(log.rating || 4)}</div>
+        <div class="log-note">${log.text}</div>
+      </div>`;
+    }).join('');
+
+    return `
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        padding:7px 12px;border-radius:10px;margin-bottom:6px;
+        background:${kidColor};color:white;">
+        <span style="font-size:13px;font-weight:900;">📅 ${label}</span>
+        <span style="font-size:11px;font-weight:700;opacity:0.9;">${total}次練習 · 均 ${avgRating}⭐</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
 }
 </script>
 </body>
