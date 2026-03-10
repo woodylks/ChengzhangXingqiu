@@ -245,6 +245,42 @@ body {
 .analysis-comment {
   font-size:13px; line-height:1.7; color:var(--text); white-space:pre-wrap;
 }
+/* ── REPERTOIRE ── */
+.rep-field { margin-bottom:16px; }
+.rep-label { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; letter-spacing:0.08em; margin-bottom:8px; }
+.rep-upload-box {
+  border:2px dashed var(--border); border-radius:12px; padding:24px;
+  text-align:center; cursor:pointer; transition:border-color 0.2s;
+  background:var(--card2); min-height:80px; display:flex; align-items:center; justify-content:center;
+}
+.rep-upload-box:hover { border-color:var(--trumpet); }
+.rep-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:14px; cursor:pointer; transition:all 0.2s; display:flex; gap:12px; align-items:center;
+}
+.rep-card:hover { border-color:var(--trumpet); }
+.rep-card-thumb { width:52px; height:52px; border-radius:8px; background:var(--card2); object-fit:cover; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:24px; }
+.rep-card-info { flex:1; min-width:0; }
+.rep-card-title { font-size:14px; font-weight:700; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rep-card-meta { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; }
+.note-chip {
+  display:flex; flex-direction:column; align-items:center;
+  background:var(--card2); border:1.5px solid var(--border); border-radius:10px;
+  padding:6px 8px; cursor:pointer; min-width:44px; transition:all 0.15s; position:relative;
+}
+.note-chip.active-chip { border-color:var(--trumpet); background:rgba(255,107,53,0.12); }
+.note-chip-name { font-size:12px; font-weight:700; font-family:'Space Mono',monospace; }
+.note-chip-dur { font-size:14px; line-height:1; margin-top:2px; }
+.dur-picker {
+  position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
+  background:var(--card); border:1px solid var(--border); border-radius:10px;
+  padding:8px; display:flex; gap:6px; z-index:20; box-shadow:0 8px 24px rgba(0,0,0,0.5);
+}
+.dur-opt {
+  padding:6px 10px; border-radius:8px; cursor:pointer; font-size:16px;
+  border:1.5px solid var(--border); background:var(--card2);
+}
+.dur-opt:hover, .dur-opt.selected { background:var(--trumpet); border-color:var(--trumpet); color:white; }
 .series-btn, .pattern-btn {
   padding: 7px 12px; border-radius: 10px; border: 1.5px solid var(--border);
   background: var(--card2); color: var(--muted); font-size: 12px; font-family: 'Space Mono', monospace;
@@ -287,6 +323,7 @@ body {
 <div class="top-nav">
   <button class="top-tab active-trumpet" id="tab-pitch" onclick="switchTab('pitch')">🎯 音準</button>
   <button class="top-tab" id="tab-exercise" onclick="switchTab('exercise')">💪 練習</button>
+  <button class="top-tab" id="tab-repertoire" onclick="switchTab('repertoire')">🎵 曲目</button>
 </div>
 
 <!-- Kid selector -->
@@ -472,6 +509,135 @@ body {
   </div>
 
 </div><!-- end exercise section -->
+
+<!-- ══════════════════════════════════════
+     REPERTOIRE SECTION
+══════════════════════════════════════ -->
+<div class="section" id="sec-repertoire">
+
+  <!-- List view -->
+  <div id="rep-list-view">
+    <div style="padding:16px 16px 8px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="font-size:13px; color:var(--muted); font-family:'Space Mono',monospace;">我的曲目庫</div>
+      <button class="btn-primary trumpet" style="padding:8px 16px;font-size:13px;" onclick="showRepAdd()">＋ 新增曲目</button>
+    </div>
+    <div id="rep-empty" style="text-align:center;padding:48px 24px;color:var(--muted);">
+      <div style="font-size:40px;margin-bottom:12px;">🎼</div>
+      <div style="font-size:14px;">還沒有曲目</div>
+      <div style="font-size:12px;margin-top:6px;">點擊「新增曲目」上傳曲譜開始練習</div>
+    </div>
+    <div id="rep-cards" style="padding:0 16px 16px; display:flex; flex-direction:column; gap:12px;"></div>
+  </div>
+
+  <!-- Add view -->
+  <div id="rep-add-view" style="display:none; padding:16px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button onclick="showRepList()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">←</button>
+      <div style="font-size:15px;font-weight:700;">新增曲目</div>
+    </div>
+
+    <!-- Song name -->
+    <div class="rep-field">
+      <div class="rep-label">曲目名稱</div>
+      <input class="form-input" id="rep-name-input" placeholder="例：小星星、長城謠..." />
+    </div>
+
+    <!-- Score upload -->
+    <div class="rep-field">
+      <div class="rep-label">上傳曲譜圖片</div>
+      <div class="rep-upload-box" id="rep-upload-box" onclick="document.getElementById('rep-img-input').click()">
+        <div id="rep-upload-hint">
+          <div style="font-size:28px;margin-bottom:8px;">📄</div>
+          <div style="font-size:13px;color:var(--muted);">點擊選擇圖片</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">支援 JPG / PNG</div>
+        </div>
+        <img id="rep-img-preview" style="display:none;width:100%;border-radius:8px;max-height:200px;object-fit:contain;" />
+      </div>
+      <input type="file" id="rep-img-input" accept="image/*" style="display:none" onchange="onScoreImageSelected(event)" />
+    </div>
+
+    <!-- YouTube -->
+    <div class="rep-field">
+      <div class="rep-label">YouTube 參考連結 <span style="color:var(--muted);font-size:11px;">（選填）</span></div>
+      <input class="form-input" id="rep-yt-input" placeholder="https://www.youtube.com/watch?v=..." />
+    </div>
+
+    <!-- AI Recognize button -->
+    <button class="btn-primary trumpet" id="rep-recognize-btn" onclick="recognizeScore()" style="margin-bottom:16px;" disabled>
+      🤖 AI 識別曲譜
+    </button>
+
+    <!-- Recognition result / editor -->
+    <div id="rep-editor" style="display:none;">
+      <div class="rep-label" style="margin-bottom:10px;">識別結果 <span style="color:var(--muted);font-size:11px;">— 點擊音符可修改時值</span></div>
+      <div id="rep-note-editor" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+
+      <!-- BPM for this piece -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div class="rep-label" style="margin-bottom:0;">練習速度</div>
+        <button class="metro-btn" onclick="changeRepBpm(-5)">−</button>
+        <span id="rep-bpm-display" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;min-width:40px;text-align:center;">80</span>
+        <span style="font-size:11px;color:var(--muted);">BPM</span>
+        <button class="metro-btn" onclick="changeRepBpm(+5)">＋</button>
+      </div>
+
+      <!-- Preview pitch chart -->
+      <div class="rep-label" style="margin-bottom:8px;">音高預覽圖</div>
+      <canvas id="rep-preview-canvas" style="width:100%;height:120px;background:#0d0d14;border-radius:10px;display:block;margin-bottom:16px;"></canvas>
+
+      <button class="btn-primary trumpet" onclick="saveRepertoire()">💾 保存曲目</button>
+    </div>
+
+    <div id="rep-loading" style="display:none;text-align:center;padding:24px;">
+      <div class="analysis-spinner" style="margin:0 auto 10px;"></div>
+      <div style="font-size:13px;color:var(--muted);">AI 正在識別曲譜...</div>
+    </div>
+  </div>
+
+  <!-- Practice view -->
+  <div id="rep-practice-view" style="display:none; padding:16px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button onclick="showRepList()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">←</button>
+      <div style="font-size:15px;font-weight:700;" id="rep-practice-title">練習</div>
+    </div>
+
+    <!-- YouTube embed -->
+    <div id="rep-yt-wrap" style="display:none;margin-bottom:14px;">
+      <div class="rep-label" style="margin-bottom:8px;">參考影片</div>
+      <div style="position:relative;padding-bottom:56.25%;border-radius:10px;overflow:hidden;background:#000;">
+        <iframe id="rep-yt-iframe" style="position:absolute;top:0;left:0;width:100%;height:100%;"
+          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      </div>
+    </div>
+
+    <!-- Pitch chart -->
+    <div class="pitch-chart-wrap">
+      <div class="pitch-chart-label">實時音高圖 <span id="rep-chart-status" style="color:var(--green);"></span></div>
+      <canvas id="rep-canvas" class="pitch-canvas"></canvas>
+    </div>
+
+    <!-- Note progress -->
+    <div class="pattern-wrap" style="margin-bottom:14px;">
+      <div class="pattern-title">音符進度</div>
+      <div id="rep-note-progress" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <button class="btn-primary trumpet" id="rep-practice-btn" onclick="toggleRepPractice()" style="flex:1;">▶ 開始練習</button>
+      <button id="rep-rec-btn" onclick="toggleRepRecording()"
+        style="flex:1;padding:14px;border-radius:14px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:var(--purple);color:white;box-shadow:0 6px 24px rgba(167,139,250,0.35);">
+        🔴 錄音分析
+      </button>
+    </div>
+
+    <div id="rep-analysis-box" class="analysis-box" style="display:none;margin-bottom:10px;"></div>
+
+    <button class="btn-secondary" onclick="showRepList()">← 返回曲目庫</button>
+  </div>
+
+</div><!-- end repertoire section -->
 
 <script>
 // ══════════════════════════════════════════
@@ -1623,6 +1789,363 @@ function showAnalysisError(panel, msg) {
   box.innerHTML = `<div style="color:var(--red);font-size:13px;">❌ ${msg}</div>`;
 }
 
-</script>
+// ══════════════════════════════════════════
+//  REPERTOIRE
+// ══════════════════════════════════════════
+const DUR_SYMBOLS = { '1':'𝅝', '2':'𝅗𝅥', '4':'♩', '8':'♪', '16':'𝅘𝅥𝅯' };
+const DUR_BEATS   = { '1':4, '2':2, '4':1, '8':0.5, '16':0.25 };
+
+let repList = JSON.parse(localStorage.getItem('rep_list')||'[]');
+let repBpm = 80;
+let repNotes = [];
+let repScoreImageB64 = null;
+let activeRepId = null;
+let repPracticeRunning = false;
+let repMetroRef = null;
+
+function showRepList() {
+  document.getElementById('rep-list-view').style.display='block';
+  document.getElementById('rep-add-view').style.display='none';
+  document.getElementById('rep-practice-view').style.display='none';
+  stopRepPractice();
+  stopPitchChart('rep');
+  renderRepCards();
+}
+function showRepAdd() {
+  document.getElementById('rep-list-view').style.display='none';
+  document.getElementById('rep-add-view').style.display='block';
+  document.getElementById('rep-practice-view').style.display='none';
+  document.getElementById('rep-name-input').value='';
+  document.getElementById('rep-yt-input').value='';
+  document.getElementById('rep-img-preview').style.display='none';
+  document.getElementById('rep-upload-hint').style.display='block';
+  document.getElementById('rep-editor').style.display='none';
+  document.getElementById('rep-loading').style.display='none';
+  document.getElementById('rep-recognize-btn').disabled=true;
+  document.getElementById('rep-bpm-display').textContent=repBpm;
+  repNotes=[]; repScoreImageB64=null;
+}
+function showRepPractice(id) {
+  const item=repList.find(r=>r.id===id);
+  if(!item) return;
+  activeRepId=id;
+  document.getElementById('rep-list-view').style.display='none';
+  document.getElementById('rep-add-view').style.display='none';
+  document.getElementById('rep-practice-view').style.display='block';
+  document.getElementById('rep-practice-title').textContent=item.name;
+  const ytWrap=document.getElementById('rep-yt-wrap');
+  if(item.ytId){
+    document.getElementById('rep-yt-iframe').src=`https://www.youtube.com/embed/${item.ytId}`;
+    ytWrap.style.display='block';
+  } else { ytWrap.style.display='none'; }
+  renderRepProgress(item.notes,-1);
+  document.getElementById('rep-practice-btn').textContent='▶ 開始練習';
+  document.getElementById('rep-practice-btn').className='btn-primary trumpet';
+  document.getElementById('rep-analysis-box').style.display='none';
+}
+
+function renderRepCards() {
+  const container=document.getElementById('rep-cards');
+  const empty=document.getElementById('rep-empty');
+  if(repList.length===0){empty.style.display='block';container.innerHTML='';return;}
+  empty.style.display='none';
+  container.innerHTML=repList.map(r=>`
+    <div class="rep-card" onclick="showRepPractice('${r.id}')">
+      <div class="rep-card-thumb">
+        ${r.thumbUrl?`<img src="${r.thumbUrl}" style="width:100%;height:100%;border-radius:8px;object-fit:cover;">`:'🎼'}
+      </div>
+      <div class="rep-card-info">
+        <div class="rep-card-title">${r.name}</div>
+        <div class="rep-card-meta">${r.notes.length} 個音符 · ${r.bpm} BPM${r.ytId?' · ▶ YT':''}</div>
+        <div class="rep-card-meta" style="margin-top:3px;">${r.savedAt||''} · ${r.kid==='trumpet'?'🎺':'🪈'}</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteRep('${r.id}')"
+        style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;">🗑</button>
+    </div>`).join('');
+}
+
+function deleteRep(id) {
+  if(!confirm('確認刪除這個曲目？')) return;
+  repList=repList.filter(r=>r.id!==id);
+  localStorage.setItem('rep_list',JSON.stringify(repList));
+  renderRepCards();
+}
+
+function onScoreImageSelected(e) {
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    repScoreImageB64=ev.target.result.split(',')[1];
+    const img=document.getElementById('rep-img-preview');
+    img.src=ev.target.result; img.style.display='block';
+    document.getElementById('rep-upload-hint').style.display='none';
+    document.getElementById('rep-recognize-btn').disabled=false;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function recognizeScore() {
+  if(!repScoreImageB64) return;
+  document.getElementById('rep-loading').style.display='block';
+  document.getElementById('rep-editor').style.display='none';
+  document.getElementById('rep-recognize-btn').disabled=true;
+  const instrument=currentKid==='trumpet'?'Bb小號（記譜音）':'長笛（Concert Pitch）';
+  const prompt=`你是樂譜識別AI。分析這張樂譜圖片，提取旋律音符。樂器：${instrument}。
+只返回JSON，不要任何其他文字：
+{"title":"曲目名稱或空字串","notes":[{"note":"C4","dur":"4"},{"note":"G4","dur":"8"}]}
+音符格式：音名+八度，如 C4 D#4 Bb3 G5。時值：全音符=1 二分=2 四分=4 八分=8 十六分=16。不確定時值填4。只識別旋律聲部。`;
+  try {
+    const resp=await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer sk-a5a9b48f7bb34817a3811920aad62e12'},
+      body:JSON.stringify({model:'qwen-vl-max',max_tokens:2000,messages:[{role:'user',content:[
+        {type:'image_url',image_url:{url:`data:image/jpeg;base64,${repScoreImageB64}`}},
+        {type:'text',text:prompt}
+      ]}]})
+    });
+    const data=await resp.json();
+    let raw=data.choices?.[0]?.message?.content||'';
+    raw=raw.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(raw);
+    if(parsed.title&&!document.getElementById('rep-name-input').value)
+      document.getElementById('rep-name-input').value=parsed.title;
+    repNotes=(parsed.notes||[]).map(n=>({full:n.note,dur:n.dur||'4'}));
+    renderNoteEditor();
+    drawRepPreview();
+    document.getElementById('rep-editor').style.display='block';
+  } catch(e){ alert('識別失敗，請重試。'); }
+  finally{
+    document.getElementById('rep-loading').style.display='none';
+    document.getElementById('rep-recognize-btn').disabled=false;
+  }
+}
+
+let activeChipIdx=null;
+function renderNoteEditor() {
+  const container=document.getElementById('rep-note-editor');
+  container.innerHTML=repNotes.map((n,i)=>`
+    <div class="note-chip ${activeChipIdx===i?'active-chip':''}" id="chip-${i}" onclick="toggleDurPicker(${i})">
+      <div class="note-chip-name">${n.full}</div>
+      <div class="note-chip-dur">${DUR_SYMBOLS[n.dur]||'♩'}</div>
+      ${activeChipIdx===i?`<div class="dur-picker" onclick="event.stopPropagation()">
+        ${Object.entries(DUR_SYMBOLS).map(([k,v])=>`
+          <div class="dur-opt ${n.dur===k?'selected':''}" onclick="setNoteDur(${i},'${k}')" title="${{1:'全音符',2:'二分',4:'四分',8:'八分',16:'十六分'}[k]}">${v}</div>
+        `).join('')}</div>`:''}
+    </div>`).join('');
+}
+function toggleDurPicker(i){ activeChipIdx=activeChipIdx===i?null:i; renderNoteEditor(); }
+function setNoteDur(i,dur){ repNotes[i].dur=dur; activeChipIdx=null; renderNoteEditor(); drawRepPreview(); }
+document.addEventListener('click',()=>{ if(activeChipIdx!==null){activeChipIdx=null;renderNoteEditor();} });
+
+function changeRepBpm(d){
+  repBpm=Math.max(40,Math.min(200,repBpm+d));
+  document.getElementById('rep-bpm-display').textContent=repBpm;
+}
+
+function drawRepPreview() {
+  const canvas=document.getElementById('rep-preview-canvas');
+  if(!canvas||repNotes.length===0) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.offsetWidth||340,H=120;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx2d=canvas.getContext('2d'); ctx2d.scale(dpr,dpr);
+  ctx2d.fillStyle='#0d0d14'; ctx2d.fillRect(0,0,W,H);
+  const inst=INSTRUMENTS[currentKid];
+  const freqs=repNotes.map(n=>inst.notes.find(x=>x.name===n.full)?.cf).filter(Boolean);
+  if(!freqs.length) return;
+  const fMin=Math.min(...freqs)*Math.pow(2,-2/12), fMax=Math.max(...freqs)*Math.pow(2,2/12);
+  const toY=f=>H-8-((Math.log2(f)-Math.log2(fMin))/(Math.log2(fMax)-Math.log2(fMin)))*(H-16);
+  const total=repNotes.reduce((s,n)=>s+(DUR_BEATS[n.dur]||1),0);
+  let x=0;
+  repNotes.forEach(n=>{
+    const obj=inst.notes.find(o=>o.name===n.full);
+    const w=((DUR_BEATS[n.dur]||1)/total)*W;
+    if(obj){
+      const y=toY(obj.cf);
+      const yU=toY(obj.cf*Math.pow(2,25/1200)),yD=toY(obj.cf*Math.pow(2,-25/1200));
+      ctx2d.fillStyle='rgba(255,107,53,0.07)'; ctx2d.fillRect(x,yU,w,yD-yU);
+      ctx2d.strokeStyle='rgba(255,107,53,0.7)'; ctx2d.lineWidth=2; ctx2d.setLineDash([4,3]);
+      ctx2d.beginPath(); ctx2d.moveTo(x+2,y); ctx2d.lineTo(x+w-2,y); ctx2d.stroke();
+      ctx2d.setLineDash([]);
+      ctx2d.fillStyle='rgba(255,107,53,0.85)'; ctx2d.font='bold 9px monospace'; ctx2d.textAlign='center';
+      ctx2d.fillText(n.full,x+w/2,y-3);
+    }
+    x+=w;
+  });
+}
+
+function saveRepertoire() {
+  const name=document.getElementById('rep-name-input').value.trim();
+  if(!name){alert('請輸入曲目名稱');return;}
+  if(!repNotes.length){alert('請先識別曲譜');return;}
+  const ytRaw=document.getElementById('rep-yt-input').value.trim();
+  const ytId=extractYtId(ytRaw);
+  const id='rep_'+Date.now();
+  const item={id,name,notes:repNotes,bpm:repBpm,ytId,
+    thumbUrl:repScoreImageB64?`data:image/jpeg;base64,${repScoreImageB64.slice(0,500)}`:null,
+    savedAt:new Date().toLocaleDateString('zh-HK'),kid:currentKid,practiceLog:[]};
+  repList.unshift(item);
+  localStorage.setItem('rep_list',JSON.stringify(repList));
+  showRepList();
+}
+
+function extractYtId(url){
+  if(!url) return null;
+  const m=url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m?m[1]:null;
+}
+
+function renderRepProgress(notes,currentIdx){
+  const el=document.getElementById('rep-note-progress'); if(!el) return;
+  el.innerHTML=notes.map((n,i)=>`
+    <div class="p-note ${i===currentIdx?`current-${currentKid}`:i<currentIdx?'done':''}"
+      style="min-width:36px;text-align:center;">
+      ${n.full}<br><span style="font-size:9px;color:var(--muted)">${DUR_SYMBOLS[n.dur]||'♩'}</span>
+    </div>`).join('');
+}
+
+let repMetroBeat=0,repMetroStep=0;
+function toggleRepPractice(){ repPracticeRunning?stopRepPractice():startRepPractice(); }
+function startRepPractice(){
+  const item=repList.find(r=>r.id===activeRepId); if(!item) return;
+  repPracticeRunning=true; repMetroBeat=0; repMetroStep=0;
+  document.getElementById('rep-practice-btn').textContent='⏹ 停止';
+  document.getElementById('rep-practice-btn').className='btn-primary stop';
+  startRepPitchChart(item);
+  const beatMs=60000/(item.bpm||80);
+  function tick(){
+    if(!repPracticeRunning) return;
+    const notes=item.notes; if(!notes.length) return;
+    renderRepProgress(notes,repMetroStep%notes.length);
+    const dur=DUR_BEATS[notes[repMetroStep%notes.length].dur]||1;
+    repMetroRef=setTimeout(()=>{repMetroStep++;tick();},beatMs*dur);
+  }
+  tick();
+}
+function stopRepPractice(){
+  repPracticeRunning=false;
+  if(repMetroRef) clearTimeout(repMetroRef);
+  stopPitchChart('rep');
+  const btn=document.getElementById('rep-practice-btn');
+  if(btn){btn.textContent='▶ 開始練習';btn.className='btn-primary trumpet';}
+}
+
+function startRepPitchChart(item){
+  stopPitchChart('rep');
+  const canvasEl=document.getElementById('rep-canvas'); if(!canvasEl) return;
+  const dpr=window.devicePixelRatio||1;
+  const cw=canvasEl.offsetWidth||340,ch=160;
+  canvasEl.width=cw*dpr; canvasEl.height=ch*dpr;
+  const ctx2d=canvasEl.getContext('2d'); ctx2d.scale(dpr,dpr);
+  const CW=cw,CH=ch;
+  const inst=INSTRUMENTS[currentKid];
+  const freqs=item.notes.map(n=>inst.notes.find(x=>x.name===n.full)?.cf).filter(Boolean);
+  if(!freqs.length) return;
+  const fMin=Math.min(...freqs)*Math.pow(2,-3/12),fMax=Math.max(...freqs)*Math.pow(2,4/12);
+  const toY=f=>CH-8-((Math.log2(f)-Math.log2(fMin))/(Math.log2(fMax)-Math.log2(fMin)))*(CH-16);
+  const total=item.notes.reduce((s,n)=>s+(DUR_BEATS[n.dur]||1),0);
+  const totalMs=(60000/(item.bpm||80))*total;
+  const history=[];
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})
+    .then(stream=>{
+      const actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
+      const analyser=actx.createAnalyser(); analyser.fftSize=8192; analyser.smoothingTimeConstant=0.85;
+      actx.createMediaStreamSource(stream).connect(analyser);
+      const buf=new Float32Array(analyser.fftSize);
+      pitchChartState['rep']={actx,stream,rafId:null};
+      let startT=null;
+      function frame(){
+        const now=Date.now(); if(!startT) startT=now;
+        const elapsed=now-startT;
+        analyser.getFloatTimeDomainData(buf);
+        let rms=0; for(let i=0;i<buf.length;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/buf.length);
+        if(rms>0.012){
+          const freq=autoCorrelate(buf,actx.sampleRate);
+          if(freq>60&&freq<2500){const r=findClosest(freq);if(r) history.push({t:elapsed,freq,cents:r.cents});}
+        }
+        while(history.length&&history[0].t<elapsed-totalMs*1.5) history.shift();
+        ctx2d.fillStyle='#0d0d14'; ctx2d.fillRect(0,0,CW,CH);
+        // Target lanes
+        let xc=0;
+        item.notes.forEach((n,ni)=>{
+          const obj=inst.notes.find(o=>o.name===n.full);
+          const w=((DUR_BEATS[n.dur]||1)/total)*CW;
+          if(obj){
+            const y=toY(obj.cf),yU=toY(obj.cf*Math.pow(2,25/1200)),yD=toY(obj.cf*Math.pow(2,-25/1200));
+            const isCur=ni===repMetroStep%item.notes.length;
+            ctx2d.fillStyle=isCur?'rgba(255,107,53,0.15)':'rgba(255,107,53,0.05)'; ctx2d.fillRect(xc,yU,w,yD-yU);
+            ctx2d.strokeStyle=isCur?'rgba(255,107,53,0.9)':'rgba(255,107,53,0.3)';
+            ctx2d.lineWidth=isCur?2.5:1.5; ctx2d.setLineDash([5,3]);
+            ctx2d.beginPath(); ctx2d.moveTo(xc+2,y); ctx2d.lineTo(xc+w-2,y); ctx2d.stroke(); ctx2d.setLineDash([]);
+            ctx2d.fillStyle=isCur?'rgba(255,107,53,1)':'rgba(255,107,53,0.4)';
+            ctx2d.font=`bold ${isCur?10:8}px monospace`; ctx2d.textAlign='center';
+            ctx2d.fillText(n.full,xc+w/2,y-4);
+          }
+          xc+=w;
+        });
+        // Pitch history
+        if(history.length>1){
+          for(let i=1;i<history.length;i++){
+            const p=history[i],pp=history[i-1];
+            const x1=(pp.t/totalMs)*CW,x2=(p.t/totalMs)*CW;
+            const abs=Math.abs(p.cents);
+            const col=abs<=10?'#00ff88':abs<=25?'#ffcc00':'#ff4466';
+            ctx2d.strokeStyle=col; ctx2d.lineWidth=2.5; ctx2d.shadowColor=col; ctx2d.shadowBlur=4;
+            ctx2d.beginPath(); ctx2d.moveTo(x1,toY(pp.freq)); ctx2d.lineTo(x2,toY(p.freq)); ctx2d.stroke();
+          }
+          ctx2d.shadowBlur=0;
+        }
+        pitchChartState['rep'].rafId=requestAnimationFrame(frame);
+      }
+      frame();
+    }).catch(()=>{});
+}
+
+async function toggleRepRecording(){
+  if(recState['rep']?.recording){
+    await stopRecording('rep');
+    setTimeout(()=>offerSaveToFirebase(),800);
+  } else {
+    await startRecording('rep');
+  }
+}
+
+async function offerSaveToFirebase(){
+  const box=document.getElementById('rep-analysis-box');
+  if(!box||box.style.display==='none') return;
+  if(document.getElementById('rep-save-btn')) return;
+  const btn=document.createElement('button');
+  btn.id='rep-save-btn'; btn.className='btn-primary trumpet';
+  btn.style.marginTop='12px'; btn.textContent='☁️ 保存練習記錄';
+  btn.onclick=saveRepPracticeLog;
+  box.appendChild(btn);
+}
+
+async function saveRepPracticeLog(){
+  const item=repList.find(r=>r.id===activeRepId); if(!item){alert('找不到曲目');return;}
+  const box=document.getElementById('rep-analysis-box');
+  const comment=box?.querySelector('.analysis-comment')?.textContent||'';
+  const chips=[...box?.querySelectorAll('.score-chip')||[]];
+  const scores={};
+  chips.forEach(c=>{const t=c.textContent;if(t.includes('音準'))scores.pitch=t;if(t.includes('節奏'))scores.rhythm=t;if(t.includes('時長'))scores.duration=t;});
+  const log={date:new Date().toLocaleDateString('zh-HK'),comment,scores,kid:currentKid};
+  item.practiceLog=(item.practiceLog||[]).concat(log);
+  repList=repList.map(r=>r.id===activeRepId?item:r);
+  localStorage.setItem('rep_list',JSON.stringify(repList));
+  // Firebase (optional)
+  try {
+    if(window.db){
+      const {doc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+      await setDoc(doc(window.db,`repLog_${currentKid}`,Date.now().toString()),
+        {repId:activeRepId,repName:item.name,...log});
+    }
+  } catch(e){}
+  const btn=document.getElementById('rep-save-btn');
+  if(btn){btn.textContent='✅ 已保存本地';btn.disabled=true;}
+}
+
+// ── Global init ──
+selectKid('trumpet');
+showRepList();</script>
 </body>
 </html>
