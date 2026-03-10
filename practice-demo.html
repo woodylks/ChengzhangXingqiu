@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>陪練助手</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --card: #12121a;
+  --card2: #16161f;
+  --border: #1e1e2e;
+  --text: #e8e8f0;
+  --muted: #5a5a7a;
+  --trumpet: #FF6B35;
+  --flute: #4FACDE;
+  --green: #00ff88;
+  --yellow: #ffcc00;
+  --red: #ff4466;
+  --purple: #a78bfa;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  font-family:'Noto Sans TC',sans-serif;
+  background:var(--bg); color:var(--text);
+  min-height:100vh; padding-bottom:80px;
+}
+
+/* ── TOP NAV ── */
+.top-nav {
+  display:flex; gap:0; border-bottom:1px solid var(--border);
+  background:var(--card); position:sticky; top:0; z-index:10;
+}
+.top-tab {
+  flex:1; padding:14px 8px; border:none; background:none;
+  font-family:'Noto Sans TC',sans-serif; font-size:12px; font-weight:700;
+  color:var(--muted); cursor:pointer; transition:all 0.2s;
+  border-bottom:2px solid transparent;
+}
+.top-tab.active-trumpet { color:var(--trumpet); border-bottom-color:var(--trumpet); }
+.top-tab.active-flute   { color:var(--flute);   border-bottom-color:var(--flute); }
+
+/* ── KID SELECTOR ── */
+.kid-bar {
+  display:flex; gap:10px; padding:14px 16px;
+  border-bottom:1px solid var(--border);
+}
+.kid-tab {
+  flex:1; padding:10px; border-radius:12px; border:2px solid var(--border);
+  background:var(--card); color:var(--muted);
+  font-family:'Noto Sans TC',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.2s;
+}
+.kid-tab.active-trumpet { border-color:var(--trumpet); color:var(--trumpet); background:rgba(255,107,53,0.08); }
+.kid-tab.active-flute   { border-color:var(--flute);   color:var(--flute);   background:rgba(79,172,222,0.08); }
+
+/* ── SECTIONS ── */
+.section { display:none; padding:16px; }
+.section.active { display:block; }
+
+/* ── PITCH DETECTOR ── */
+.note-display {
+  width:180px; height:180px; border-radius:50%;
+  border:3px solid var(--border); display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  margin:0 auto 16px; transition:border-color 0.2s,box-shadow 0.2s; background:var(--card);
+}
+.note-display.perfect { border-color:var(--green); box-shadow:0 0 40px rgba(0,255,136,0.3); }
+.note-display.close   { border-color:var(--yellow); box-shadow:0 0 30px rgba(255,204,0,0.2); }
+.note-display.off     { border-color:var(--red);    box-shadow:0 0 20px rgba(255,68,102,0.15); }
+.note-name    { font-family:'Space Mono',monospace; font-size:52px; font-weight:700; line-height:1; transition:color 0.2s; }
+.note-solfege { font-family:'Noto Sans TC',sans-serif; font-size:16px; font-weight:700; color:var(--muted); margin-top:3px; }
+.note-freq    { font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); margin-top:4px; }
+.note-idle    { color:var(--muted); }
+.note-perfect { color:var(--green); }
+.note-close   { color:var(--yellow); }
+.note-off     { color:var(--red); }
+
+/* Fingering */
+.fingering-wrap { display:flex; gap:10px; justify-content:center; margin-bottom:14px; min-height:58px; align-items:center; }
+.valve { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.valve-num { font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); }
+.valve-circle {
+  width:38px; height:38px; border-radius:50%; border:2px solid var(--border);
+  background:var(--card); display:flex; align-items:center; justify-content:center;
+  font-family:'Space Mono',monospace; font-size:14px; font-weight:700; color:var(--muted); transition:all 0.15s;
+}
+.valve-circle.pressed { background:var(--trumpet); border-color:var(--trumpet); color:white; box-shadow:0 0 12px rgba(255,107,53,0.5); }
+.valve-circle.open    { background:rgba(0,255,136,0.1); border-color:var(--green); color:var(--green); }
+.fingering-label { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); text-align:center; margin-bottom:6px; letter-spacing:0.05em; }
+
+/* Bars */
+.bar-wrap { margin-bottom:12px; }
+.bar-label { font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; font-family:'Space Mono',monospace; margin-bottom:5px; }
+.bar-outer { height:8px; border-radius:4px; background:var(--border); position:relative; overflow:hidden; }
+.bar-center { position:absolute; left:50%; top:0; width:2px; height:100%; background:var(--muted); transform:translateX(-50%); }
+.bar-fill   { position:absolute; top:0; height:100%; border-radius:4px; transition:left 0.08s,width 0.08s,background 0.2s; }
+.bar-cents  { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); text-align:center; margin-top:4px; }
+.vol-fill   { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--green),var(--yellow),var(--red)); width:0%; transition:width 0.05s; }
+
+/* Feedback */
+.feedback-box {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px; min-height:52px;
+}
+.feedback-icon { font-size:20px; }
+.feedback-text { font-size:14px; font-weight:700; }
+.feedback-sub  { font-size:11px; color:var(--muted); margin-top:2px; }
+
+/* Note grid */
+.note-grid-title { font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; font-family:'Space Mono',monospace; margin-bottom:8px; }
+.note-grid { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:16px; }
+.note-chip {
+  padding:4px 9px; border-radius:7px; border:1px solid var(--border);
+  font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); background:var(--card); transition:all 0.15s;
+}
+.note-chip.active-trumpet { border-color:var(--trumpet); color:var(--trumpet); background:rgba(255,107,53,0.12); }
+.note-chip.active-flute   { border-color:var(--flute);   color:var(--flute);   background:rgba(79,172,222,0.12); }
+
+/* ── EXERCISE SECTION ── */
+.ex-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.ex-card {
+  background:var(--card); border:1.5px solid var(--border); border-radius:14px;
+  padding:14px 12px; cursor:pointer; transition:all 0.2s; text-align:center;
+}
+.ex-card:active { transform:scale(0.97); }
+.ex-card.selected-trumpet { border-color:var(--trumpet); background:rgba(255,107,53,0.08); }
+.ex-card.selected-flute   { border-color:var(--flute);   background:rgba(79,172,222,0.08); }
+.ex-card.selected-trumpet .ex-icon { color:var(--trumpet); }
+.ex-card.selected-flute   .ex-icon { color:var(--flute); }
+.ex-icon  { font-size:26px; margin-bottom:6px; color:var(--muted); }
+.ex-title { font-size:13px; font-weight:900; margin-bottom:3px; }
+.ex-desc  { font-size:11px; color:var(--muted); line-height:1.4; }
+
+/* Exercise panel */
+.ex-panel {
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  padding:16px; margin-bottom:16px; display:none;
+}
+.ex-panel.active { display:block; }
+.ex-panel-title { font-size:15px; font-weight:900; margin-bottom:4px; }
+.ex-panel-sub   { font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.5; }
+
+/* Metronome */
+.metro-wrap { margin-bottom:16px; }
+.metro-display {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--card2); border-radius:12px; padding:12px 14px; margin-bottom:10px;
+}
+.metro-bpm { font-family:'Space Mono',monospace; font-size:28px; font-weight:700; }
+.metro-unit { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); }
+.metro-btn-wrap { display:flex; gap:8px; }
+.metro-btn {
+  width:36px; height:36px; border-radius:10px; border:1.5px solid var(--border);
+  background:var(--card); color:var(--text); font-size:18px; cursor:pointer; transition:all 0.15s;
+}
+.metro-btn:active { transform:scale(0.92); }
+.metro-slider { width:100%; accent-color:var(--trumpet); margin-bottom:8px; }
+.metro-slider.flute { accent-color:var(--flute); }
+
+/* Beat dots */
+.beat-dots { display:flex; gap:8px; justify-content:center; margin-bottom:14px; flex-wrap:wrap; }
+.beat-dot {
+  width:16px; height:16px; border-radius:50%; border:2px solid var(--border);
+  background:var(--card); transition:all 0.08s;
+}
+.beat-dot.active-trumpet { background:var(--trumpet); border-color:var(--trumpet); box-shadow:0 0 8px rgba(255,107,53,0.6); transform:scale(1.2); }
+.beat-dot.active-flute   { background:var(--flute);   border-color:var(--flute);   box-shadow:0 0 8px rgba(79,172,222,0.6); transform:scale(1.2); }
+.beat-dot.accent { border-color:var(--yellow); }
+
+/* Exercise pattern display */
+.pattern-wrap { background:var(--card2); border-radius:12px; padding:14px; margin-bottom:14px; }
+.pattern-title { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; margin-bottom:10px; letter-spacing:0.08em; }
+.pattern-notes { display:flex; flex-wrap:wrap; gap:6px; }
+.p-note {
+  padding:6px 10px; border-radius:8px; border:1px solid var(--border);
+  font-family:'Space Mono',monospace; font-size:13px; font-weight:700; background:var(--card);
+  color:var(--muted); transition:all 0.1s; min-width:40px; text-align:center;
+}
+.p-note.current-trumpet { background:var(--trumpet); border-color:var(--trumpet); color:white; transform:scale(1.1); box-shadow:0 0 10px rgba(255,107,53,0.4); }
+.p-note.current-flute   { background:var(--flute);   border-color:var(--flute);   color:white; transform:scale(1.1); box-shadow:0 0 10px rgba(79,172,222,0.4); }
+.p-note.done { opacity:0.4; }
+
+/* Tonguing pattern */
+.tongue-pattern { display:flex; flex-wrap:wrap; gap:6px; }
+.t-syllable {
+  padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+  font-family:'Space Mono',monospace; font-size:15px; font-weight:700;
+  background:var(--card); color:var(--muted); transition:all 0.1s;
+}
+.t-syllable.current-trumpet { background:var(--trumpet); color:white; transform:scale(1.12); box-shadow:0 0 10px rgba(255,107,53,0.4); }
+.t-syllable.current-flute   { background:var(--flute);   color:white; transform:scale(1.12); box-shadow:0 0 10px rgba(79,172,222,0.4); }
+
+/* Breath control bar */
+.breath-bar-outer { height:20px; border-radius:10px; background:var(--border); overflow:hidden; margin-bottom:8px; position:relative; }
+.breath-bar-fill  { height:100%; border-radius:10px; width:0%; transition:width 0.1s linear; }
+.breath-bar-fill.inhale  { background:linear-gradient(90deg,#4FACDE,#a78bfa); }
+.breath-bar-fill.hold    { background:var(--yellow); }
+.breath-bar-fill.exhale  { background:linear-gradient(90deg,var(--green),#4FACDE); }
+.breath-instruction { font-size:18px; font-weight:900; text-align:center; margin-bottom:6px; }
+.breath-count { font-family:'Space Mono',monospace; font-size:32px; font-weight:700; text-align:center; color:var(--muted); }
+
+/* Buttons */
+.btn-primary {
+  width:100%; padding:15px; border-radius:14px; border:none;
+  font-family:'Noto Sans TC',sans-serif; font-size:15px; font-weight:900; cursor:pointer; transition:all 0.2s; margin-bottom:10px;
+}
+.btn-primary.trumpet  { background:var(--trumpet); color:white; box-shadow:0 6px 24px rgba(255,107,53,0.35); }
+.btn-primary.flute    { background:var(--flute);   color:white; box-shadow:0 6px 24px rgba(79,172,222,0.35); }
+.btn-primary.stop     { background:var(--red);     color:white; box-shadow:0 6px 24px rgba(255,68,102,0.35); }
+.btn-primary:active   { transform:scale(0.97); }
+.btn-secondary {
+  width:100%; padding:12px; border-radius:12px; border:1.5px solid var(--border);
+  background:var(--card); color:var(--muted);
+  font-family:'Noto Sans TC',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.2s;
+}
+.btn-secondary:active { transform:scale(0.97); }
+
+.divider { height:1px; background:var(--border); margin:14px 0; }
+
+@keyframes pulse { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.04);opacity:0.85;} }
+.listening-pulse { animation:pulse 1.2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<!-- Top nav -->
+<div class="top-nav">
+  <button class="top-tab active-trumpet" id="tab-pitch" onclick="switchTab('pitch')">🎯 音準</button>
+  <button class="top-tab" id="tab-exercise" onclick="switchTab('exercise')">💪 練習</button>
+</div>
+
+<!-- Kid selector -->
+<div class="kid-bar">
+  <button class="kid-tab active-trumpet" id="kid-trumpet" onclick="selectKid('trumpet')">🦁 添樂<br><small style="font-weight:400;font-size:11px">Bb小號</small></button>
+  <button class="kid-tab" id="kid-flute" onclick="selectKid('flute')">🐰 悅琳<br><small style="font-weight:400;font-size:11px">長笛</small></button>
+</div>
+
+<!-- ══ PITCH SECTION ══ -->
+<div class="section active" id="sec-pitch">
+
+  <div class="note-display" id="note-display">
+    <div class="note-name note-idle" id="note-name">–</div>
+    <div class="note-solfege" id="note-solfege"></div>
+    <div class="note-freq" id="note-freq">等待聲音...</div>
+  </div>
+
+  <!-- Fingering (trumpet only) -->
+  <div id="fingering-section">
+    <div class="fingering-label" id="fingering-label">按鍵</div>
+    <div class="fingering-wrap">
+      <div class="valve"><div class="valve-num">1</div><div class="valve-circle" id="v1">1</div></div>
+      <div class="valve"><div class="valve-num">2</div><div class="valve-circle" id="v2">2</div></div>
+      <div class="valve"><div class="valve-num">3</div><div class="valve-circle" id="v3">3</div></div>
+    </div>
+  </div>
+
+  <div class="bar-wrap">
+    <div class="bar-label">音準偏差</div>
+    <div class="bar-outer">
+      <div class="bar-center"></div>
+      <div class="bar-fill" id="tuning-fill" style="left:50%;width:0%"></div>
+    </div>
+    <div class="bar-cents" id="tuning-cents">–</div>
+  </div>
+
+  <div class="bar-wrap">
+    <div class="bar-label">音量</div>
+    <div class="bar-outer"><div class="vol-fill" id="vol-fill"></div></div>
+  </div>
+
+  <div class="feedback-box">
+    <div class="feedback-icon" id="p-icon">🎸</div>
+    <div>
+      <div class="feedback-text" id="p-text">按下按鈕開始聆聽</div>
+      <div class="feedback-sub" id="p-sub">靠近麥克風吹奏</div>
+    </div>
+  </div>
+
+  <div class="note-grid-title" id="note-grid-title">Bb小號音域（記譜音）</div>
+  <div class="note-grid" id="note-grid"></div>
+
+  <button class="btn-primary trumpet" id="pitch-btn" onclick="togglePitch()">🎙️ 開始聆聽</button>
+</div>
+
+<!-- ══ EXERCISE SECTION ══ -->
+<div class="section" id="sec-exercise">
+
+  <!-- Exercise cards -->
+  <div class="ex-grid" id="ex-grid"></div>
+
+  <!-- ① Lip Flexibility / Long Tone Panel -->
+  <div class="ex-panel" id="panel-lip">
+    <div class="ex-panel-title" id="lip-title">💋 Lip Flexibility</div>
+    <div class="ex-panel-sub" id="lip-desc"></div>
+
+    <!-- Metronome -->
+    <div class="metro-wrap">
+      <div class="metro-display">
+        <div>
+          <div class="metro-bpm" id="lip-bpm">60</div>
+          <div class="metro-unit">BPM</div>
+        </div>
+        <div class="metro-btn-wrap">
+          <button class="metro-btn" onclick="changeBpm('lip',-5)">−</button>
+          <button class="metro-btn" onclick="changeBpm('lip',+5)">＋</button>
+        </div>
+      </div>
+      <input type="range" class="metro-slider" id="lip-slider" min="40" max="120" value="60"
+        oninput="sliderBpm('lip',this.value)">
+      <div class="beat-dots" id="lip-dots"></div>
+    </div>
+
+    <div class="pattern-wrap">
+      <div class="pattern-title" id="lip-pattern-title">練習音型</div>
+      <div class="pattern-notes" id="lip-pattern"></div>
+    </div>
+
+    <button class="btn-primary trumpet" id="lip-start-btn" onclick="toggleExercise('lip')">▶ 開始練習</button>
+    <button class="btn-secondary" onclick="closePanel('lip')">← 返回</button>
+  </div>
+
+  <!-- ② Tonguing Panel -->
+  <div class="ex-panel" id="panel-tongue">
+    <div class="ex-panel-title" id="tongue-title">👅 吐音練習</div>
+    <div class="ex-panel-sub" id="tongue-desc"></div>
+
+    <div class="metro-wrap">
+      <div class="metro-display">
+        <div>
+          <div class="metro-bpm" id="tongue-bpm">60</div>
+          <div class="metro-unit">BPM</div>
+        </div>
+        <div class="metro-btn-wrap">
+          <button class="metro-btn" onclick="changeBpm('tongue',-5)">−</button>
+          <button class="metro-btn" onclick="changeBpm('tongue',+5)">＋</button>
+        </div>
+      </div>
+      <input type="range" class="metro-slider" id="tongue-slider" min="40" max="160" value="60"
+        oninput="sliderBpm('tongue',this.value)">
+      <div class="beat-dots" id="tongue-dots"></div>
+    </div>
+
+    <div class="pattern-wrap">
+      <div class="pattern-title">吐音音節</div>
+      <div class="tongue-pattern" id="tongue-pattern"></div>
+    </div>
+
+    <button class="btn-primary trumpet" id="tongue-start-btn" onclick="toggleExercise('tongue')">▶ 開始練習</button>
+    <button class="btn-secondary" onclick="closePanel('tongue')">← 返回</button>
+  </div>
+
+  <!-- ③ Breath Control Panel -->
+  <div class="ex-panel" id="panel-breath">
+    <div class="ex-panel-title">🌬️ 氣息練習</div>
+    <div class="ex-panel-sub" id="breath-desc"></div>
+
+    <div class="pattern-wrap" style="text-align:center;">
+      <div class="breath-instruction" id="breath-instruction">準備好了嗎？</div>
+      <div class="breath-count" id="breath-count">–</div>
+      <div style="margin-top:12px;">
+        <div class="bar-label" style="text-align:left">氣息進度</div>
+        <div class="breath-bar-outer">
+          <div class="breath-bar-fill" id="breath-bar"></div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;" id="breath-cycle-label">第 1 / 4 組</div>
+    </div>
+
+    <button class="btn-primary trumpet" id="breath-start-btn" onclick="toggleExercise('breath')">▶ 開始練習</button>
+    <button class="btn-secondary" onclick="closePanel('breath')">← 返回</button>
+  </div>
+
+</div><!-- end exercise section -->
+
+<script>
+// ══════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════
+const SOLFEGE = {
+  'C':'Do','C#':'Di','Db':'Ra','D':'Re','D#':'Ri','Eb':'Me',
+  'E':'Mi','F':'Fa','F#':'Fi','Gb':'Se','G':'Sol',
+  'G#':'Si','Ab':'Le','A':'La','A#':'Li','Bb':'Te','B':'Ti',
+};
+
+const TRUMPET_FINGERING = {
+  'G3':[0,0,0],'G#3':[0,1,1],'Ab3':[0,1,1],'A3':[1,1,0],'Bb3':[1,0,0],'B3':[0,1,0],
+  'C4':[0,0,0],'C#4':[1,1,1],'Db4':[1,1,1],'D4':[1,0,1],'D#4':[0,1,1],'Eb4':[0,1,1],
+  'E4':[1,1,0],'F4':[1,0,0],'F#4':[0,1,1],'Gb4':[0,1,1],
+  'G4':[0,0,0],'G#4':[0,1,1],'Ab4':[0,1,1],'A4':[1,1,0],'Bb4':[1,0,0],'B4':[0,1,0],
+  'C5':[0,0,0],'C#5':[1,1,0],'Db5':[1,1,0],'D5':[1,0,1],'D#5':[0,1,1],'Eb5':[0,1,1],
+  'E5':[1,1,0],'F5':[1,0,0],'F#5':[1,1,1],'Gb5':[1,1,1],'G5':[0,0,0],
+};
+
+const INSTRUMENTS = {
+  trumpet: {
+    gridTitle: 'Bb小號音域（記譜音）', colorName:'trumpet',
+    notes: [
+      {name:'G3',  cf:196.0*Math.pow(2,-2/12)},{name:'Ab3', cf:207.7*Math.pow(2,-2/12)},
+      {name:'A3',  cf:220.0*Math.pow(2,-2/12)},{name:'Bb3', cf:233.1*Math.pow(2,-2/12)},
+      {name:'B3',  cf:246.9*Math.pow(2,-2/12)},{name:'C4',  cf:261.6*Math.pow(2,-2/12)},
+      {name:'C#4', cf:277.2*Math.pow(2,-2/12)},{name:'D4',  cf:293.7*Math.pow(2,-2/12)},
+      {name:'Eb4', cf:311.1*Math.pow(2,-2/12)},{name:'E4',  cf:329.6*Math.pow(2,-2/12)},
+      {name:'F4',  cf:349.2*Math.pow(2,-2/12)},{name:'F#4', cf:370.0*Math.pow(2,-2/12)},
+      {name:'G4',  cf:392.0*Math.pow(2,-2/12)},{name:'Ab4', cf:415.3*Math.pow(2,-2/12)},
+      {name:'A4',  cf:440.0*Math.pow(2,-2/12)},{name:'Bb4', cf:466.2*Math.pow(2,-2/12)},
+      {name:'B4',  cf:493.9*Math.pow(2,-2/12)},{name:'C5',  cf:523.3*Math.pow(2,-2/12)},
+      {name:'D5',  cf:587.3*Math.pow(2,-2/12)},{name:'E5',  cf:659.3*Math.pow(2,-2/12)},
+      {name:'F5',  cf:698.5*Math.pow(2,-2/12)},{name:'G5',  cf:784.0*Math.pow(2,-2/12)},
+    ]
+  },
+  flute: {
+    gridTitle:'長笛音域', colorName:'flute',
+    notes: [
+      {name:'C4',cf:261.6},{name:'D4',cf:293.7},{name:'E4',cf:329.6},{name:'F4',cf:349.2},
+      {name:'G4',cf:392.0},{name:'A4',cf:440.0},{name:'Bb4',cf:466.2},{name:'B4',cf:493.9},
+      {name:'C5',cf:523.3},{name:'D5',cf:587.3},{name:'E5',cf:659.3},{name:'F5',cf:698.5},
+      {name:'G5',cf:784.0},{name:'A5',cf:880.0},{name:'Bb5',cf:932.3},{name:'B5',cf:987.8},
+      {name:'C6',cf:1046.5},{name:'D6',cf:1174.7},{name:'E6',cf:1318.5},
+      {name:'F6',cf:1396.9},{name:'G6',cf:1568.0},{name:'A6',cf:1760.0},
+    ]
+  }
+};
+
+// Exercise definitions per instrument
+const EXERCISES = {
+  trumpet: [
+    {
+      id:'lip', icon:'💋', title:'Lip Flexibility', shortDesc:'嘴唇靈活性',
+      desc:'不改變按鍵，靠嘴唇鬆緊在相鄰音之間切換。從 C→G→C 開始，感受嘴唇的張力變化。',
+      panel:'lip', beats:4, defaultBpm:52,
+      pattern:['C4','G4','C5','G4','C4'],
+      patternLabel:'泛音練習（不按鍵）',
+    },
+    {
+      id:'tongue', icon:'👅', title:'Single Tongue', shortDesc:'單吐音',
+      desc:'用「Tu」發音，每個音清晰分開。保持氣息穩定，吐音來自舌頭，不是嘴唇。',
+      panel:'tongue', beats:4, defaultBpm:60,
+      syllables:['Tu','Tu','Tu','Tu','Tu','Tu','Tu','Tu'],
+    },
+    {
+      id:'dtongue', icon:'⚡', title:'Double Tongue', shortDesc:'雙吐音',
+      desc:'用「Tu-ku」快速交替。先慢慢練清楚每個音節，再逐漸加速。',
+      panel:'tongue', beats:4, defaultBpm:60,
+      syllables:['Tu','ku','Tu','ku','Tu','ku','Tu','ku'],
+    },
+    {
+      id:'breath', icon:'🌬️', title:'Long Tone', shortDesc:'長音氣息',
+      desc:'一口氣吹一個音，保持音色穩定均勻。練習氣息支撐和音色控制。',
+      panel:'breath', beats:4, defaultBpm:60,
+    },
+  ],
+  flute: [
+    {
+      id:'lip', icon:'🎶', title:'Long Tone', shortDesc:'長音練習',
+      desc:'選一個音，一口氣吹到底。保持音色圓潤，不抖動。從 A4 開始，感受氣息的穩定支撐。',
+      panel:'lip', beats:4, defaultBpm:52,
+      pattern:['A4','G4','F4','E4','D4'],
+      patternLabel:'長音練習音階（由高到低）',
+    },
+    {
+      id:'tongue', icon:'👅', title:'Single Tongue', shortDesc:'單吐音',
+      desc:'用「Tu」或輕柔用「Du」。長笛吐音要輕，舌頭像輕輕碰上顎一下。',
+      panel:'tongue', beats:4, defaultBpm:60,
+      syllables:['Du','Du','Du','Du','Du','Du','Du','Du'],
+    },
+    {
+      id:'dtongue', icon:'⚡', title:'Double Tongue', shortDesc:'雙吐音',
+      desc:'用「Du-gu」快速交替。先確保每個音清晰，再加速練習。',
+      panel:'tongue', beats:4, defaultBpm:60,
+      syllables:['Du','gu','Du','gu','Du','gu','Du','gu'],
+    },
+    {
+      id:'breath', icon:'🌬️', title:'氣息控制', shortDesc:'漸強漸弱',
+      desc:'同一個音從最弱吹到最強（pp→ff），再從最強回到最弱。練習氣息的精確控制。',
+      panel:'breath', beats:4, defaultBpm:60,
+    },
+  ]
+};
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let currentKid = 'trumpet';
+let currentTabName = 'pitch';
+let currentEx = null;
+let bpmState = { lip:60, tongue:60, breath:60 };
+
+// Pitch detector state
+let audioCtx=null,analyser=null,bufLen=null,dataArr=null,rafId=null,pitchOn=false;
+
+// Metronome state
+let metroIntervals = {};
+let metroBeat = { lip:0, tongue:0, breath:0 };
+let exRunning = { lip:false, tongue:false, breath:false };
+
+// Breath exercise state
+let breathPhase='inhale', breathTimer=null, breathCycle=0, breathTotalCycles=4;
+let breathStep=0, breathStepTimer=null;
+
+// ══════════════════════════════════════════
+//  UI
+// ══════════════════════════════════════════
+function switchTab(tab) {
+  currentTabName = tab;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+  document.querySelectorAll('.top-tab').forEach(b=>b.className='top-tab');
+  document.getElementById('tab-'+tab).className=`top-tab active-${currentKid}`;
+}
+
+function selectKid(kid) {
+  currentKid = kid;
+  document.getElementById('kid-trumpet').className='kid-tab'+(kid==='trumpet'?' active-trumpet':'');
+  document.getElementById('kid-flute').className  ='kid-tab'+(kid==='flute'  ?' active-flute':'');
+  // Update tab active color
+  document.getElementById('tab-'+currentTabName).className=`top-tab active-${kid}`;
+  // Update pitch btn
+  document.getElementById('pitch-btn').className=`btn-primary ${kid}`+(pitchOn?' stop':'');
+  // Fingering section
+  document.getElementById('fingering-section').style.display=kid==='trumpet'?'block':'none';
+  // Metronome slider color
+  document.querySelectorAll('.metro-slider').forEach(s=>{
+    s.className='metro-slider'+(kid==='flute'?' flute':'');
+  });
+  renderNoteGrid();
+  renderExGrid();
+  resetPitchDisplay();
+  closeAllPanels();
+}
+
+function renderNoteGrid() {
+  const inst = INSTRUMENTS[currentKid];
+  document.getElementById('note-grid-title').textContent=inst.gridTitle;
+  document.getElementById('note-grid').innerHTML=inst.notes.map(n=>
+    `<div class="note-chip" id="chip-${n.name.replace('#','s').replace('b','b')}">${n.name}</div>`
+  ).join('');
+}
+
+function renderExGrid() {
+  const exs = EXERCISES[currentKid];
+  document.getElementById('ex-grid').innerHTML = exs.map(ex=>
+    `<div class="ex-card" id="excard-${ex.id}" onclick="openExercise('${ex.id}')">
+      <div class="ex-icon">${ex.icon}</div>
+      <div class="ex-title">${ex.title}</div>
+      <div class="ex-desc">${ex.shortDesc}</div>
+    </div>`
+  ).join('');
+}
+
+function openExercise(id) {
+  const ex = EXERCISES[currentKid].find(e=>e.id===id);
+  if(!ex) return;
+  currentEx = ex;
+
+  // Highlight card
+  document.querySelectorAll('.ex-card').forEach(c=>c.className='ex-card');
+  document.getElementById('excard-'+id).className=`ex-card selected-${currentKid}`;
+
+  closeAllPanels();
+
+  const panel = document.getElementById('panel-'+ex.panel);
+
+  if(ex.panel==='lip') {
+    document.getElementById('lip-title').textContent=ex.icon+' '+ex.title;
+    document.getElementById('lip-desc').textContent=ex.desc;
+    bpmState.lip = ex.defaultBpm||60;
+    document.getElementById('lip-bpm').textContent=bpmState.lip;
+    document.getElementById('lip-slider').value=bpmState.lip;
+    renderBeatDots('lip', ex.beats||4);
+    // Pattern
+    document.getElementById('lip-pattern-title').textContent=ex.patternLabel||'練習音型';
+    document.getElementById('lip-pattern').innerHTML=(ex.pattern||[]).map((n,i)=>
+      `<div class="p-note" id="pn-${i}">${n}<br><span style="font-size:10px;color:var(--muted)">${getSolfege(n)}</span></div>`
+    ).join('');
+    document.getElementById('lip-start-btn').className=`btn-primary ${currentKid}`;
+    document.getElementById('lip-start-btn').textContent='▶ 開始練習';
+  }
+  else if(ex.panel==='tongue') {
+    document.getElementById('tongue-title').textContent=ex.icon+' '+ex.title;
+    document.getElementById('tongue-desc').textContent=ex.desc;
+    bpmState.tongue = ex.defaultBpm||60;
+    document.getElementById('tongue-bpm').textContent=bpmState.tongue;
+    document.getElementById('tongue-slider').value=bpmState.tongue;
+    renderBeatDots('tongue', ex.beats||4);
+    document.getElementById('tongue-pattern').innerHTML=(ex.syllables||[]).map((s,i)=>
+      `<div class="t-syllable" id="ts-${i}">${s}</div>`
+    ).join('');
+    document.getElementById('tongue-start-btn').className=`btn-primary ${currentKid}`;
+    document.getElementById('tongue-start-btn').textContent='▶ 開始練習';
+  }
+  else if(ex.panel==='breath') {
+    document.getElementById('breath-desc').textContent=ex.desc;
+    document.getElementById('breath-start-btn').className=`btn-primary ${currentKid}`;
+    document.getElementById('breath-start-btn').textContent='▶ 開始練習';
+    document.getElementById('breath-instruction').textContent='準備好了嗎？';
+    document.getElementById('breath-count').textContent='–';
+    document.getElementById('breath-bar').style.width='0%';
+    document.getElementById('breath-bar').className='breath-bar-fill';
+    document.getElementById('breath-cycle-label').textContent='第 1 / 4 組';
+  }
+
+  panel.classList.add('active');
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function closePanel(panelId) {
+  stopExercise(panelId);
+  document.getElementById('panel-'+panelId).classList.remove('active');
+  document.querySelectorAll('.ex-card').forEach(c=>c.className='ex-card');
+  currentEx=null;
+}
+function closeAllPanels() {
+  ['lip','tongue','breath'].forEach(p=>{
+    stopExercise(p);
+    document.getElementById('panel-'+p).classList.remove('active');
+  });
+}
+
+function getSolfege(noteName) {
+  const m = noteName.match(/^([A-Gb#]+)/);
+  return m ? (SOLFEGE[m[1]]||'') : '';
+}
+
+// ── Beat dots ──
+function renderBeatDots(panel, beats) {
+  const wrap = document.getElementById(panel+'-dots');
+  wrap.innerHTML = Array.from({length:beats},(_,i)=>
+    `<div class="beat-dot${i===0?' accent':''}" id="${panel}-dot-${i}"></div>`
+  ).join('');
+}
+function flashDot(panel, beat, beats) {
+  for(let i=0;i<beats;i++){
+    const d=document.getElementById(`${panel}-dot-${i}`);
+    if(d) d.className='beat-dot'+(i===0?' accent':'');
+  }
+  const active=document.getElementById(`${panel}-dot-${beat}`);
+  if(active) active.className=`beat-dot active-${currentKid}`;
+}
+
+// ── BPM controls ──
+function changeBpm(panel, delta) {
+  bpmState[panel] = Math.max(40, Math.min(200, bpmState[panel]+delta));
+  document.getElementById(panel+'-bpm').textContent=bpmState[panel];
+  document.getElementById(panel+'-slider').value=bpmState[panel];
+  if(exRunning[panel]) { stopMetro(panel); startMetro(panel); }
+}
+function sliderBpm(panel, val) {
+  bpmState[panel]=parseInt(val);
+  document.getElementById(panel+'-bpm').textContent=bpmState[panel];
+  if(exRunning[panel]) { stopMetro(panel); startMetro(panel); }
+}
+
+// ══════════════════════════════════════════
+//  METRONOME + EXERCISE RUNNERS
+// ══════════════════════════════════════════
+function toggleExercise(panel) {
+  exRunning[panel] ? stopExercise(panel) : startExercise(panel);
+}
+
+function startExercise(panel) {
+  exRunning[panel]=true;
+  const btnId = panel+'-start-btn';
+  document.getElementById(btnId).textContent='⏹ 停止';
+  document.getElementById(btnId).className='btn-primary stop';
+
+  if(panel==='breath') { startBreath(); return; }
+  startMetro(panel);
+}
+
+function stopExercise(panel) {
+  exRunning[panel]=false;
+  const btnId = panel+'-start-btn';
+  const btn=document.getElementById(btnId);
+  if(btn){ btn.textContent='▶ 開始練習'; btn.className=`btn-primary ${currentKid}`; }
+  stopMetro(panel);
+  if(panel==='breath') stopBreath();
+  // Reset highlights
+  if(panel==='lip') { document.querySelectorAll('.p-note').forEach(n=>{n.className='p-note';}); metroBeat.lip=0; }
+  if(panel==='tongue') { document.querySelectorAll('.t-syllable').forEach(n=>{n.className='t-syllable';}); metroBeat.tongue=0; }
+  // Reset dots
+  const beats = currentEx?.beats||4;
+  for(let i=0;i<beats;i++){
+    const d=document.getElementById(`${panel}-dot-${i}`);
+    if(d) d.className='beat-dot'+(i===0?' accent':'');
+  }
+}
+
+let audioCtxMetro = null;
+function getMetroCtx() {
+  if(!audioCtxMetro || audioCtxMetro.state==='closed') audioCtxMetro=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtxMetro;
+}
+function beep(freq=880, dur=0.04, vol=0.3) {
+  try {
+    const ctx=getMetroCtx();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value=freq; g.gain.setValueAtTime(vol,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.start(); o.stop(ctx.currentTime+dur);
+  } catch(e){}
+}
+
+function startMetro(panel) {
+  const bpm=bpmState[panel];
+  const interval=60000/bpm;
+  const ex=currentEx;
+  const beats=ex?.beats||4;
+  const patternLen = panel==='lip' ? (ex?.pattern?.length||0) : (ex?.syllables?.length||0);
+
+  metroBeat[panel]=0;
+  let stepIdx=0;
+
+  metroIntervals[panel]=setInterval(()=>{
+    const beat=metroBeat[panel]%beats;
+    flashDot(panel, beat, beats);
+    beep(beat===0?1100:880, 0.04, beat===0?0.5:0.25);
+
+    // Highlight pattern/syllable
+    if(panel==='lip' && patternLen>0) {
+      document.querySelectorAll('.p-note').forEach((n,i)=>{ n.className='p-note'+(i===stepIdx%patternLen?` current-${currentKid}`:stepIdx>i?' done':''); });
+    }
+    if(panel==='tongue' && patternLen>0) {
+      document.querySelectorAll('.t-syllable').forEach((n,i)=>{ n.className='t-syllable'+(i===stepIdx%patternLen?` current-${currentKid}`:''); });
+    }
+    stepIdx++;
+    metroBeat[panel]++;
+  }, interval);
+}
+
+function stopMetro(panel) {
+  clearInterval(metroIntervals[panel]);
+  metroIntervals[panel]=null;
+}
+
+// ── Breath exercise ──
+// Pattern: 4 counts inhale, 2 hold, 4 exhale, 2 rest = 12 steps
+const BREATH_PATTERN = [
+  {phase:'inhale', label:'吸氣 🫁', counts:4},
+  {phase:'hold',   label:'保持 ✋', counts:2},
+  {phase:'exhale', label:'呼氣 🎵', counts:4},
+  {phase:'rest',   label:'休息 😌', counts:2},
+];
+
+function startBreath() {
+  breathCycle=0; breathStep=0; breathTotalCycles=4;
+  runBreathStep();
+}
+function stopBreath() {
+  clearTimeout(breathTimer);
+  document.getElementById('breath-instruction').textContent='準備好了嗎？';
+  document.getElementById('breath-count').textContent='–';
+  document.getElementById('breath-bar').style.width='0%';
+  document.getElementById('breath-bar').className='breath-bar-fill';
+  document.getElementById('breath-cycle-label').textContent='第 1 / 4 組';
+  breathStep=0; breathCycle=0;
+}
+function runBreathStep() {
+  if(!exRunning.breath) return;
+  const step=BREATH_PATTERN[breathStep % BREATH_PATTERN.length];
+  const totalTime=step.counts*1000;
+  document.getElementById('breath-instruction').textContent=step.label;
+  document.getElementById('breath-bar').className=`breath-bar-fill ${step.phase}`;
+  // Animate bar
+  const bar=document.getElementById('breath-bar');
+  bar.style.transition='none'; bar.style.width='0%';
+  setTimeout(()=>{
+    bar.style.transition=`width ${totalTime}ms linear`;
+    bar.style.width='100%';
+  },30);
+  // Count down
+  let count=step.counts;
+  document.getElementById('breath-count').textContent=count;
+  const countInterval=setInterval(()=>{
+    count--;
+    if(count>0) document.getElementById('breath-count').textContent=count;
+  },1000);
+  breathTimer=setTimeout(()=>{
+    clearInterval(countInterval);
+    breathStep++;
+    // Check cycle complete
+    if(breathStep % BREATH_PATTERN.length === 0) {
+      breathCycle++;
+      document.getElementById('breath-cycle-label').textContent=`第 ${Math.min(breathCycle+1,breathTotalCycles)} / ${breathTotalCycles} 組`;
+      if(breathCycle>=breathTotalCycles) {
+        stopExercise('breath');
+        document.getElementById('breath-instruction').textContent='✅ 完成！做得好！';
+        document.getElementById('breath-count').textContent='🎉';
+        return;
+      }
+    }
+    runBreathStep();
+  }, totalTime);
+}
+
+// ══════════════════════════════════════════
+//  PITCH DETECTOR
+// ══════════════════════════════════════════
+function togglePitch() { pitchOn ? stopPitch() : startPitch(); }
+
+async function startPitch() {
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
+    analyser=audioCtx.createAnalyser(); analyser.fftSize=8192; analyser.smoothingTimeConstant=0.85;
+    bufLen=analyser.fftSize; dataArr=new Float32Array(bufLen);
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
+    pitchOn=true;
+    document.getElementById('pitch-btn').textContent='⏹ 停止聆聽';
+    document.getElementById('pitch-btn').className='btn-primary stop';
+    document.getElementById('note-display').classList.add('listening-pulse');
+    setPFeedback('🎙️','正在聆聽...','開始吹奏吧！');
+    detectPitch();
+  } catch(e) { setPFeedback('❌','無法使用麥克風','請允許瀏覽器使用麥克風'); }
+}
+function stopPitch() {
+  pitchOn=false; cancelAnimationFrame(rafId);
+  if(audioCtx){audioCtx.close();audioCtx=null;}
+  document.getElementById('pitch-btn').textContent='🎙️ 開始聆聽';
+  document.getElementById('pitch-btn').className=`btn-primary ${currentKid}`;
+  document.getElementById('note-display').classList.remove('listening-pulse');
+  resetPitchDisplay();
+}
+function resetPitchDisplay() {
+  document.getElementById('note-name').textContent='–';
+  document.getElementById('note-name').className='note-name note-idle';
+  document.getElementById('note-solfege').textContent='';
+  document.getElementById('note-freq').textContent='等待聲音...';
+  document.getElementById('note-display').className='note-display';
+  document.getElementById('tuning-fill').style.cssText='left:50%;width:0%';
+  document.getElementById('tuning-cents').textContent='–';
+  document.getElementById('vol-fill').style.width='0%';
+  document.getElementById('fingering-label').textContent='按鍵';
+  ['v1','v2','v3'].forEach(id=>document.getElementById(id).className='valve-circle');
+  highlightChip(null);
+  setPFeedback('🎸','按下按鈕開始聆聽','靠近麥克風吹奏');
+}
+function setPFeedback(icon,text,sub) {
+  document.getElementById('p-icon').textContent=icon;
+  document.getElementById('p-text').textContent=text;
+  document.getElementById('p-sub').textContent=sub;
+}
+function highlightChip(name) {
+  document.querySelectorAll('.note-chip').forEach(c=>c.className='note-chip');
+  if(!name) return;
+  const el=document.getElementById('chip-'+name.replace('#','s').replace('b','b'));
+  if(el) el.className=`note-chip active-${currentKid}`;
+}
+function showFingering(writtenName) {
+  if(currentKid!=='trumpet') return;
+  const f=TRUMPET_FINGERING[writtenName];
+  const isOpen=f&&f.every(v=>v===0);
+  document.getElementById('fingering-label').textContent=f?(isOpen?'開放（不按）':'按鍵：'+f.map((v,i)=>v?i+1:'').filter(Boolean).join(' + ')):'按鍵';
+  ['v1','v2','v3'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(!f){el.className='valve-circle';return;}
+    el.className=isOpen?'valve-circle open':(f[i]?'valve-circle pressed':'valve-circle');
+  });
+}
+function autoCorrelate(buf,sr) {
+  const SIZE=buf.length; let rms=0;
+  for(let i=0;i<SIZE;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/SIZE);
+  if(rms<0.01) return -1;
+  let r1=0,r2=SIZE-1;
+  for(let i=0;i<SIZE/2;i++){if(Math.abs(buf[i])<0.2){r1=i;break;}}
+  for(let i=1;i<SIZE/2;i++){if(Math.abs(buf[SIZE-i])<0.2){r2=SIZE-i;break;}}
+  const b=buf.slice(r1,r2); const c=new Array(b.length).fill(0);
+  for(let i=0;i<b.length;i++) for(let j=0;j<b.length-i;j++) c[i]+=b[j]*b[j+i];
+  let d=0; while(c[d]>c[d+1])d++;
+  let maxVal=-1,maxPos=-1;
+  for(let i=d;i<b.length;i++){if(c[i]>maxVal){maxVal=c[i];maxPos=i;}}
+  let T0=maxPos;
+  if(maxPos>0&&maxPos<b.length-1){const x1=c[maxPos-1],x2=c[maxPos],x3=c[maxPos+1];T0=maxPos+(x3-x1)/(2*(2*x2-x1-x3));}
+  return sr/T0;
+}
+function findClosest(freq) {
+  const notes=INSTRUMENTS[currentKid].notes;
+  let best=null,bestC=Infinity;
+  notes.forEach(n=>{const c=1200*Math.log2(freq/n.cf);if(Math.abs(c)<Math.abs(bestC)){bestC=c;best=n;}});
+  return best&&Math.abs(bestC)<=70?{note:best,cents:bestC}:null;
+}
+function detectPitch() {
+  analyser.getFloatTimeDomainData(dataArr);
+  let rms=0; for(let i=0;i<bufLen;i++) rms+=dataArr[i]*dataArr[i]; rms=Math.sqrt(rms/bufLen);
+  document.getElementById('vol-fill').style.width=Math.min(rms*400,100)+'%';
+  if(rms>0.01){
+    const freq=autoCorrelate(dataArr,audioCtx.sampleRate);
+    if(freq>80&&freq<2000){ const r=findClosest(freq); if(r) updatePitch(r.note,r.cents,freq); }
+  }
+  rafId=requestAnimationFrame(detectPitch);
+}
+function updatePitch(note,cents,freq) {
+  const abs=Math.abs(cents);
+  let cls,icon,text,sub;
+  if(abs<=10){cls='perfect';icon='✅';text='非常準！';sub=`${note.name} · 偏差 ${cents.toFixed(1)} 音分`;}
+  else if(abs<=25){cls='close';icon='🔶';text=cents>0?'稍微偏高':'稍微偏低';sub=`${note.name} · 偏差 ${cents.toFixed(1)} 音分`;}
+  else{cls='off';icon=cents>0?'⬆️':'⬇️';text=cents>0?`偏高 ${abs.toFixed(0)} 音分`:`偏低 ${abs.toFixed(0)} 音分`;sub=`目標 ${note.name} · ${freq.toFixed(1)}Hz`;}
+
+  document.getElementById('note-display').className=`note-display listening-pulse ${cls}`;
+  const m=note.name.match(/^([A-Gb#]+)(\d)$/);
+  const letter=m?m[1]:note.name;
+  const nameEl=document.getElementById('note-name');
+  nameEl.textContent=letter; nameEl.className=`note-name note-${cls}`;
+  const solEl=document.getElementById('note-solfege');
+  solEl.textContent=SOLFEGE[letter]||'';
+  solEl.style.color=cls==='perfect'?'var(--green)':cls==='close'?'var(--yellow)':'var(--red)';
+  document.getElementById('note-freq').textContent=freq.toFixed(1)+' Hz';
+
+  const pct=Math.max(0,Math.min(100,(cents+50)/100*100));
+  const fill=document.getElementById('tuning-fill');
+  fill.style.left=Math.min(pct,50)+'%'; fill.style.width=Math.abs(pct-50)+'%';
+  fill.style.background=cls==='perfect'?'var(--green)':cls==='close'?'var(--yellow)':'var(--red)';
+  document.getElementById('tuning-cents').textContent=(cents>=0?'+':'')+cents.toFixed(1)+' 音分';
+
+  setPFeedback(icon,text,sub);
+  highlightChip(note.name);
+  showFingering(note.name);
+}
+
+// ── Init ──
+selectKid('trumpet');
+</script>
+</body>
+</html>
