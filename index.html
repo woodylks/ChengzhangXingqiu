@@ -1051,12 +1051,13 @@ body {
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">截止</label>
-        <select class="form-input" id="new-task-due">
-          <option value="今天">今天</option>
-          <option value="明天">明天</option>
-          <option value="本週">本週</option>
-        </select>
+        <label class="form-label">截止日期</label>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <button type="button" onclick="setDueShortcut(0)" style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;cursor:pointer;" id="due-btn-today">今天</button>
+          <button type="button" onclick="setDueShortcut(1)" style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;cursor:pointer;" id="due-btn-tomorrow">明天</button>
+          <button type="button" onclick="setDueShortcut(7)" style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;cursor:pointer;" id="due-btn-week">下週</button>
+        </div>
+        <input type="date" class="form-input" id="new-task-due" style="font-size:15px;">
       </div>
     </div>
     <button class="btn-primary" id="add-task-confirm" onclick="confirmAddTask()">確認新增</button>
@@ -1441,7 +1442,20 @@ function renderTaskList() {
         <div class="task-check ${checkClass}">${t.done?'✓':''}</div>
         <div class="task-info">
           <div class="task-name${t.done?' task-done-text':''}">${t.name}</div>
-          <div class="task-meta">${subj?.emoji||'📚'} ${subj?.name||t.subject} · ${t.due} · ${typeLabel(t.type)}</div>
+          <div class="task-meta">${subj?.emoji||'📚'} ${subj?.name||t.subject} · ${(()=>{
+            const v=t.due||'';
+            if(!v) return '今天';
+            if(/^\d{4}-\d{2}-\d{2}$/.test(v)){
+              const d=new Date(v+'T00:00:00'); const today=new Date(); today.setHours(0,0,0,0);
+              const diff=Math.round((d-today)/86400000);
+              if(diff===0) return '今天';
+              if(diff===1) return '明天';
+              if(diff<0) return '已過期';
+              const mm=d.getMonth()+1, dd=d.getDate();
+              return mm+'月'+dd+'日';
+            }
+            return v;
+          })()} · ${typeLabel(t.type)}</div>
         </div>
         <div class="priority-dot" style="background:${colors[t.priority]||'var(--muted)'};margin-top:6px;flex-shrink:0;"></div>
       </div>
@@ -1484,7 +1498,20 @@ function openEditTask(id) {
   document.getElementById('new-task-subject').value = t.subject;
   document.getElementById('new-task-type').value = t.type;
   document.getElementById('new-task-priority').value = t.priority;
-  document.getElementById('new-task-due').value = t.due;
+  (function(){
+    const v = t.due || '';
+    let iso = '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) { iso = v; }
+    else if (v === '今天' || v === '') { iso = new Date().toISOString().slice(0,10); }
+    else if (v === '明天') { const d=new Date(); d.setDate(d.getDate()+1); iso=d.toISOString().slice(0,10); }
+    else if (v === '本週') { const d=new Date(); d.setDate(d.getDate()+(5-d.getDay())); iso=d.toISOString().slice(0,10); }
+    else {
+      const m1=v.match(/(\d+)[\/-](\d+)/), m2=v.match(/(\d+)月(\d+)日/);
+      const mm=m1||m2;
+      if(mm){const yr=new Date().getFullYear();const nd=new Date(yr,parseInt(mm[1])-1,parseInt(mm[2]));iso=nd.toISOString().slice(0,10);}
+    }
+    document.getElementById('new-task-due').value = iso || new Date().toISOString().slice(0,10);
+  })();
   const btn = document.getElementById('add-task-confirm');
   btn.textContent = '✅ 確認修改';
   btn.className = `btn-primary${currentKid===2?' kid2':''}`;
@@ -2323,6 +2350,13 @@ function populateSubjectSelects() {
 
 function openAddTask() {
   document.getElementById('add-task-confirm').className = `btn-primary${currentKid===2?' kid2':''}`;
+  document.getElementById('new-task-due').value = new Date().toISOString().slice(0,10);
+  ['today','tomorrow','week'].forEach(k => {
+    const b = document.getElementById('due-btn-' + k);
+    if (b) b.style.background = 'white';
+  });
+  const tb = document.getElementById('due-btn-today');
+  if (tb) tb.style.background = '#FF6B3520';
   openModal('task-modal');
 }
 
@@ -2358,6 +2392,19 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
     }
   });
 });
+
+function setDueShortcut(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  document.getElementById('new-task-due').value = d.toISOString().slice(0,10);
+  ['today','tomorrow','week'].forEach(k => {
+    const b = document.getElementById('due-btn-' + k);
+    if (b) b.style.background = 'white';
+  });
+  const map = {0:'today',1:'tomorrow',7:'week'};
+  const btn = document.getElementById('due-btn-' + (map[days]||''));
+  if (btn) btn.style.background = '#FF6B3520';
+}
 
 function confirmAddTask() {
   const name = document.getElementById('new-task-name').value.trim();
@@ -2820,19 +2867,23 @@ function checkAutoArchive() {
       const toKeep = [];
 
       tasks.forEach(t => {
-        // Parse due date - keep if it's a future date
+        // Parse due date - keep if it's strictly future (after today)
         let isFuture = false;
-        if (t.due && t.due !== '今天' && t.due !== '無截止日') {
-          // Try parse formats like "3/15", "2026/3/15", "3月15日"
-          const m1 = t.due.match(/(\d+)[\/\-](\d+)/);
-          const m2 = t.due.match(/(\d+)月(\d+)日/);
-          const match = m1 || m2;
-          if (match) {
-            const year = new Date().getFullYear();
-            const dueDate = new Date(year, parseInt(match[1])-1, parseInt(match[2]));
-            dueDate.setHours(0,0,0,0);
-            if (dueDate > todayDate) isFuture = true;
+        if (t.due) {
+          let dueDate = null;
+          // ISO format YYYY-MM-DD (new format)
+          if (/^\d{4}-\d{2}-\d{2}$/.test(t.due)) {
+            dueDate = new Date(t.due + 'T00:00:00');
+          } else if (t.due !== '今天' && t.due !== '無截止日') {
+            // Legacy formats
+            const m1 = t.due.match(/(\d+)[\/\-](\d+)/);
+            const m2 = t.due.match(/(\d+)月(\d+)日/);
+            const match = m1 || m2;
+            if (match) {
+              dueDate = new Date(new Date().getFullYear(), parseInt(match[1])-1, parseInt(match[2]));
+            }
           }
+          if (dueDate) { dueDate.setHours(0,0,0,0); if (dueDate > todayDate) isFuture = true; }
         }
         if (isFuture) {
           toKeep.push(t);
