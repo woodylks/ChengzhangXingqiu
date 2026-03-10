@@ -577,12 +577,12 @@ body {
 
 
 <!-- HEADER -->
-<div class="app-header">
+<div class="app-header" id="app-header-el" oncontextmenu="return false;">
   <div class="header-content">
     <div class="header-logo">
       <span class="logo-icon">🌟</span>
       <div class="logo-text">
-        <h1>成長星球</h1>
+        <h1 id="app-title-el">成長星球</h1>
         <p>育兒學習管理中心</p>
       </div>
     </div>
@@ -1000,6 +1000,54 @@ body {
 </div>
 
 <!-- BOTTOM NAV -->
+<div class="section" id="sec-admin">
+  <div style="padding:16px 16px 100px">
+    <div style="font-size:18px;font-weight:900;margin-bottom:16px;">⚙️ 數據管理</div>
+
+    <!-- Fix date -->
+    <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      <div style="font-weight:800;margin-bottom:10px;">📅 修改歷史記錄日期</div>
+      <div style="font-size:13px;color:#9B8B7A;margin-bottom:10px;">把某天的記錄改到另一天（例如把10號改成9號）</div>
+      <label style="font-size:13px;font-weight:700;">孩子</label>
+      <select id="adm-kid" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin:6px 0 10px;font-size:14px;">
+        <option value="1">添樂 🦁</option>
+        <option value="2">悅琳 🐰</option>
+      </select>
+      <label style="font-size:13px;font-weight:700;">原本日期</label>
+      <input type="date" id="adm-from" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin:6px 0 10px;font-size:14px;">
+      <label style="font-size:13px;font-weight:700;">改成日期</label>
+      <input type="date" id="adm-to" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin:6px 0 10px;font-size:14px;">
+      <button onclick="admFixDate()" style="width:100%;padding:12px;border-radius:12px;border:none;background:#4FACDE;color:white;font-size:15px;font-weight:800;cursor:pointer;">✅ 修改日期</button>
+      <div id="adm-date-result" style="margin-top:8px;font-size:13px;font-weight:700;color:#52C98A;display:none;"></div>
+    </div>
+
+    <!-- View raw data -->
+    <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      <div style="font-weight:800;margin-bottom:10px;">🔍 查看歷史記錄</div>
+      <select id="adm-view-kid" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin-bottom:10px;font-size:14px;">
+        <option value="1">添樂 🦁</option>
+        <option value="2">悅琳 🐰</option>
+      </select>
+      <button onclick="admViewHistory()" style="width:100%;padding:12px;border-radius:12px;border:none;background:#8B5CF6;color:white;font-size:15px;font-weight:800;cursor:pointer;">🔍 顯示所有記錄</button>
+      <div id="adm-view-result" style="margin-top:10px;font-size:12px;color:#2D2016;background:#F5F5F5;border-radius:10px;padding:10px;display:none;max-height:200px;overflow-y:auto;word-break:break-all;white-space:pre-wrap;"></div>
+    </div>
+
+    <!-- Delete a day -->
+    <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      <div style="font-weight:800;margin-bottom:10px;">🗑️ 刪除某天記錄</div>
+      <select id="adm-del-kid" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin:6px 0 10px;font-size:14px;">
+        <option value="1">添樂 🦁</option>
+        <option value="2">悅琳 🐰</option>
+      </select>
+      <input type="date" id="adm-del-date" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin-bottom:10px;font-size:14px;">
+      <button onclick="admDeleteDay()" style="width:100%;padding:12px;border-radius:12px;border:none;background:#F87171;color:white;font-size:15px;font-weight:800;cursor:pointer;">🗑️ 刪除這天</button>
+      <div id="adm-del-result" style="margin-top:8px;font-size:13px;font-weight:700;color:#F87171;display:none;"></div>
+    </div>
+
+    <button onclick="switchTab('dashboard')" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid #EDE3D9;background:white;font-size:15px;font-weight:800;cursor:pointer;color:#9B8B7A;">← 返回</button>
+  </div>
+</div>
+
 <div class="bottom-nav" id="bottom-nav">
   <div class="nav-btn active" id="nav-dashboard" ontouchend="navTap(event,'dashboard')" onclick="switchTab('dashboard')">
     <span class="nav-icon">🏠</span>總覽
@@ -1406,11 +1454,87 @@ function todayISO() {
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
+
+// ══════════════════════════════════════════════
+//  ADMIN / DATA MANAGEMENT
+// ══════════════════════════════════════════════
+let adminTapCount = 0, adminTapTimer = null;
+function initAdminEntry() {
+  const el = document.getElementById('app-title-el');
+  if (!el) return;
+  el.addEventListener('click', () => {
+    adminTapCount++;
+    clearTimeout(adminTapTimer);
+    adminTapTimer = setTimeout(() => { adminTapCount = 0; }, 1500);
+    if (adminTapCount >= 5) {
+      adminTapCount = 0;
+      // Set default dates
+      const today = todayISO();
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+      const yISO = yesterday.toISOString().slice(0,10);
+      document.getElementById('adm-from').value = today;
+      document.getElementById('adm-to').value = yISO;
+      document.getElementById('adm-del-date').value = today;
+      switchTab('admin');
+    }
+  });
+}
+
+function admFixDate() {
+  const kid = document.getElementById('adm-kid').value;
+  const from = document.getElementById('adm-from').value;
+  const to = document.getElementById('adm-to').value;
+  const res = document.getElementById('adm-date-result');
+  if (!from || !to) { res.style.display='block'; res.style.color='#F87171'; res.textContent='請選擇日期'; return; }
+  const key = `kid${kid}_history`;
+  const h = loadData(key, []);
+  let found = false;
+  h.forEach(d => {
+    if (d.dateKey === from) {
+      d.dateKey = to;
+      const dp = new Date(to+'T00:00:00');
+      const ww = ['日','一','二','三','四','五','六'];
+      d.dateLabel = `${dp.getMonth()+1}月${dp.getDate()}日 週${ww[dp.getDay()]}`;
+      found = true;
+    }
+  });
+  if (!found) { res.style.display='block'; res.style.color='#F87171'; res.textContent=`找不到 ${from} 的記錄`; return; }
+  saveData(key, h);
+  res.style.display='block'; res.style.color='#52C98A';
+  res.textContent = `✅ 已把 ${from} 改成 ${to}`;
+  renderHistory();
+}
+
+function admViewHistory() {
+  const kid = document.getElementById('adm-view-kid').value;
+  const h = loadData(`kid${kid}_history`, []);
+  const res = document.getElementById('adm-view-result');
+  res.style.display = 'block';
+  if (!h.length) { res.textContent = '沒有記錄'; return; }
+  res.textContent = h.map(d => `${d.dateKey}  ${d.doneCount}/${d.totalCount}完成  ${d.tasks.map(t=>t.name).join('、')}`).join('\n');
+}
+
+function admDeleteDay() {
+  const kid = document.getElementById('adm-del-kid').value;
+  const date = document.getElementById('adm-del-date').value;
+  const res = document.getElementById('adm-del-result');
+  if (!date) { res.style.display='block'; res.textContent='請選擇日期'; return; }
+  if (!confirm(`確定刪除 ${date} 的全部記錄？`)) return;
+  const key = `kid${kid}_history`;
+  const h = loadData(key, []);
+  const before = h.length;
+  const filtered = h.filter(d => d.dateKey !== date);
+  saveData(key, filtered);
+  res.style.display='block';
+  res.textContent = before === filtered.length ? `找不到 ${date} 的記錄` : `✅ 已刪除 ${date}`;
+  renderHistory();
+}
+
 window.onload = function() {
   setDate();
+  runMigrations();          // migrate data FIRST before any logic runs
   checkAutoArchive();
   histSelectedDate = todayISO(); // default select today
-  runMigrations();
   renderDashboard();
   renderExamList();
   renderArtsGrid();
@@ -2941,7 +3065,7 @@ function archiveTodayTasks() {
 
 // Auto-archive when day changes
 function checkAutoArchive() {
-  const lastDate = loadData(kkey('lastDate'), '');
+  const lastDate = toISODate(loadData(kkey('lastDate'), ''));
   const today = todayISO();
   if (lastDate && lastDate !== today) {
     const tasks = getTasks();
@@ -2980,19 +3104,20 @@ function checkAutoArchive() {
       });
 
       if (toArchive.length > 0) {
-        const weekdays = ['日','一','二','三','四','五','六'];
-        let prev;
-        try { prev = new Date(lastDate.replace(/\//g, '-')); } catch(e) { prev = new Date(); }
         const history = getHistory();
-        const filtered = history.filter(h => h.dateKey !== lastDate);
-        filtered.unshift({
-          dateKey: lastDate,
-          dateLabel: (()=>{ const dp=new Date(lastDate+'T00:00:00'); const ww=['日','一','二','三','四','五','六']; return `${dp.getMonth()+1}月${dp.getDate()}日 週${ww[dp.getDay()]}`; })(),
-          tasks: toArchive.map(t => ({...t})),
-          doneCount: toArchive.filter(t=>t.done).length,
-          totalCount: toArchive.length,
-        });
-        saveHistory(filtered);
+        // Don't overwrite if user already manually archived that day
+        const alreadyArchived = history.some(h => h.dateKey === lastDate);
+        if (!alreadyArchived) {
+          const filtered = history.filter(h => h.dateKey !== lastDate);
+          filtered.unshift({
+            dateKey: lastDate,
+            dateLabel: (()=>{ const dp=new Date(lastDate+'T00:00:00'); const ww=['日','一','二','三','四','五','六']; return `${dp.getMonth()+1}月${dp.getDate()}日 週${ww[dp.getDay()]}`; })(),
+            tasks: toArchive.map(t => ({...t})),
+            doneCount: toArchive.filter(t=>t.done).length,
+            totalCount: toArchive.length,
+          });
+          saveHistory(filtered);
+        }
       }
 
       // Only keep future tasks
