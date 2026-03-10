@@ -219,6 +219,36 @@ body {
 .divider { height:1px; background:var(--border); margin:14px 0; }
 
 @keyframes pulse { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.04);opacity:0.85;} }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.analysis-box {
+  background:var(--card2); border:1px solid var(--border); border-radius:14px;
+  padding:14px; margin:10px 0;
+}
+.analysis-loading {
+  display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px;
+}
+.analysis-spinner {
+  width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--purple);
+  border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0;
+}
+.analysis-score {
+  display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;
+}
+.score-chip {
+  padding:6px 10px; border-radius:8px; font-size:12px; font-weight:700;
+  font-family:'Space Mono',monospace;
+}
+.score-chip.good  { background:rgba(0,255,136,0.12); color:var(--green); border:1px solid rgba(0,255,136,0.3); }
+.score-chip.ok    { background:rgba(255,204,0,0.12);  color:var(--yellow); border:1px solid rgba(255,204,0,0.3); }
+.score-chip.poor  { background:rgba(255,68,102,0.12); color:var(--red);   border:1px solid rgba(255,68,102,0.3); }
+.analysis-comment {
+  font-size:13px; line-height:1.7; color:var(--text); white-space:pre-wrap;
+}
+.rec-timer {
+  font-family:'Space Mono',monospace; font-size:12px; color:var(--purple);
+  text-align:center; margin-bottom:8px;
+}
 .listening-pulse { animation:pulse 1.2s ease-in-out infinite; }
 </style>
 </head>
@@ -317,6 +347,9 @@ body {
     </div>
 
     <button class="btn-primary trumpet" id="lip-start-btn" onclick="toggleExercise('lip')">▶ 開始練習</button>
+    <div class="divider"></div>
+    <button class="btn-primary trumpet" id="lip-rec-btn" onclick="toggleRecording('lip')" style="background:var(--purple);box-shadow:0 6px 24px rgba(167,139,250,0.35);">🔴 開始錄音分析</button>
+    <div id="lip-analysis-box" class="analysis-box" style="display:none;"></div>
     <button class="btn-secondary" onclick="closePanel('lip')">← 返回</button>
   </div>
 
@@ -347,6 +380,9 @@ body {
     </div>
 
     <button class="btn-primary trumpet" id="tongue-start-btn" onclick="toggleExercise('tongue')">▶ 開始練習</button>
+    <div class="divider"></div>
+    <button class="btn-primary trumpet" id="tongue-rec-btn" onclick="toggleRecording('tongue')" style="background:var(--purple);box-shadow:0 6px 24px rgba(167,139,250,0.35);">🔴 開始錄音分析</button>
+    <div id="tongue-analysis-box" class="analysis-box" style="display:none;"></div>
     <button class="btn-secondary" onclick="closePanel('tongue')">← 返回</button>
   </div>
 
@@ -368,6 +404,9 @@ body {
     </div>
 
     <button class="btn-primary trumpet" id="breath-start-btn" onclick="toggleExercise('breath')">▶ 開始練習</button>
+    <div class="divider"></div>
+    <button class="btn-primary trumpet" id="breath-rec-btn" onclick="toggleRecording('breath')" style="background:var(--purple);box-shadow:0 6px 24px rgba(167,139,250,0.35);">🔴 開始錄音分析</button>
+    <div id="breath-analysis-box" class="analysis-box" style="display:none;"></div>
     <button class="btn-secondary" onclick="closePanel('breath')">← 返回</button>
   </div>
 
@@ -920,6 +959,258 @@ function updatePitch(note,cents,freq) {
 
 // ── Init ──
 selectKid('trumpet');
+
+// ══════════════════════════════════════════
+//  RECORDING + ANALYSIS
+// ══════════════════════════════════════════
+const ALIYUN_KEY = 'sk-a5a9b48f7bb34817a3811920aad62e12';
+const ALIYUN_URL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
+const CLOUDINARY = { cloud:'dfaap5ur8', preset:'chengzhang', url:'https://api.cloudinary.com/v1_1/dfaap5ur8/video/upload' };
+
+let recState = {};  // { panel: { mediaRecorder, chunks, stream, analysisCtx, timerInterval, recording } }
+
+async function toggleRecording(panel) {
+  if (recState[panel]?.recording) {
+    stopRecording(panel);
+  } else {
+    await startRecording(panel);
+  }
+}
+
+async function startRecording(panel) {
+  const btn = document.getElementById(panel+'-rec-btn');
+  const box = document.getElementById(panel+'-analysis-box');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+
+    // Setup analyser for pitch tracking during recording
+    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+    const analyserNode = actx.createAnalyser();
+    analyserNode.fftSize = 8192;
+    analyserNode.smoothingTimeConstant = 0.8;
+    actx.createMediaStreamSource(stream).connect(analyserNode);
+
+    // MediaRecorder for audio capture
+    const chunks = [];
+    const mr = new MediaRecorder(stream, { mimeType: getSupportedMime() });
+    mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    mr.start(100);
+
+    // Pitch tracking data during recording
+    const pitchLog = [];   // { time, freq, note, cents }
+    const noteOnsets = []; // timestamps when a new note starts
+    let lastNote = null, silenceFrames = 0, totalFrames = 0;
+    const bufLen = analyserNode.fftSize;
+    const dataArr = new Float32Array(bufLen);
+    let recRafId = null;
+    const recStart = Date.now();
+
+    function trackFrame() {
+      analyserNode.getFloatTimeDomainData(dataArr);
+      let rms = 0;
+      for (let i = 0; i < bufLen; i++) rms += dataArr[i] * dataArr[i];
+      rms = Math.sqrt(rms / bufLen);
+      totalFrames++;
+
+      if (rms < 0.015) {
+        silenceFrames++;
+      } else {
+        const freq = autoCorrelate(dataArr, actx.sampleRate);
+        if (freq > 80 && freq < 2000) {
+          const result = findClosest(freq);
+          if (result) {
+            const t = Date.now() - recStart;
+            pitchLog.push({ time: t, freq, note: result.note.name, cents: result.cents });
+            if (result.note.name !== lastNote) {
+              noteOnsets.push(t);
+              lastNote = result.note.name;
+            }
+          }
+        }
+      }
+      recRafId = requestAnimationFrame(trackFrame);
+    }
+    trackFrame();
+
+    // Timer display
+    let secs = 0;
+    const timerEl = document.createElement('div');
+    timerEl.className = 'rec-timer';
+    timerEl.id = panel+'-timer';
+    btn.parentNode.insertBefore(timerEl, btn.nextSibling);
+    const timerInterval = setInterval(() => {
+      secs++;
+      timerEl.textContent = `🔴 錄音中 ${secs}s（再按停止並分析）`;
+    }, 1000);
+    timerEl.textContent = '🔴 錄音中 0s（再按停止並分析）';
+
+    btn.textContent = '⏹ 停止並分析';
+    btn.style.background = 'var(--red)';
+    box.style.display = 'none';
+
+    recState[panel] = { mediaRecorder: mr, chunks, stream, analysisCtx: actx, timerInterval, recording: true, recRafId, pitchLog, noteOnsets, silenceFrames, totalFrames: { ref: () => totalFrames }, recStart };
+
+  } catch(e) {
+    showAnalysisError(panel, '無法使用麥克風，請允許瀏覽器權限');
+  }
+}
+
+function getSupportedMime() {
+  const types = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'];
+  for (const t of types) { if (MediaRecorder.isTypeSupported(t)) return t; }
+  return '';
+}
+
+async function stopRecording(panel) {
+  const state = recState[panel];
+  if (!state) return;
+  state.recording = false;
+
+  const btn = document.getElementById(panel+'-rec-btn');
+  btn.textContent = '⏳ 分析中...';
+  btn.disabled = true;
+  btn.style.background = 'var(--muted)';
+
+  clearInterval(state.timerInterval);
+  cancelAnimationFrame(state.recRafId);
+
+  const timerEl = document.getElementById(panel+'-timer');
+  if (timerEl) timerEl.remove();
+
+  const box = document.getElementById(panel+'-analysis-box');
+  box.style.display = 'block';
+  box.innerHTML = '<div class="analysis-loading"><div class="analysis-spinner"></div>正在分析演奏數據...</div>';
+
+  // Stop recording
+  await new Promise(resolve => {
+    state.mediaRecorder.onstop = resolve;
+    state.mediaRecorder.stop();
+    state.stream.getTracks().forEach(t => t.stop());
+    state.analysisCtx.close();
+  });
+
+  // Compute analysis from pitchLog
+  const pitchLog = state.pitchLog;
+  const noteOnsets = state.noteOnsets;
+  const totalDuration = (Date.now() - state.recStart) / 1000;
+  const silenceRatio = state.silenceFrames / Math.max(1, state.totalFrames.ref());
+
+  let inTuneCount = 0, outTuneCount = 0;
+  const noteNames = {};
+  pitchLog.forEach(p => {
+    if (Math.abs(p.cents) <= 25) inTuneCount++; else outTuneCount++;
+    noteNames[p.note] = (noteNames[p.note] || 0) + 1;
+  });
+  const totalNotes = inTuneCount + outTuneCount;
+  const inTunePct = totalNotes > 0 ? Math.round(inTuneCount / totalNotes * 100) : 0;
+
+  // Rhythm regularity: std dev of note onset intervals
+  let rhythmScore = null;
+  if (noteOnsets.length >= 3) {
+    const intervals = [];
+    for (let i = 1; i < noteOnsets.length; i++) intervals.push(noteOnsets[i] - noteOnsets[i-1]);
+    const mean = intervals.reduce((a,b) => a+b, 0) / intervals.length;
+    const variance = intervals.reduce((a,b) => a + Math.pow(b-mean,2), 0) / intervals.length;
+    const stdDev = Math.sqrt(variance);
+    const cv = mean > 0 ? stdDev / mean : 1; // coefficient of variation
+    rhythmScore = Math.max(0, Math.round((1 - Math.min(cv, 1)) * 100));
+  }
+
+  // Most common notes played
+  const topNotes = Object.entries(noteNames).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>e[0]);
+
+  const ex = currentEx || {};
+  const kidName = currentKid === 'trumpet' ? '添樂' : '悅琳';
+  const instrument = currentKid === 'trumpet' ? 'Bb小號' : '長笛';
+
+  // Build analysis summary for AI
+  const analysisData = {
+    練習類型: ex.title || '自由練習',
+    樂器: instrument,
+    孩子: kidName,
+    錄音時長: `${totalDuration.toFixed(1)}秒`,
+    音準率: `${inTunePct}%（${inTuneCount}/${totalNotes} 個音在±25音分以內）`,
+    節奏穩定度: rhythmScore !== null ? `${rhythmScore}%` : '音符太少，無法分析',
+    靜音比例: `${Math.round(silenceRatio*100)}%`,
+    吹到的音符: topNotes.length > 0 ? topNotes.join(', ') : '未檢測到有效音符',
+  };
+
+  // Show scores while waiting for AI
+  const pitchCls = inTunePct >= 70 ? 'good' : inTunePct >= 40 ? 'ok' : 'poor';
+  const rhythmCls = rhythmScore === null ? 'ok' : rhythmScore >= 70 ? 'good' : rhythmScore >= 40 ? 'ok' : 'poor';
+  const rhythmLabel = rhythmScore !== null ? `節奏 ${rhythmScore}%` : '節奏 –';
+  box.innerHTML = `
+    <div class="analysis-score">
+      <div class="score-chip ${pitchCls}">音準 ${inTunePct}%</div>
+      <div class="score-chip ${rhythmCls}">${rhythmLabel}</div>
+      <div class="score-chip ok">時長 ${totalDuration.toFixed(0)}s</div>
+    </div>
+    <div class="analysis-loading"><div class="analysis-spinner"></div>AI 正在生成評語...</div>`;
+
+  // Call qwen-plus for comment
+  try {
+    const prompt = `你是一位專業兒童管樂老師，正在分析學生的練習錄音數據。
+
+學生資料：${kidName}，樂器：${instrument}，練習項目：${ex.title||'自由練習'}
+練習說明：${ex.desc||''}
+
+演奏分析數據：
+- 錄音時長：${analysisData.錄音時長}
+- 音準率：${analysisData.音準率}
+- 節奏穩定度：${analysisData.節奏穩定度}
+- 靜音比例（沒有吹奏的時間）：${analysisData.靜音比例}
+- 檢測到的音符：${analysisData.吹到的音符}
+
+請根據以上數據，用鼓勵的語氣給出2-3句具體的評語和1-2個改進建議。
+要求：
+1. 針對數據說具體問題，不要說空話
+2. 語氣溫暖，適合小學生
+3. 不超過100字
+4. 用繁體中文`;
+
+    const resp = await fetch(ALIYUN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ALIYUN_KEY}` },
+      body: JSON.stringify({
+        model: 'qwen-plus',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const comment = data.choices?.[0]?.message?.content || '無法獲取評語，請重試';
+
+    box.innerHTML = `
+      <div class="analysis-score">
+        <div class="score-chip ${pitchCls}">音準 ${inTunePct}%</div>
+        <div class="score-chip ${rhythmCls}">${rhythmLabel}</div>
+        <div class="score-chip ok">時長 ${totalDuration.toFixed(0)}s</div>
+      </div>
+      <div class="analysis-comment">${comment}</div>`;
+  } catch(e) {
+    box.innerHTML = `
+      <div class="analysis-score">
+        <div class="score-chip ${pitchCls}">音準 ${inTunePct}%</div>
+        <div class="score-chip ${rhythmCls}">${rhythmLabel}</div>
+      </div>
+      <div class="analysis-comment" style="color:var(--muted)">AI 評語暫時不可用，但你可以參考上面的數據。</div>`;
+  }
+
+  btn.textContent = '🔴 重新錄音分析';
+  btn.disabled = false;
+  btn.style.background = 'var(--purple)';
+  recState[panel] = null;
+}
+
+function showAnalysisError(panel, msg) {
+  const box = document.getElementById(panel+'-analysis-box');
+  box.style.display = 'block';
+  box.innerHTML = `<div style="color:var(--red);font-size:13px;">❌ ${msg}</div>`;
+}
+
 </script>
 </body>
 </html>
