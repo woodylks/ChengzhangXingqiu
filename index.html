@@ -3099,7 +3099,7 @@ function openHomeworkPhotoModal() {
   const currentEl = document.getElementById('hw-photo-current');
   if (currentUrl) {
     currentEl.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">今日已上傳截圖：</div>' +
-      '<img src="' + currentUrl + '" style="width:100%;border-radius:10px;cursor:pointer;object-fit:cover;max-height:160px;" onclick="viewFullImage('' + currentUrl + '')">' +
+      '<img src="' + currentUrl + '" style="width:100%;border-radius:10px;cursor:pointer;object-fit:cover;max-height:160px;" onclick="viewFullImage(\'' + currentUrl + '\'">' +
       '<div style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center;">可重新上傳替換</div>';
   } else {
     currentEl.innerHTML = '';
@@ -3141,7 +3141,7 @@ async function handleHwPhotoUpload(event) {
     area.innerHTML = '<div style="font-size:32px;margin-bottom:6px;">✅</div><div style="font-size:14px;font-weight:800;color:var(--green);">上傳成功！</div>';
     document.getElementById('hw-photo-current').innerHTML =
       '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">今日已上傳截圖：</div>' +
-      '<img src="' + url + '" style="width:100%;border-radius:10px;object-fit:cover;max-height:160px;cursor:pointer;" onclick="viewFullImage('' + url + '')">';
+      '<img src="' + url + '" style="width:100%;border-radius:10px;object-fit:cover;max-height:160px;cursor:pointer;" onclick="viewFullImage(\'' + url + '\'">';
     renderHwPhotoPreview();
   } catch(err) {
     prog.style.display = 'none';
@@ -3164,7 +3164,7 @@ function renderHwPhotoPreview() {
     if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.background = 'white'; }
     return;
   }
-  el.innerHTML = '<div style="position:relative;margin-bottom:10px;" onclick="viewFullImage('' + imgUrl + '')">' +
+  el.innerHTML = '<div style="position:relative;margin-bottom:10px;" onclick="viewFullImage(\'' + imgUrl + '\'">' +
     '<img src="' + imgUrl + '" style="width:100%;max-height:140px;object-fit:cover;border-radius:10px;cursor:pointer;border:2px solid ' + kidColor + '30;">' +
     '<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.5);color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;">🔍 點擊放大</div>' +
     '</div>';
@@ -3468,8 +3468,8 @@ function loadPracticeInfo() {
     ? `<img src="${d.scoreImg}" style="width:100%;border-radius:8px;border:1.5px solid var(--border);" onerror="this.style.display='none'">`
     : "";
   if (uploadArea) uploadArea.innerHTML = d.scoreImg
-    ? "<div style="font-size:22px;margin-bottom:2px;">✅</div><div style="font-size:12px;font-weight:700;color:var(--green);">已有樂譜，點擊更換</div>"
-    : "<div style="font-size:22px;margin-bottom:2px;">📷</div><div style="font-size:12px;font-weight:700;color:var(--muted);">點擊選擇照片上傳</div>";
+    ? '<div style="font-size:22px;margin-bottom:2px;">✅</div><div style="font-size:12px;font-weight:700;color:var(--green);">已有樂譜，點擊更換</div>'
+    : '<div style="font-size:22px;margin-bottom:2px;">📷</div><div style="font-size:12px;font-weight:700;color:var(--muted);">點擊選擇照片上傳</div>';
   const ytEl = document.getElementById("yt-embed-area");
   if (ytEl) ytEl.innerHTML = d.ytUrl
     ? `<iframe class="yt-frame" src="${ytEmbedUrl(d.ytUrl)}" allowfullscreen></iframe>`
@@ -3486,7 +3486,7 @@ function savePracticeInfo() {
 }
 
 function ytEmbedUrl(url) {
-  const m = url.match(/(?:youtube.com/watch?v=|youtu.be/)([a-zA-Z0-9_-]{11})/);
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   return m ? `https://www.youtube.com/embed/${m[1]}` : "";
 }
 
