@@ -2142,19 +2142,16 @@ async function sendMsg() {
 
 
   try {
-    // Build Gemini conversation: system prompt as first user turn
-    const geminiMsgs = [
-      { role: 'user', parts: [{ text: systemPrompt }] },
-      { role: 'model', parts: [{ text: '明白，我會按照以上指示幫助你。' }] },
-      ...chatHistory.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
-    ];
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyA8jImT_8clTKVhlibpivRVoc0h4UpnAMY', {
+    const res = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: geminiMsgs })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-a5a9b48f7bb34817a3811920aad62e12' },
+      body: JSON.stringify({
+        model: 'qwen-plus',
+        messages: [{ role: 'system', content: systemPrompt }, ...chatHistory]
+      })
     });
     const data = await res.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '抱歉，暫時無法回應，請稍後再試。';
+    const reply = data.choices?.[0]?.message?.content || '抱歉，暫時無法回應，請稍後再試。';
     removeTyping();
     appendMsg('ai', reply);
     chatHistory.push({ role:'assistant', content: reply });
@@ -2609,16 +2606,16 @@ async function scanBlackboard(input) {
   const dateStr = `${today.getMonth()+1}月${today.getDate()}日`;
 
   try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyA8jImT_8clTKVhlibpivRVoc0h4UpnAMY', {
+    const scanPrompt = '這是一張學校黑板的功課照片（' + dateStr + '）。請識別所有科目的功課，用JSON格式回應，格式如下：\n{"tasks":[{"name":"功課名稱","subject":"math或chinese或english或science或it或other","priority":"high或medium或low"}]}\n科目對應：中文/語文/普通話=chinese，英文/英語=english，數學=math，常識/科學=science，IT=it，其他=other。\n只回JSON，不要其他文字，不要markdown。';
+    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-a5a9b48f7bb34817a3811920aad62e12' },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inline_data: { mime_type: 'image/jpeg', data: base64 } },
-            { text: '這是一張學校黑板的功課照片（' + dateStr + '）。請識別所有科目的功課，用JSON格式回應，格式如下：\n{\"tasks\":[{\"name\":\"功課名稱\",\"subject\":\"math或chinese或english或science或it或other\",\"priority\":\"high或medium或low\"}]}\n科目對應：中文/語文/普通話=chinese，英文/英語=english，數學=math，常識/科學=science，IT=it，其他=other。\n只回JSON，不要其他文字，不要markdown。' }
-          ]
-        }]
+        model: 'qwen-vl-max',
+        messages: [{ role: 'user', content: [
+          { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + base64 } },
+          { type: 'text', text: scanPrompt }
+        ]}]
       })
     });
 
@@ -2630,7 +2627,7 @@ async function scanBlackboard(input) {
       return;
     }
 
-    const text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json|```/g,'').trim();
+    const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g,'').trim();
     let json;
     try {
       json = JSON.parse(text);
@@ -3056,24 +3053,15 @@ async function scanBlackboardFromUrl(imageUrl) {
   const dateStr = (today.getMonth()+1) + '月' + today.getDate() + '日';
   const prompt = '這是一張學校黑板的功課照片（' + dateStr + '）。請識別所有科目的功課，用JSON格式回應，格式如下：\n{"tasks":[{"name":"功課名稱","subject":"math或chinese或english或science或it或other","priority":"high或medium或low"}]}\n科目對應：中文/語文/普通話=chinese，英文/英語=english，數學=math，常識/科學=science，IT=it，其他=other。\n只回JSON，不要其他文字，不要markdown。';
   try {
-    // Fetch image and convert to base64 for Gemini
-    const imgResp = await fetch(imageUrl);
-    const imgBlob = await imgResp.blob();
-    const imgBase64 = await new Promise(res => {
-      const r = new FileReader();
-      r.onload = () => res(r.result.split(',')[1]);
-      r.readAsDataURL(imgBlob);
-    });
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyA8jImT_8clTKVhlibpivRVoc0h4UpnAMY', {
+    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-a5a9b48f7bb34817a3811920aad62e12' },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inline_data: { mime_type: 'image/jpeg', data: imgBase64 } },
-            { text: prompt }
-          ]
-        }]
+        model: 'qwen-vl-max',
+        messages: [{ role: 'user', content: [
+          { type: 'image_url', image_url: { url: imageUrl } },
+          { type: 'text', text: prompt }
+        ]}]
       })
     });
     const data = await response.json();
@@ -3081,7 +3069,7 @@ async function scanBlackboardFromUrl(imageUrl) {
       if (statusEl) statusEl.innerHTML = '❌ AI錯誤：' + (data.error.message || '');
       return;
     }
-    const text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
     let json;
     try { json = JSON.parse(text); }
     catch(e) { const m = text.match(/\{[\s\S]*\}/); json = m ? JSON.parse(m[0]) : { tasks: [] }; }
