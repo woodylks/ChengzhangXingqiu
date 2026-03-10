@@ -666,12 +666,15 @@ body {
         <div class="card-title" style="margin:0;"><span class="icon">📅</span> 功課歷史記錄</div>
         <button onclick="archiveTodayTasks()" style="padding:6px 12px;border-radius:20px;border:none;background:var(--green);color:white;font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">📦 歸檔今日</button>
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
-        <button onclick="filterHistory('all')" class="hist-filter" data-filter="all" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--kid1);color:white;font-size:11px;font-weight:700;cursor:pointer;">全部</button>
-        <button onclick="filterHistory('week')" class="hist-filter" data-filter="week" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:11px;font-weight:700;cursor:pointer;">本週</button>
-        <button onclick="filterHistory('month')" class="hist-filter" data-filter="month" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:11px;font-weight:700;cursor:pointer;">本月</button>
+      <!-- Calendar nav -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <button onclick="histCalNav(-1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:16px;cursor:pointer;">‹</button>
+        <div id="hist-cal-month" style="font-size:15px;font-weight:900;color:var(--text);"></div>
+        <button onclick="histCalNav(1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:16px;cursor:pointer;">›</button>
       </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;" id="subject-filter-btns"></div>
+      <!-- Calendar grid -->
+      <div id="hist-calendar" style="margin-bottom:14px;"></div>
+      <!-- Day detail -->
       <div id="history-list"></div>
     </div>
   </div>
@@ -2811,6 +2814,9 @@ function importFromPaste() {
 //  HISTORY FEATURE
 // ══════════════════════════════════════════════
 let historyFilter = 'all';
+let histCalYear = new Date().getFullYear();
+let histCalMonth = new Date().getMonth(); // 0-indexed
+let histSelectedDate = null; // 'YYYY-MM-DD'
 let historySubjectFilter = 'all';
 
 function getHistory() {
@@ -2915,88 +2921,125 @@ function checkAutoArchive() {
   saveData(kkey('lastDate'), today);
 }
 
-function filterHistory(f) {
-  historyFilter = f;
-  document.querySelectorAll('.hist-filter').forEach(b => {
-    b.classList.toggle('active-filter', b.dataset.filter === f);
-    b.style.background = b.dataset.filter === f ? 'var(--kid1)' : 'white';
-    b.style.color = b.dataset.filter === f ? 'white' : 'var(--text)';
-  });
+function histCalNav(dir) {
+  histCalMonth += dir;
+  if (histCalMonth > 11) { histCalMonth = 0; histCalYear++; }
+  if (histCalMonth < 0)  { histCalMonth = 11; histCalYear--; }
   renderHistory();
 }
 
-function filterHistorySubject(s) {
-  historySubjectFilter = s;
-  document.querySelectorAll('.subj-filter').forEach(b => {
-    b.classList.toggle('active-subj', b.dataset.subj === s);
-    b.style.background = b.dataset.subj === s ? 'var(--text)' : 'white';
-    b.style.color = b.dataset.subj === s ? 'white' : 'var(--text)';
-  });
+function histSelectDay(dateStr) {
+  histSelectedDate = histSelectedDate === dateStr ? null : dateStr;
   renderHistory();
 }
+
+function filterHistory(f) { historyFilter = f; renderHistory(); }
+function filterHistorySubject(s) { historySubjectFilter = s; renderHistory(); }
 
 function renderHistory() {
-  // Populate subject filter buttons
-  const subjBtns = document.getElementById('subject-filter-btns');
-  if (subjBtns) {
-    const allS = [...SUBJECTS, ...ARTS];
-    subjBtns.innerHTML = `<button onclick="filterHistorySubject('all')" class="subj-filter" data-subj="all" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:${historySubjectFilter==='all'?'var(--text)':'white'};color:${historySubjectFilter==='all'?'white':'var(--text)'};font-size:12px;font-weight:700;cursor:pointer;">全部</button>`
-    + allS.map(s => `<button onclick="filterHistorySubject('${s.id}')" class="subj-filter" data-subj="${s.id}" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:${historySubjectFilter===s.id?'var(--text)':'white'};color:${historySubjectFilter===s.id?'white':'var(--text)'};font-size:12px;font-weight:700;cursor:pointer;">${s.emoji} ${s.name}</button>`).join('');
+  const kidColor = currentKid===1 ? 'var(--kid1)' : 'var(--kid2)';
+  const history = getHistory();
+
+  // Build lookup: dateKey -> day record
+  const byDate = {};
+  history.forEach(d => { byDate[d.dateKey] = d; });
+
+  // ── Calendar ──
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const monthLabel = document.getElementById('hist-cal-month');
+  if (monthLabel) monthLabel.textContent = histCalYear + '年 ' + monthNames[histCalMonth];
+
+  const calEl = document.getElementById('hist-calendar');
+  if (calEl) {
+    const firstDay = new Date(histCalYear, histCalMonth, 1).getDay();
+    const daysInMonth = new Date(histCalYear, histCalMonth+1, 0).getDate();
+    const todayStr = new Date().toISOString().slice(0,10);
+
+    let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;">';
+    ['日','一','二','三','四','五','六'].forEach(d => {
+      html += `<div style="font-size:10px;font-weight:800;color:var(--muted);padding:4px 0;">${d}</div>`;
+    });
+    for (let i=0; i<firstDay; i++) html += '<div></div>';
+    for (let d=1; d<=daysInMonth; d++) {
+      const iso = histCalYear+'-'+String(histCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const hasData = !!byDate[iso];
+      const isToday = iso === todayStr;
+      const isSelected = iso === histSelectedDate;
+      const dayRec = byDate[iso];
+      const pct = dayRec ? Math.round((dayRec.doneCount||0)/Math.max(dayRec.totalCount||1,1)*100) : 0;
+
+      let bg = 'transparent', color = 'var(--text)', border = '1.5px solid transparent';
+      if (isSelected) { bg = kidColor; color = 'white'; border = '1.5px solid '+kidColor; }
+      else if (isToday) { border = '1.5px solid '+kidColor; color = kidColor; }
+      else if (hasData) { bg = kidColor+'22'; }
+
+      const dot = hasData && !isSelected
+        ? `<div style="width:5px;height:5px;border-radius:50%;background:${pct>=100?'var(--green)':kidColor};margin:1px auto 0;"></div>`
+        : '<div style="height:6px;"></div>';
+
+      html += `<div onclick="histSelectDay('${iso}')" style="padding:5px 2px 2px;border-radius:8px;cursor:${hasData||isToday?'pointer':'default'};background:${bg};color:${color};border:${border};min-height:36px;user-select:none;">
+        <div style="font-size:12px;font-weight:${isToday||isSelected?'900':'600'};">${d}</div>
+        ${dot}
+      </div>`;
+    }
+    html += '</div>';
+    calEl.innerHTML = html;
   }
 
-  let history = getHistory();
-  if (!history.length) {
-    document.getElementById('history-list').innerHTML = `
-      <div class="empty-state">
-        <div class="emoji">📭</div>
-        <p>還沒有歷史記錄</p>
-        <p style="font-size:11px;margin-top:4px;">每天完成功課後點「歸檔今日」</p>
-      </div>`;
+  // ── Day detail ──
+  const listEl = document.getElementById('history-list');
+  if (!listEl) return;
+
+  if (!histSelectedDate) {
+    const monthDays = history.filter(d => d.dateKey && d.dateKey.startsWith(histCalYear+'-'+String(histCalMonth+1).padStart(2,'0')));
+    if (!monthDays.length) {
+      listEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px 0;">點擊日期查看當天功課</div>';
+      return;
+    }
+    const total = monthDays.reduce((s,d)=>s+(d.totalCount||0),0);
+    const done  = monthDays.reduce((s,d)=>s+(d.doneCount||0),0);
+    const pct   = total ? Math.round(done/total*100) : 0;
+    listEl.innerHTML = `<div style="text-align:center;padding:12px 0 4px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">本月共完成</div>
+      <div style="font-size:28px;font-weight:900;color:${kidColor};">${pct}%</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px;">${done} / ${total} 項任務</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;">👆 點擊有記錄的日期查看詳情</div>
+    </div>`;
     return;
   }
 
-  // Date filter
-  const now = new Date();
-  if (historyFilter === 'week') {
-    const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
-    history = history.filter(h => new Date(h.dateKey.replace(/\//g,'-')) >= weekAgo);
-  } else if (historyFilter === 'month') {
-    const monthAgo = new Date(now); monthAgo.setMonth(now.getMonth() - 1);
-    history = history.filter(h => new Date(h.dateKey.replace(/\//g,'-')) >= monthAgo);
+  const dayRec = byDate[histSelectedDate];
+  if (!dayRec) {
+    listEl.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px 0;">${
+      histSelectedDate === new Date().toISOString().slice(0,10) ? '今日功課尚未歸檔' : '這天沒有記錄'
+    }</div>`;
+    return;
   }
 
-  const kidColor = currentKid===1 ? 'var(--kid1)' : 'var(--kid2)';
+  const tasks = dayRec.tasks || [];
+  const doneCount = tasks.filter(t=>t.done).length;
+  const pct2 = Math.round(doneCount/Math.max(tasks.length,1)*100);
+  const dd = new Date(histSelectedDate+'T00:00:00');
+  const weekdays = ['日','一','二','三','四','五','六'];
+  const dateLabel = `${dd.getMonth()+1}月${dd.getDate()}日 週${weekdays[dd.getDay()]}`;
 
-  document.getElementById('history-list').innerHTML = history.map(day => {
-    let tasks = day.tasks || [];
-    // Subject filter
-    if (historySubjectFilter !== 'all') {
-      tasks = tasks.filter(t => t.subject === historySubjectFilter);
-    }
-    if (!tasks.length) return '';
-
-    const doneCount = tasks.filter(t=>t.done).length;
-    const pct = Math.round(doneCount/tasks.length*100);
-
-    return `
-    <div class="hist-day-group">
-      <div class="hist-day-header" style="background:${kidColor};">
-        <span>${day.dateLabel}</span>
-        <span class="day-stats">✅ ${doneCount}/${tasks.length} 完成 · ${pct}%</span>
-      </div>
-      ${tasks.map(t => {
-        const subj = ALL_SUBJECTS.find(s=>s.id===t.subject);
-        return `<div class="hist-task">
-          <div class="done-badge ${t.done?'done':'undone'}">${t.done?'✓':'○'}</div>
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:700;${t.done?'text-decoration:line-through;opacity:0.6':''}">${t.name}</div>
-            <div style="font-size:11px;color:var(--muted);">${subj?.emoji||'📚'} ${subj?.name||t.subject}</div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }).filter(Boolean).join('') || '<div class="empty-state"><div class="emoji">🔍</div><p>此篩選條件下沒有記錄</p></div>';
+  listEl.innerHTML = `
+    <div style="background:${kidColor};border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:white;font-weight:900;font-size:14px;">${dateLabel}</span>
+      <span style="color:white;font-size:12px;font-weight:700;">✅ ${doneCount}/${tasks.length} · ${pct2}%</span>
+    </div>
+    ${tasks.map(t => {
+      const subj = ALL_SUBJECTS.find(s=>s.id===t.subject);
+      return `<div class="hist-task">
+        <div class="done-badge ${t.done?'done':'undone'}">${t.done?'✓':'○'}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;${t.done?'text-decoration:line-through;opacity:0.55':''}">${t.name}</div>
+          <div style="font-size:11px;color:var(--muted);">${subj?.emoji||'📚'} ${subj?.name||t.subject}</div>
+        </div>
+      </div>`;
+    }).join('')}`;
 }
+
 
 // Override switchTab to render history when needed
 
