@@ -551,13 +551,14 @@ body {
     await fbSet(`data/kid${kid}/syllabuses/main`, { items: syllabuses, updatedAt: Date.now() });
   };
   window.loadAllFromCloud = async function(kid) {
-    const [tasks, notices, progress, training, exams, syllabuses] = await Promise.all([
+    const [tasks, notices, progress, training, exams, syllabuses, hwPhotos] = await Promise.all([
       fbGet(`data/kid${kid}/tasks/main`),
       fbGet(`data/kid${kid}/notices/main`),
       fbGet(`data/kid${kid}/progress/main`),
       fbGet(`data/kid${kid}/training/main`),
       fbGet(`data/kid${kid}/exams/main`),
       fbGet(`data/kid${kid}/syllabuses/main`),
+      fbGet(`data/shared/hwPhotos/main`),
     ]);
     return {
       tasks: tasks?.items || null,
@@ -566,6 +567,7 @@ body {
       training: training?.items || null,
       exams: exams?.items || null,
       syllabuses: syllabuses?.items || null,
+      hwPhotos: hwPhotos?.items || null,
     };
   };
 
@@ -1373,6 +1375,7 @@ async function loadFromCloud(kid) {
     if (data.training) { saveData(`kid${kid}_training`, data.training); changed = true; }
     if (data.exams) { saveData(`kid${kid}_exams`, data.exams); changed = true; }
     if (data.syllabuses) { saveData(`kid${kid}_syllabuses`, data.syllabuses); changed = true; }
+    if (data.hwPhotos) { saveData('hw_photos', data.hwPhotos); changed = true; }
     if (changed) {
       renderDashboard();
       renderExamList();
@@ -3280,7 +3283,10 @@ function navTap(e, tab) {
 const GITHUB_PHOTO_BASE = 'https://raw.githubusercontent.com/woodylks/ChengzhangXingqiu/main/Photos/';
 
 function getHwPhotos() { return loadData('hw_photos', {}); }
-function saveHwPhotos(p) { saveData('hw_photos', p); }
+function saveHwPhotos(p) {
+  saveData('hw_photos', p);
+  if (window.fbReady) window.fbSet('data/shared/hwPhotos/main', { items: p, updatedAt: Date.now() });
+}
 
 function getDayKey() {
   const d = new Date();
