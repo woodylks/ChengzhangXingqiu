@@ -33,6 +33,10 @@
   --shadow-lg: 0 8px 32px rgba(45,32,22,0.14);
   --radius: 20px;
   --radius-sm: 12px;
+  --trumpet: #FF6B35;
+  --flute: #4FACDE;
+  --card2: #F5EDE4;
+  --yellow: #FFCC00;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -472,6 +476,138 @@ body {
 
 /* ── YOUTUBE EMBED ── */
 .yt-frame { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); border: none; margin-top: 8px; }
+
+/* ══════════ PRACTICE MODULE CSS ══════════ */
+.btn-primary {
+  width:100%; padding:15px; border-radius:14px; border:none;
+  font-family:'Noto Sans TC',sans-serif; font-size:15px; font-weight:900; cursor:pointer; transition:all 0.2s; margin-bottom:10px;
+}
+.btn-primary.trumpet  { background:var(--trumpet); color:white; box-shadow:0 6px 24px rgba(255,107,53,0.35); }
+.btn-primary.flute    { background:var(--flute);   color:white; box-shadow:0 6px 24px rgba(79,172,222,0.35); }
+.btn-primary.stop     { background:var(--red);     color:white; box-shadow:0 6px 24px rgba(255,68,102,0.35); }
+.btn-primary:active   { transform:scale(0.97); }
+.btn-secondary {
+  width:100%; padding:12px; border-radius:12px; border:1.5px solid var(--border);
+  background:var(--card); color:var(--muted);
+  font-family:'Noto Sans TC',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.2s;
+}
+.btn-secondary:active { transform:scale(0.97); }
+
+.divider { height:1px; background:var(--border); margin:14px 0; }
+
+@keyframes pulse { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.04);opacity:0.85;} }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.analysis-box {
+  background:var(--card2); border:1px solid var(--border); border-radius:14px;
+  padding:14px; margin:10px 0;
+}
+.analysis-loading {
+  display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px;
+}
+.analysis-spinner {
+  width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--purple);
+  border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0;
+}
+.analysis-score {
+  display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;
+}
+.score-chip {
+  padding:6px 10px; border-radius:8px; font-size:12px; font-weight:700;
+  font-family:'Space Mono',monospace;
+}
+.score-chip.good  { background:rgba(0,255,136,0.12); color:var(--green); border:1px solid rgba(0,255,136,0.3); }
+.score-chip.ok    { background:rgba(255,204,0,0.12);  color:var(--yellow); border:1px solid rgba(255,204,0,0.3); }
+.score-chip.poor  { background:rgba(255,68,102,0.12); color:var(--red);   border:1px solid rgba(255,68,102,0.3); }
+.analysis-comment {
+  font-size:13px; line-height:1.7; color:var(--text); white-space:pre-wrap;
+}
+/* ── REPERTOIRE ── */
+.rep-field { margin-bottom:16px; }
+.rep-label { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; letter-spacing:0.08em; margin-bottom:8px; }
+.rep-upload-box {
+  border:2px dashed var(--border); border-radius:12px; padding:24px;
+  text-align:center; cursor:pointer; transition:border-color 0.2s;
+  background:var(--card2); min-height:80px; display:flex; align-items:center; justify-content:center;
+}
+.rep-upload-box:hover { border-color:var(--trumpet); }
+.rep-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:14px; cursor:pointer; transition:all 0.2s; display:flex; gap:12px; align-items:center;
+}
+.rep-card:hover { border-color:var(--trumpet); }
+.rep-view-btn {
+  padding:6px 12px; border-radius:10px; border:1.5px solid var(--border);
+  background:var(--card2); color:var(--muted); font-size:12px; font-family:'Space Mono',monospace;
+  cursor:pointer; transition:all 0.18s;
+}
+.rep-view-btn.active { background:var(--trumpet); border-color:var(--trumpet); color:white; }
+.rep-cal-day {
+  aspect-ratio:1; border-radius:8px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; font-size:11px; cursor:pointer;
+  background:var(--card2); border:1.5px solid transparent; transition:all 0.15s;
+}
+.rep-cal-day.has-practice { background:rgba(255,107,53,0.15); border-color:rgba(255,107,53,0.4); color:var(--trumpet); font-weight:700; }
+.rep-cal-day.today { border-color:var(--trumpet); }
+.rep-cal-day.other-month { opacity:0.3; cursor:default; }
+.rep-cal-day.selected { background:var(--trumpet); color:white; border-color:var(--trumpet); }
+.rep-card-thumb { width:52px; height:52px; border-radius:8px; background:var(--card2); object-fit:cover; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:24px; }
+.rep-card-info { flex:1; min-width:0; }
+.rep-card-title { font-size:14px; font-weight:700; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rep-card-meta { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; }
+.note-chip {
+  display:flex; flex-direction:column; align-items:center;
+  background:var(--card2); border:1.5px solid var(--border); border-radius:10px;
+  padding:6px 8px; cursor:pointer; min-width:44px; transition:all 0.15s; position:relative;
+}
+.note-chip.active-chip { border-color:var(--trumpet); background:rgba(255,107,53,0.12); }
+.note-chip-name { font-size:12px; font-weight:700; font-family:'Space Mono',monospace; }
+.note-chip-dur { font-size:14px; line-height:1; margin-top:2px; }
+.dur-picker {
+  position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
+  background:var(--card); border:1px solid var(--border); border-radius:10px;
+  padding:8px; display:flex; gap:6px; z-index:20; box-shadow:0 8px 24px rgba(0,0,0,0.5);
+}
+.dur-opt {
+  padding:6px 10px; border-radius:8px; cursor:pointer; font-size:16px;
+  border:1.5px solid var(--border); background:var(--card2);
+}
+.dur-opt:hover, .dur-opt.selected { background:var(--trumpet); border-color:var(--trumpet); color:white; }
+.series-btn, .pattern-btn {
+  padding: 7px 12px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: var(--card2); color: var(--muted); font-size: 12px; font-family: 'Space Mono', monospace;
+  cursor: pointer; transition: all 0.18s;
+}
+.series-btn.active { background: var(--trumpet); border-color: var(--trumpet); color: white; box-shadow: 0 4px 12px rgba(255,107,53,0.35); }
+.pattern-btn.active { background: rgba(255,107,53,0.18); border-color: var(--trumpet); color: var(--trumpet); }
+.series-valve-hint {
+  font-size: 10px; color: var(--muted); margin-top: 2px;
+}
+.pitch-chart-wrap {
+  background: var(--card2); border-radius: 12px; padding: 12px; margin-bottom: 14px;
+}
+.pitch-chart-label {
+  font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted);
+  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;
+}
+.pitch-canvas {
+  width: 100%; height: 160px; display: block; border-radius: 8px;
+  background: #0d0d14;
+}
+.chart-note-labels {
+  position: absolute; top: 0; left: 0; height: 100%; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.chart-note-label {
+  font-family: 'Space Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.3);
+  padding-left: 4px; line-height: 1;
+}
+.rec-timer {
+  font-family:'Space Mono',monospace; font-size:12px; color:var(--purple);
+  text-align:center; margin-bottom:8px;
+}
+.listening-pulse { animation:pulse 1.2s ease-in-out infinite; }
+
 </style>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -824,48 +960,20 @@ body {
         <div id="music-q-area"></div>
       </div>
 
-      <!-- 🎼 陪練功能 -->
+      <!-- 🎼 陪練功能 (已升級 → 體藝板塊) -->
       <div class="card" style="margin-bottom:12px;">
-        <div class="card-title"><span class="icon">🎼</span> 陪練功能</div>
-        <!-- Instrument tabs -->
-        <div style="display:flex;gap:6px;margin-bottom:12px;" id="instr-tabs"></div>
-        <!-- Piece + score image -->
-        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">🎶 今日曲目</div>
-        <input class="form-input" id="piece-name" placeholder="例：小星星、卡農…" style="margin-bottom:8px;">
-        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">🖼 樂譜圖片</div>
-        <input type="file" id="score-img-file" accept="image/*" style="display:none;" onchange="uploadScoreImg(event)">
-        <div id="score-img-upload-area" onclick="document.getElementById('score-img-file').click()"
-          style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:6px;">
-          <div style="font-size:22px;margin-bottom:2px;">📷</div>
-          <div style="font-size:12px;font-weight:700;color:var(--muted);">點擊選擇照片上傳</div>
+        <div class="card-title"><span class="icon">🎼</span> 樂器陪練</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">音準訓練、曲目練習、實時音高圖、AI評分 — 完整功能在體藝板塊</div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="goToPractice('trumpet')"
+            style="flex:1;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--kid1),#ff8c5a);color:white;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">
+            🎺 小號練習
+          </button>
+          <button onclick="goToPractice('flute')"
+            style="flex:1;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--kid2),#74c8f0);color:white;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">
+            🎵 長笛練習
+          </button>
         </div>
-        <div id="score-upload-progress" style="display:none;margin-bottom:6px;">
-          <div style="height:5px;border-radius:3px;background:var(--border);overflow:hidden;">
-            <div id="score-upload-bar" style="height:100%;border-radius:3px;background:var(--green);width:0%;transition:width 0.2s;"></div>
-          </div>
-          <div id="score-upload-pct" style="font-size:11px;color:var(--muted);text-align:center;margin-top:2px;">上傳中…</div>
-        </div>
-        <div id="score-img-preview" style="margin-bottom:8px;"></div>
-        <!-- YouTube -->
-        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px;">▶️ YouTube示範連結</div>
-        <div style="display:flex;gap:8px;margin-bottom:6px;">
-          <input class="form-input" id="yt-url" placeholder="https://youtu.be/…" style="flex:1;">
-          <button onclick="savePracticeInfo()" style="padding:0 14px;border-radius:var(--radius-sm);border:none;background:var(--green);color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">保存</button>
-        </div>
-        <div id="yt-embed-area"></div>
-        <!-- Practice log -->
-        <div style="font-size:12px;font-weight:800;color:var(--muted);margin:10px 0 4px;">📓 練習日誌</div>
-        <textarea class="form-input" id="practice-log-input" rows="2" placeholder="今天練習內容、老師要求、進步點…" style="resize:none;margin-bottom:6px;"></textarea>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <select class="form-input" id="practice-rating" style="flex:1;">
-            <option value="5">⭐⭐⭐⭐⭐ 超棒</option>
-            <option value="4" selected>⭐⭐⭐⭐ 不錯</option>
-            <option value="3">⭐⭐⭐ 一般</option>
-            <option value="2">⭐⭐ 需加強</option>
-          </select>
-          <button onclick="addPracticeLog()" id="practice-log-btn" style="padding:0 16px;border-radius:var(--radius-sm);border:none;color:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">記錄</button>
-        </div>
-        <div id="practice-log-list"></div>
       </div>
 
     </div>
@@ -1249,11 +1357,14 @@ const SUBJECTS = [
 ];
 
 const ARTS = [
-  { id: 'swim', name: '游泳', emoji: '🏊' },
-  { id: 'art', name: '繪畫', emoji: '🎨' },
-  { id: 'dance', name: '舞蹈', emoji: '💃' },
-  { id: 'music', name: '音樂', emoji: '🎹' },
+  { id: 'swim',    name: '游泳', emoji: '🏊' },
+  { id: 'art',     name: '繪畫', emoji: '🎨' },
+  { id: 'dance',   name: '舞蹈', emoji: '💃' },
+  { id: 'music',   name: '音樂', emoji: '🎹' },
+  { id: 'trumpet', name: '小號', emoji: '🎺', kidOnly: 1 },
+  { id: 'flute',   name: '長笛', emoji: '🎵', kidOnly: 2 },
 ];
+const PRACTICE_ARTS = ['trumpet', 'flute'];
 
 const ALL_SUBJECTS = [...SUBJECTS, ...ARTS];
 
@@ -1561,6 +1672,8 @@ function setDate() {
 // ══════════════════════════════════════════════
 function switchKid(kid) {
   currentKid = kid;
+  // Sync practice module
+  practiceKid = kid === 1 ? 'trumpet' : 'flute';
   selectedSubject = null;
   selectedArts = null;
   document.getElementById('kidBtn1').className = `kid-tab${kid===1?' active-1':''}`;
@@ -2232,14 +2345,17 @@ function renderArtsGrid() {
   const prog = getProgress();
   const el = document.getElementById('arts-grid');
   const color = currentKid===1?'var(--kid1)':'var(--kid2)';
-  el.innerHTML = ARTS.map(s => {
+  // Filter: kidOnly items only show for the matching kid
+  const visibleArts = ARTS.filter(s => !s.kidOnly || s.kidOnly === currentKid);
+  el.innerHTML = visibleArts.map(s => {
     const v = prog[s.id]||0;
     const sel = selectedArts===s.id;
+    const isPractice = PRACTICE_ARTS.includes(s.id);
     return `
     <div class="subject-card${sel?(currentKid===1?' selected':' selected-2'):''}" onclick="selectArts('${s.id}')">
       <div class="subject-emoji">${s.emoji}</div>
       <div class="subject-name">${s.name}</div>
-      <div class="subject-score" style="color:${sel?color:'var(--muted)'}">${v}%</div>
+      <div class="subject-score" style="color:${sel?color:'var(--muted)'}">${isPractice?'▶ 練習':v+'%'}</div>
     </div>`;
   }).join('');
 }
@@ -2253,6 +2369,19 @@ function selectArts(id) {
 function renderArtsDetail() {
   const el = document.getElementById('arts-detail');
   if (!selectedArts) { el.innerHTML=''; return; }
+  // Trumpet/Flute → show embedded practice module
+  if (PRACTICE_ARTS.includes(selectedArts)) {
+    const kidStr = selectedArts; // 'trumpet' or 'flute'
+    el.innerHTML = `<div id="arts-practice-embed" style="margin-top:4px;"></div>`;
+    // Mount the practice module sections into the embed div
+    const embed = document.getElementById('arts-practice-embed');
+    // Build a mini container with the three practice sections
+    embed.innerHTML = buildPracticeEmbed();
+    // Init practice module for this kid
+    selectKid(kidStr);
+    switchPracticeTab('pitch');
+    return;
+  }
   const arts = ARTS.find(s=>s.id===selectedArts);
   const prog = getProgress();
   const training = getTraining().filter(t=>t.arts===selectedArts);
@@ -3818,6 +3947,2597 @@ function renderPracticeLog() {
     </div>`;
   }).join('');
 }
+
+
+
+// ── Practice embed helpers ──
+function buildPracticeEmbed() {
+  return `
+<div style="background:#13131f;border-radius:16px;overflow:hidden;margin-bottom:8px;">
+<div class="top-nav">
+  <button class="top-tab active-trumpet" id="tab-pitch" onclick="switchPracticeTab('pitch')">🎯 音準</button>
+  <button class="top-tab" id="tab-exercise" onclick="switchPracticeTab('exercise')">💪 練習</button>
+  <button class="top-tab" id="tab-repertoire" onclick="switchPracticeTab('repertoire')">🎵 曲目</button>
+</div>
+
+<!-- Kid selector -->
+<div class="kid-bar">
+  <button class="kid-tab active-trumpet" id="kid-trumpet" onclick="selectKid('trumpet')">🦁 添樂<br><small style="font-weight:400;font-size:11px">Bb小號</small></button>
+  <button class="kid-tab" id="kid-flute" onclick="selectKid('flute')">🐰 悅琳<br><small style="font-weight:400;font-size:11px">長笛</small></button>
+</div>
+
+<!-- ══ PITCH SECTION ══ -->
+<div class="section active" id="sec-pitch">
+
+  <div class="note-display" id="note-display">
+    <div class="note-name note-idle" id="note-name">–</div>
+    <div class="note-solfege" id="note-solfege"></div>
+    <div class="note-freq" id="note-freq">等待聲音...</div>
+  </div>
+
+  <!-- Fingering (trumpet only) -->
+  <div id="fingering-section">
+    <div class="fingering-label" id="fingering-label">按鍵</div>
+    <div class="fingering-wrap">
+      <div class="valve"><div class="valve-num">1</div><div class="valve-circle" id="v1">1</div></div>
+      <div class="valve"><div class="valve-num">2</div><div class="valve-circle" id="v2">2</div></div>
+      <div class="valve"><div class="valve-num">3</div><div class="valve-circle" id="v3">3</div></div>
+    </div>
+  </div>
+
+  <div class="bar-wrap">
+    <div class="bar-label">音準偏差</div>
+    <div class="bar-outer">
+      <div class="bar-center"></div>
+      <div class="bar-fill" id="tuning-fill" style="left:50%;width:0%"></div>
+    </div>
+    <div class="bar-cents" id="tuning-cents">–</div>
+  </div>
+
+  <div class="bar-wrap">
+    <div class="bar-label">音量</div>
+    <div class="bar-outer"><div class="vol-fill" id="vol-fill"></div></div>
+  </div>
+
+  <div class="feedback-box">
+    <div class="feedback-icon" id="p-icon">🎸</div>
+    <div>
+      <div class="feedback-text" id="p-text">按下按鈕開始聆聽</div>
+      <div class="feedback-sub" id="p-sub">靠近麥克風吹奏</div>
+    </div>
+  </div>
+
+  <div class="note-grid-title" id="note-grid-title">Bb小號音域（記譜音）</div>
+  <div class="note-grid" id="note-grid"></div>
+
+  <button class="btn-primary trumpet" id="pitch-btn" onclick="togglePitch()">🎙️ 開始聆聽</button>
+</div>
+
+<!-- ══ EXERCISE SECTION ══ -->
+<div class="section" id="sec-exercise">
+
+  <!-- Exercise cards -->
+  <div class="ex-grid" id="ex-grid"></div>
+
+  <!-- ① Lip Flexibility / Long Tone Panel -->
+  <div class="ex-panel" id="panel-lip">
+    <div class="ex-panel-title" id="lip-title">💋 Lip Flexibility</div>
+    <div class="ex-panel-sub" id="lip-desc"></div>
+
+    <!-- Series selector (only shown for trumpet lip exercise) -->
+    <div id="lip-series-selector" style="display:none; margin-bottom:12px;">
+      <div class="pattern-title" style="margin-bottom:8px;">選擇按鍵組合</div>
+      <div id="lip-series-btns" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <div class="pattern-title" style="margin-top:12px;margin-bottom:8px;">選擇音型難度</div>
+      <div id="lip-pattern-btns" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+
+    <!-- Metronome -->
+    <div class="metro-wrap">
+      <div class="metro-display">
+        <div>
+          <div class="metro-bpm" id="lip-bpm">60</div>
+          <div class="metro-unit">BPM</div>
+        </div>
+        <div class="metro-btn-wrap">
+          <button class="metro-btn" onclick="changeBpm('lip',-5)">−</button>
+          <button class="metro-btn" onclick="changeBpm('lip',+5)">＋</button>
+        </div>
+      </div>
+      <input type="range" class="metro-slider" id="lip-slider" min="40" max="120" value="60"
+        oninput="sliderBpm('lip',this.value)">
+      <div class="beat-dots" id="lip-dots"></div>
+    </div>
+
+    <div class="pattern-wrap">
+      <div class="pattern-title" id="lip-pattern-title">練習音型</div>
+      <div class="pattern-notes" id="lip-pattern"></div>
+    </div>
+
+    <div class="pitch-chart-wrap" id="lip-chart-wrap" style="display:none;">
+      <div class="pitch-chart-label">實時音高圖</div>
+      <div style="position:relative;">
+        <canvas id="lip-canvas" class="pitch-canvas"></canvas>
+        <div class="chart-note-labels" id="lip-note-labels"></div>
+      </div>
+    </div>
+
+    <button class="btn-primary trumpet" id="lip-start-btn" onclick="toggleExercise('lip')">▶ 開始練習</button>
+    <div class="divider"></div>
+    <button class="btn-primary trumpet" id="lip-rec-btn" onclick="toggleRecording('lip')" style="background:var(--purple);box-shadow:0 6px 24px rgba(167,139,250,0.35);">🔴 開始錄音分析</button>
+    <div id="lip-analysis-box" class="analysis-box" style="display:none;"></div>
+    <button class="btn-secondary" onclick="closePanel('lip')">← 返回</button>
+  </div>
+
+  <!-- ② Tonguing Panel -->
+  <div class="ex-panel" id="panel-tongue">
+    <div class="ex-panel-title" id="tongue-title">👅 吐音練習</div>
+    <div class="ex-panel-sub" id="tongue-desc"></div>
+
+    <div class="metro-wrap">
+      <div class="metro-display">
+        <div>
+          <div class="metro-bpm" id="tongue-bpm">60</div>
+          <div class="metro-unit">BPM</div>
+        </div>
+        <div class="metro-btn-wrap">
+          <button class="metro-btn" onclick="changeBpm('tongue',-5)">−</button>
+          <button class="metro-btn" onclick="changeBpm('tongue',+5)">＋</button>
+        </div>
+      </div>
+      <input type="range" class="metro-slider" id="tongue-slider" min="40" max="160" value="60"
+        oninput="sliderBpm('tongue',this.value)">
+      <div class="beat-dots" id="tongue-dots"></div>
+    </div>
+
+    <div class="pattern-wrap">
+      <div class="pattern-title">吐音音節</div>
+      <div class="tongue-pattern" id="tongue-pattern"></div>
+    </div>
+
+    <div class="pitch-chart-wrap" id="tongue-chart-wrap" style="display:none;">
+      <div class="pitch-chart-label">實時音高圖</div>
+      <div style="position:relative;">
+        <canvas id="tongue-canvas" class="pitch-canvas"></canvas>
+        <div class="chart-note-labels" id="tongue-note-labels"></div>
+      </div>
+    </div>
+
+    <button class="btn-primary trumpet" id="tongue-start-btn" onclick="toggleExercise('tongue')">▶ 開始練習</button>
+    <div class="divider"></div>
+    <button class="btn-primary trumpet" id="tongue-rec-btn" onclick="toggleRecording('tongue')" style="background:var(--purple);box-shadow:0 6px 24px rgba(167,139,250,0.35);">🔴 開始錄音分析</button>
+    <div id="tongue-analysis-box" class="analysis-box" style="display:none;"></div>
+    <button class="btn-secondary" onclick="closePanel('tongue')">← 返回</button>
+  </div>
+
+  <!-- ③ Breath Control Panel -->
+  <div class="ex-panel" id="panel-breath">
+    <div class="ex-panel-title">🌬️ 氣息練習</div>
+    <div class="ex-panel-sub" id="breath-desc"></div>
+
+    <div class="pitch-chart-wrap" id="breath-chart-wrap" style="display:none;">
+      <div class="pitch-chart-label">實時音高圖</div>
+      <div style="position:relative;">
+        <canvas id="breath-canvas" class="pitch-canvas"></canvas>
+        <div class="chart-note-labels" id="breath-note-labels"></div>
+      </div>
+    </div>
+
+    <div class="pattern-wrap" style="text-align:center;">
+      <div class="breath-instruction" id="breath-instruction">準備好了嗎？</div>
+      <div class="breath-count" id="breath-count">–</div>
+      <div style="margin-top:12px;">
+        <div class="bar-label" style="text-align:left">氣息進度</div>
+        <div class="breath-bar-outer">
+          <div class="breath-bar-fill" id="breath-bar"></div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;" id="breath-cycle-label">第 1 / 4 組</div>
+    </div>
+
+    <button class="btn-primary trumpet" id="breath-start-btn" onclick="toggleExercise('breath')">▶ 開始練習</button>
+    <div class="divider"></div>
+    <button class="btn-primary trumpet" id="breath-rec-btn" onclick="toggleRecording('breath')" style="background:var(--purple);box-shadow:0 6px 24px rgba(167,139,250,0.35);">🔴 開始錄音分析</button>
+    <div id="breath-analysis-box" class="analysis-box" style="display:none;"></div>
+    <button class="btn-secondary" onclick="closePanel('breath')">← 返回</button>
+  </div>
+
+</div><!-- end exercise section -->
+
+<!-- ══════════════════════════════════════
+     REPERTOIRE SECTION
+══════════════════════════════════════ -->
+<div class="section" id="sec-repertoire">
+
+  <!-- ① LIST VIEW -->
+  <div id="rep-list-view">
+    <div style="padding:16px 16px 8px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="display:flex;gap:6px;">
+        <button class="rep-view-btn active" id="rvb-library" onclick="switchRepView('library')">🎼 曲目庫</button>
+        <button class="rep-view-btn" id="rvb-calendar" onclick="switchRepView('calendar')">📅 練習記錄</button>
+      </div>
+      <button class="btn-primary trumpet" style="padding:8px 14px;font-size:12px;" onclick="showRepAdd()">＋ 新增</button>
+    </div>
+
+    <!-- Library sub-view -->
+    <div id="rep-library-view">
+      <div id="rep-empty" style="text-align:center;padding:48px 24px;color:var(--muted);">
+        <div style="font-size:40px;margin-bottom:12px;">🎼</div>
+        <div style="font-size:14px;">還沒有曲目</div>
+        <div style="font-size:12px;margin-top:6px;">點擊「＋ 新增」上傳曲譜開始練習</div>
+      </div>
+      <div id="rep-cards" style="padding:0 16px 16px; display:flex; flex-direction:column; gap:12px;"></div>
+    </div>
+
+    <!-- Calendar sub-view -->
+    <div id="rep-calendar-view" style="display:none; padding:0 16px 16px;">
+      <div id="rep-cal-header" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 12px;">
+        <button onclick="repCalShift(-1)" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">‹</button>
+        <div id="rep-cal-title" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;"></div>
+        <button onclick="repCalShift(+1)" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">›</button>
+      </div>
+      <div id="rep-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px;"></div>
+      <div id="rep-cal-detail" style="display:none;">
+        <div class="rep-label" id="rep-cal-detail-date" style="margin-bottom:8px;"></div>
+        <div id="rep-cal-detail-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② ADD VIEW -->
+  <div id="rep-add-view" style="display:none; padding:16px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button onclick="showRepList()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">←</button>
+      <div style="font-size:15px;font-weight:700;">新增曲目</div>
+    </div>
+
+    <!-- Name -->
+    <div class="rep-field">
+      <div class="rep-label">曲目名稱</div>
+      <input class="form-input" id="rep-name-input" placeholder="例：小星星、Hering No.1..." />
+    </div>
+
+    <!-- Score image (display only) -->
+    <div class="rep-field">
+      <div class="rep-label">曲譜圖片 <span style="color:var(--muted);font-size:11px;">（選填，僅供練習時參考）</span></div>
+      <div class="rep-upload-box" id="rep-upload-box" onclick="document.getElementById('rep-img-input').click()">
+        <div id="rep-upload-hint"><div style="font-size:28px;margin-bottom:8px;">📄</div>
+          <div style="font-size:13px;color:var(--muted);">點擊選擇圖片</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">JPG / PNG</div></div>
+        <img id="rep-img-preview" style="display:none;width:100%;border-radius:8px;max-height:200px;object-fit:contain;" />
+      </div>
+      <input type="file" id="rep-img-input" accept="image/*" style="display:none" onchange="onScoreImageSelected(event)" />
+    </div>
+
+    <!-- YouTube -->
+    <div class="rep-field">
+      <div class="rep-label">YouTube 參考連結 <span style="color:var(--muted);font-size:11px;">（選填）</span></div>
+      <input class="form-input" id="rep-yt-input" placeholder="https://www.youtube.com/watch?v=..." />
+    </div>
+
+    <!-- Input method selector -->
+    <div class="rep-field">
+      <div class="rep-label">錄入音符（示範錄音）</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="rep-view-btn active" id="input-tab-hum" onclick="switchInputTab('hum')" style="flex:1;">🎙 哼唱錄入</button>
+        <button class="rep-view-btn" id="input-tab-upload" onclick="switchInputTab('upload')" style="flex:1;">📤 上傳音頻</button>
+      </div>
+
+      <!-- Hum tab -->
+      <div id="input-panel-hum">
+        <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">吹奏一遍，App 自動識別音符和時值，同時作為示範錄音保存。</div>
+          <div id="hum-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;font-family:'Space Mono',monospace;">準備就緒</div>
+          <div id="hum-viz" style="height:60px;background:#0d0d14;border-radius:8px;margin-bottom:10px;overflow:hidden;position:relative;">
+            <canvas id="hum-canvas" style="width:100%;height:100%;display:block;"></canvas>
+            <div id="hum-note-display" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--trumpet);"></div>
+          </div>
+          <button class="btn-primary trumpet" id="hum-rec-btn" onclick="toggleHumRecording()" style="width:100%;">🎙 開始吹奏</button>
+        </div>
+      </div>
+
+      <!-- Upload tab -->
+      <div id="input-panel-upload" style="display:none;">
+        <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">上傳一段示範音頻（MP3/WAV/M4A），自動提取音符序列。</div>
+          <div class="rep-upload-box" onclick="document.getElementById('rep-audio-input').click()" style="min-height:60px;">
+            <div id="audio-upload-hint" style="text-align:center;">
+              <div style="font-size:24px;margin-bottom:6px;">🎵</div>
+              <div style="font-size:12px;color:var(--muted);">點擊選擇音頻文件</div>
+            </div>
+            <div id="audio-upload-done" style="display:none;text-align:center;">
+              <div style="font-size:13px;color:var(--green);">✅ 已選擇音頻</div>
+              <div id="audio-upload-name" style="font-size:11px;color:var(--muted);margin-top:4px;"></div>
+            </div>
+          </div>
+          <input type="file" id="rep-audio-input" accept="audio/*" style="display:none" onchange="onAudioFileSelected(event)" />
+          <button class="btn-primary trumpet" id="audio-analyze-btn" onclick="analyzeUploadedAudio()" style="width:100%;margin-top:10px;" disabled>
+            🔍 分析音符
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result editor (shared by both methods) -->
+    <div id="rep-editor" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="rep-label" style="margin-bottom:0;">識別結果 <span style="color:var(--muted);font-size:11px;">— 點擊音符可修改時值</span></div>
+        <div style="font-size:11px;color:var(--muted);" id="rep-note-count"></div>
+      </div>
+      <div id="rep-note-editor" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div class="rep-label" style="margin-bottom:0;">練習速度</div>
+        <button class="metro-btn" onclick="changeRepBpm(-5)">−</button>
+        <span id="rep-bpm-display" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;min-width:40px;text-align:center;">80</span>
+        <span style="font-size:11px;color:var(--muted);">BPM</span>
+        <button class="metro-btn" onclick="changeRepBpm(+5)">＋</button>
+      </div>
+      <div class="rep-label" style="margin-bottom:8px;">音高預覽圖</div>
+      <canvas id="rep-preview-canvas" style="width:100%;height:120px;background:#0d0d14;border-radius:10px;display:block;margin-bottom:16px;"></canvas>
+      <button class="btn-primary trumpet" onclick="saveRepertoire()">💾 保存曲目</button>
+    </div>
+
+    <div id="rep-loading" style="display:none;text-align:center;padding:24px;">
+      <div class="analysis-spinner" style="margin:0 auto 10px;"></div>
+      <div style="font-size:13px;color:var(--muted);" id="rep-loading-msg">處理中...</div>
+    </div>
+  </div>
+
+  <!-- ③ PRACTICE VIEW -->
+  <div id="rep-practice-view" style="display:none; padding:16px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <button onclick="showRepList()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">←</button>
+      <div style="font-size:15px;font-weight:700;flex:1;" id="rep-practice-title">練習</div>
+    </div>
+
+    <!-- Score image -->
+    <div id="rep-score-wrap" style="display:none;margin-bottom:12px;">
+      <div class="rep-label" style="margin-bottom:6px;">曲譜</div>
+      <img id="rep-score-img" style="width:100%;border-radius:10px;max-height:220px;object-fit:contain;background:#0d0d14;" />
+    </div>
+
+    <!-- Demo recording -->
+    <div class="pitch-chart-wrap" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="pitch-chart-label" style="margin-bottom:0;">示範錄音</div>
+        <div id="rep-demo-controls"></div>
+      </div>
+      <div id="rep-demo-status" style="font-size:12px;color:var(--muted);">尚未錄製示範</div>
+      <audio id="rep-demo-audio" controls style="width:100%;margin-top:8px;display:none;"></audio>
+    </div>
+
+    <!-- YouTube embed -->
+    <div id="rep-yt-wrap" style="display:none;margin-bottom:12px;">
+      <div class="rep-label" style="margin-bottom:6px;">參考影片</div>
+      <div style="position:relative;padding-bottom:56.25%;border-radius:10px;overflow:hidden;background:#000;">
+        <iframe id="rep-yt-iframe" style="position:absolute;top:0;left:0;width:100%;height:100%;"
+          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+
+    <!-- Realtime pitch chart -->
+    <div class="pitch-chart-wrap" id="rep-pitch-chart-wrap" style="display:none;margin-bottom:12px;">
+      <div class="pitch-chart-label">實時音高圖</div>
+      <canvas id="rep-canvas" class="pitch-canvas"></canvas>
+    </div>
+
+    <!-- Practice controls -->
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn-primary trumpet" id="rep-practice-btn" onclick="toggleRepPractice()" style="flex:1;">▶ 開始練習</button>
+      <button id="rep-rec-btn" onclick="toggleRepRecording()"
+        style="flex:1;padding:14px;border-radius:14px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:var(--purple);color:white;">
+        🔴 錄音分析
+      </button>
+    </div>
+
+    <!-- Analysis result -->
+    <div id="rep-analysis-box" class="analysis-box" style="display:none;margin-bottom:10px;">
+      <!-- scores row -->
+      <div id="rep-scores-row" class="analysis-score"></div>
+      <!-- pitch stability histogram -->
+      <div id="rep-hist-wrap" style="display:none;margin:10px 0;">
+        <div class="rep-label" style="margin-bottom:6px;">音準分佈</div>
+        <canvas id="rep-hist-canvas" style="width:100%;height:70px;border-radius:8px;background:#0d0d14;display:block;"></canvas>
+      </div>
+      <!-- demo comparison chart -->
+      <div id="rep-compare-wrap" style="display:none;margin:10px 0;">
+        <div class="rep-label" style="margin-bottom:6px;">與示範對比</div>
+        <canvas id="rep-compare-canvas" style="width:100%;height:100px;border-radius:8px;background:#0d0d14;display:block;"></canvas>
+      </div>
+      <!-- AI comment -->
+      <div id="rep-ai-comment" class="analysis-comment" style="margin-top:10px;"></div>
+    </div>
+
+    <button class="btn-secondary" onclick="showRepList()">← 返回曲目庫</button>
+  </div>
+
+</div><!-- end repertoire section -->
+</div>`;
+}
+
+function goToPractice(kidStr) {
+  // Navigate to arts tab and select instrument
+  switchTab('arts');
+  selectArts(kidStr);
+}
+
+function initPracticeModule() {
+  // Called after practice HTML is embedded
+  // Already handled by selectKid() call in renderArtsDetail
+}
+
+// ══════════════════════════════════════════
+// PRACTICE MODULE (from practice-demo.html)
+// ══════════════════════════════════════════
+
+// ══════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════
+const SOLFEGE = {
+  'C':'Do','C#':'Di','Db':'Ra','D':'Re','D#':'Ri','Eb':'Me',
+  'E':'Mi','F':'Fa','F#':'Fi','Gb':'Se','G':'Sol',
+  'G#':'Si','Ab':'Le','A':'La','A#':'Li','Bb':'Te','B':'Ti',
+};
+
+const TRUMPET_FINGERING = {
+  'G3':[0,0,0],'G#3':[0,1,1],'Ab3':[0,1,1],'A3':[1,1,0],'Bb3':[1,0,0],'B3':[0,1,0],
+  'C4':[0,0,0],'C#4':[1,1,1],'Db4':[1,1,1],'D4':[1,0,1],'D#4':[0,1,1],'Eb4':[0,1,1],
+  'E4':[1,1,0],'F4':[1,0,0],'F#4':[0,1,1],'Gb4':[0,1,1],
+  'G4':[0,0,0],'G#4':[0,1,1],'Ab4':[0,1,1],'A4':[1,1,0],'Bb4':[1,0,0],'B4':[0,1,0],
+  'C5':[0,0,0],'C#5':[1,1,0],'Db5':[1,1,0],'D5':[1,0,1],'D#5':[0,1,1],'Eb5':[0,1,1],
+  'E5':[1,1,0],'F5':[1,0,0],'F#5':[1,1,1],'Gb5':[1,1,1],'G5':[0,0,0],
+  'G#5':[0,1,1],'Ab5':[0,1,1],'A5':[1,1,0],'Bb5':[1,0,0],'B5':[0,1,0],'C6':[0,0,0],
+};
+
+const INSTRUMENTS = {
+  trumpet: {
+    gridTitle: 'Bb小號音域（記譜音）', colorName:'trumpet',
+    notes: [
+      {name:'G3',  cf:196.0*Math.pow(2,-2/12)},{name:'Ab3', cf:207.7*Math.pow(2,-2/12)},
+      {name:'A3',  cf:220.0*Math.pow(2,-2/12)},{name:'Bb3', cf:233.1*Math.pow(2,-2/12)},
+      {name:'B3',  cf:246.9*Math.pow(2,-2/12)},{name:'C4',  cf:261.6*Math.pow(2,-2/12)},
+      {name:'C#4', cf:277.2*Math.pow(2,-2/12)},{name:'D4',  cf:293.7*Math.pow(2,-2/12)},
+      {name:'Eb4', cf:311.1*Math.pow(2,-2/12)},{name:'E4',  cf:329.6*Math.pow(2,-2/12)},
+      {name:'F4',  cf:349.2*Math.pow(2,-2/12)},{name:'F#4', cf:370.0*Math.pow(2,-2/12)},
+      {name:'G4',  cf:392.0*Math.pow(2,-2/12)},{name:'Ab4', cf:415.3*Math.pow(2,-2/12)},
+      {name:'A4',  cf:440.0*Math.pow(2,-2/12)},{name:'Bb4', cf:466.2*Math.pow(2,-2/12)},
+      {name:'B4',  cf:493.9*Math.pow(2,-2/12)},{name:'C5',  cf:523.3*Math.pow(2,-2/12)},
+      {name:'D5',  cf:587.3*Math.pow(2,-2/12)},{name:'E5',  cf:659.3*Math.pow(2,-2/12)},
+      {name:'F5',  cf:698.5*Math.pow(2,-2/12)},{name:'G5',  cf:784.0*Math.pow(2,-2/12)},
+      {name:'A5',  cf:880.0*Math.pow(2,-2/12)},{name:'Bb5', cf:932.3*Math.pow(2,-2/12)},
+      {name:'C6',  cf:1046.5*Math.pow(2,-2/12)},
+    ]
+  },
+  flute: {
+    gridTitle:'長笛音域', colorName:'flute',
+    notes: [
+      {name:'C4',cf:261.6},{name:'D4',cf:293.7},{name:'E4',cf:329.6},{name:'F4',cf:349.2},
+      {name:'G4',cf:392.0},{name:'A4',cf:440.0},{name:'Bb4',cf:466.2},{name:'B4',cf:493.9},
+      {name:'C5',cf:523.3},{name:'D5',cf:587.3},{name:'E5',cf:659.3},{name:'F5',cf:698.5},
+      {name:'G5',cf:784.0},{name:'A5',cf:880.0},{name:'Bb5',cf:932.3},{name:'B5',cf:987.8},
+      {name:'C6',cf:1046.5},{name:'D6',cf:1174.7},{name:'E6',cf:1318.5},
+      {name:'F6',cf:1396.9},{name:'G6',cf:1568.0},{name:'A6',cf:1760.0},
+    ]
+  }
+};
+
+// Exercise definitions per instrument
+// Lip flexibility harmonic series definitions
+const LIP_SERIES = [
+  {
+    id:'open', label:'開放', valves:[0,0,0], emoji:'⭕',
+    desc:'不按任何鍵，靠嘴唇鬆緊在泛音之間切換。',
+    patterns: [
+      { label:'基礎 3層', notes:['C4','G4','C5','G4','C4'] },
+      { label:'上行 4層', notes:['C4','G4','C5','E5','C5','G4','C4'] },
+      { label:'完整 5層', notes:['C4','G4','C5','E5','G5','E5','C5','G4','C4'] },
+      { label:'高音衝頂', notes:['C5','E5','G5','C6','G5','E5','C5'] },
+    ]
+  },
+  {
+    id:'v1', label:'按鍵 1', valves:[1,0,0], emoji:'1️⃣',
+    desc:'只按第1鍵（降全音），練習 Bb 泛音列。',
+    patterns: [
+      { label:'基礎 3層', notes:['Bb3','F4','Bb4','F4','Bb3'] },
+      { label:'上行 4層', notes:['Bb3','F4','Bb4','D5','Bb4','F4','Bb3'] },
+      { label:'完整 5層', notes:['Bb3','F4','Bb4','D5','F5','D5','Bb4','F4','Bb3'] },
+      { label:'高音衝頂', notes:['Bb4','D5','F5','Bb5','F5','D5','Bb4'] },
+    ]
+  },
+  {
+    id:'v2', label:'按鍵 2', valves:[0,1,0], emoji:'2️⃣',
+    desc:'只按第2鍵（降半音），練習 B 泛音列。',
+    patterns: [
+      { label:'基礎 3層', notes:['B3','F#4','B4','F#4','B3'] },
+      { label:'上行 4層', notes:['B3','F#4','B4','D#5','B4','F#4','B3'] },
+      { label:'完整 5層', notes:['B3','F#4','B4','D#5','F#5','D#5','B4','F#4','B3'] },
+      { label:'高音衝頂', notes:['B4','D#5','F#5','B5','F#5','D#5','B4'] },
+    ]
+  },
+  {
+    id:'v12', label:'鍵 1+2', valves:[1,1,0], emoji:'①②',
+    desc:'按第1+2鍵（降一個半音），練習 A 泛音列。',
+    patterns: [
+      { label:'基礎 3層', notes:['A3','E4','A4','E4','A3'] },
+      { label:'上行 4層', notes:['A3','E4','A4','C#5','A4','E4','A3'] },
+      { label:'完整 5層', notes:['A3','E4','A4','C#5','E5','C#5','A4','E4','A3'] },
+      { label:'高音衝頂', notes:['A4','C#5','E5','A5','E5','C#5','A4'] },
+    ]
+  },
+  {
+    id:'v13', label:'鍵 1+3', valves:[1,0,1], emoji:'①③',
+    desc:'按第1+3鍵（降增二度），練習 Ab 泛音列。',
+    patterns: [
+      { label:'基礎 3層', notes:['Ab3','Eb4','Ab4','Eb4','Ab3'] },
+      { label:'上行 4層', notes:['Ab3','Eb4','Ab4','C5','Ab4','Eb4','Ab3'] },
+      { label:'完整 5層', notes:['Ab3','Eb4','Ab4','C5','Eb5','C5','Ab4','Eb4','Ab3'] },
+      { label:'高音衝頂', notes:['Ab4','C5','Eb5','Ab5','Eb5','C5','Ab4'] },
+    ]
+  },
+  {
+    id:'v123', label:'鍵 1+2+3', valves:[1,1,1], emoji:'①②③',
+    desc:'三鍵全按（最低音），練習 G 泛音列。',
+    patterns: [
+      { label:'基礎 3層', notes:['G3','D4','G4','D4','G3'] },
+      { label:'上行 4層', notes:['G3','D4','G4','B4','G4','D4','G3'] },
+      { label:'完整 5層', notes:['G3','D4','G4','B4','D5','B4','G4','D4','G3'] },
+      { label:'高音衝頂', notes:['G4','B4','D5','G5','D5','B4','G4'] },
+    ]
+  },
+];
+let currentLipSeries = 0;
+let currentLipPattern = 0;
+
+const EXERCISES = {
+  trumpet: [
+    {
+      id:'lip', icon:'💋', title:'Lip Flexibility', shortDesc:'嘴唇靈活性',
+      desc:'不改變按鍵，靠嘴唇鬆緊在泛音之間切換。選擇按鍵組合和音型難度。',
+      panel:'lip', beats:4, defaultBpm:52,
+      get pattern(){ return LIP_SERIES[currentLipSeries].patterns[currentLipPattern].notes; },
+      get patternLabel(){ return `泛音練習 · ${LIP_SERIES[currentLipSeries].label} · ${LIP_SERIES[currentLipSeries].patterns[currentLipPattern].label}`; },
+    },
+    {
+      id:'tongue', icon:'👅', title:'Single Tongue', shortDesc:'單吐音',
+      desc:'用「Tu」發音，每個音清晰分開。保持氣息穩定，吐音來自舌頭，不是嘴唇。',
+      panel:'tongue', beats:4, defaultBpm:60,
+      syllables:['Tu','Tu','Tu','Tu','Tu','Tu','Tu','Tu'],
+    },
+    {
+      id:'dtongue', icon:'⚡', title:'Double Tongue', shortDesc:'雙吐音',
+      desc:'用「Tu-ku」快速交替。先慢慢練清楚每個音節，再逐漸加速。',
+      panel:'tongue', beats:4, defaultBpm:60,
+      syllables:['Tu','ku','Tu','ku','Tu','ku','Tu','ku'],
+    },
+    {
+      id:'breath', icon:'🌬️', title:'Long Tone', shortDesc:'長音氣息',
+      desc:'一口氣吹一個音，保持音色穩定均勻。練習氣息支撐和音色控制。',
+      panel:'breath', beats:4, defaultBpm:60,
+    },
+  ],
+  flute: [
+    {
+      id:'lip', icon:'🎶', title:'Long Tone', shortDesc:'長音練習',
+      desc:'選一個音，一口氣吹到底。保持音色圓潤，不抖動。從 A4 開始，感受氣息的穩定支撐。',
+      panel:'lip', beats:4, defaultBpm:52,
+      pattern:['A4','G4','F4','E4','D4'],
+      patternLabel:'長音練習音階（由高到低）',
+    },
+    {
+      id:'tongue', icon:'👅', title:'Single Tongue', shortDesc:'單吐音',
+      desc:'用「Tu」或輕柔用「Du」。長笛吐音要輕，舌頭像輕輕碰上顎一下。',
+      panel:'tongue', beats:4, defaultBpm:60,
+      syllables:['Du','Du','Du','Du','Du','Du','Du','Du'],
+    },
+    {
+      id:'dtongue', icon:'⚡', title:'Double Tongue', shortDesc:'雙吐音',
+      desc:'用「Du-gu」快速交替。先確保每個音清晰，再加速練習。',
+      panel:'tongue', beats:4, defaultBpm:60,
+      syllables:['Du','gu','Du','gu','Du','gu','Du','gu'],
+    },
+    {
+      id:'breath', icon:'🌬️', title:'氣息控制', shortDesc:'漸強漸弱',
+      desc:'同一個音從最弱吹到最強（pp→ff），再從最強回到最弱。練習氣息的精確控制。',
+      panel:'breath', beats:4, defaultBpm:60,
+    },
+  ]
+};
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let practiceKid = 'trumpet';
+let currentTabName = 'pitch';
+let currentEx = null;
+let bpmState = { lip:60, tongue:60, breath:60 };
+
+// Pitch detector state
+let audioCtx=null,analyser=null,bufLen=null,dataArr=null,rafId=null,pitchOn=false;
+
+// Metronome state
+let metroIntervals = {};
+let metroBeat = { lip:0, tongue:0, breath:0 };
+let exRunning = { lip:false, tongue:false, breath:false };
+
+// Breath exercise state
+let breathPhase='inhale', breathTimer=null, breathCycle=0, breathTotalCycles=4;
+let breathStep=0, breathStepTimer=null;
+
+// ══════════════════════════════════════════
+//  UI
+// ══════════════════════════════════════════
+function switchPracticeTab(tab) {
+  currentTabName = tab;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+  document.querySelectorAll('.top-tab').forEach(b=>b.className='top-tab');
+  document.getElementById('tab-'+tab).className=`top-tab active-${practiceKid}`;
+}
+
+function selectKid(kid) {
+  practiceKid = kid;
+  document.getElementById('kid-trumpet').className='kid-tab'+(kid==='trumpet'?' active-trumpet':'');
+  document.getElementById('kid-flute').className  ='kid-tab'+(kid==='flute'  ?' active-flute':'');
+  // Update tab active color
+  document.getElementById('tab-'+currentTabName).className=`top-tab active-${kid}`;
+  // Update pitch btn
+  document.getElementById('pitch-btn').className=`btn-primary ${kid}`+(pitchOn?' stop':'');
+  // Fingering section
+  document.getElementById('fingering-section').style.display=kid==='trumpet'?'block':'none';
+  // Metronome slider color
+  document.querySelectorAll('.metro-slider').forEach(s=>{
+    s.className='metro-slider'+(kid==='flute'?' flute':'');
+  });
+  renderNoteGrid();
+  renderExGrid();
+  resetPitchDisplay();
+  closeAllPanels();
+}
+
+function renderNoteGrid() {
+  const inst = INSTRUMENTS[practiceKid];
+  document.getElementById('note-grid-title').textContent=inst.gridTitle;
+  document.getElementById('note-grid').innerHTML=inst.notes.map(n=>
+    `<div class="note-chip" id="chip-${n.name.replace('#','s').replace('b','b')}">${n.name}</div>`
+  ).join('');
+}
+
+function renderExGrid() {
+  const exs = EXERCISES[practiceKid];
+  document.getElementById('ex-grid').innerHTML = exs.map(ex=>
+    `<div class="ex-card" id="excard-${ex.id}" onclick="openExercise('${ex.id}')">
+      <div class="ex-icon">${ex.icon}</div>
+      <div class="ex-title">${ex.title}</div>
+      <div class="ex-desc">${ex.shortDesc}</div>
+    </div>`
+  ).join('');
+}
+
+function openExercise(id) {
+  const ex = EXERCISES[practiceKid].find(e=>e.id===id);
+  if(!ex) return;
+  currentEx = ex;
+
+  // Highlight card
+  document.querySelectorAll('.ex-card').forEach(c=>c.className='ex-card');
+  document.getElementById('excard-'+id).className=`ex-card selected-${practiceKid}`;
+
+  closeAllPanels();
+
+  const panel = document.getElementById('panel-'+ex.panel);
+
+  if(ex.panel==='lip') {
+    document.getElementById('lip-title').textContent=ex.icon+' '+ex.title;
+    document.getElementById('lip-desc').textContent=ex.desc;
+    bpmState.lip = ex.defaultBpm||60;
+    document.getElementById('lip-bpm').textContent=bpmState.lip;
+    document.getElementById('lip-slider').value=bpmState.lip;
+    renderBeatDots('lip', ex.beats||4);
+
+    // Show series selector only for trumpet lip flexibility
+    const isLipFlex = practiceKid === 'trumpet' && ex.id === 'lip';
+    const selDiv = document.getElementById('lip-series-selector');
+    selDiv.style.display = isLipFlex ? 'block' : 'none';
+    if (isLipFlex) {
+      renderLipSeriesSelector();
+    }
+
+    // Pattern
+    document.getElementById('lip-pattern-title').textContent=ex.patternLabel||'練習音型';
+    document.getElementById('lip-pattern').innerHTML=(ex.pattern||[]).map((n,i)=>
+      `<div class="p-note" id="pn-${i}">${n}<br><span style="font-size:10px;color:var(--muted)">${getSolfege(n)}</span></div>`
+    ).join('');
+    document.getElementById('lip-start-btn').className=`btn-primary ${practiceKid}`;
+    document.getElementById('lip-start-btn').textContent='▶ 開始練習';
+  }
+  else if(ex.panel==='tongue') {
+    document.getElementById('tongue-title').textContent=ex.icon+' '+ex.title;
+    document.getElementById('tongue-desc').textContent=ex.desc;
+    bpmState.tongue = ex.defaultBpm||60;
+    document.getElementById('tongue-bpm').textContent=bpmState.tongue;
+    document.getElementById('tongue-slider').value=bpmState.tongue;
+    renderBeatDots('tongue', ex.beats||4);
+    document.getElementById('tongue-pattern').innerHTML=(ex.syllables||[]).map((s,i)=>
+      `<div class="t-syllable" id="ts-${i}">${s}</div>`
+    ).join('');
+    document.getElementById('tongue-start-btn').className=`btn-primary ${practiceKid}`;
+    document.getElementById('tongue-start-btn').textContent='▶ 開始練習';
+  }
+  else if(ex.panel==='breath') {
+    document.getElementById('breath-desc').textContent=ex.desc;
+    document.getElementById('breath-start-btn').className=`btn-primary ${practiceKid}`;
+    document.getElementById('breath-start-btn').textContent='▶ 開始練習';
+    document.getElementById('breath-instruction').textContent='準備好了嗎？';
+    document.getElementById('breath-count').textContent='–';
+    document.getElementById('breath-bar').style.width='0%';
+    document.getElementById('breath-bar').className='breath-bar-fill';
+    document.getElementById('breath-cycle-label').textContent='第 1 / 4 組';
+  }
+
+  panel.classList.add('active');
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function closePanel(panelId) {
+  stopExercise(panelId);
+  document.getElementById('panel-'+panelId).classList.remove('active');
+  document.querySelectorAll('.ex-card').forEach(c=>c.className='ex-card');
+  currentEx=null;
+}
+function closeAllPanels() {
+  ['lip','tongue','breath'].forEach(p=>{
+    stopExercise(p);
+    document.getElementById('panel-'+p).classList.remove('active');
+  });
+}
+
+function getSolfege(noteName) {
+  const m = noteName.match(/^([A-Gb#]+)/);
+  return m ? (SOLFEGE[m[1]]||'') : '';
+}
+
+// ── Beat dots ──
+function renderBeatDots(panel, beats) {
+  const wrap = document.getElementById(panel+'-dots');
+  wrap.innerHTML = Array.from({length:beats},(_,i)=>
+    `<div class="beat-dot${i===0?' accent':''}" id="${panel}-dot-${i}"></div>`
+  ).join('');
+}
+function flashDot(panel, beat, beats) {
+  for(let i=0;i<beats;i++){
+    const d=document.getElementById(`${panel}-dot-${i}`);
+    if(d) d.className='beat-dot'+(i===0?' accent':'');
+  }
+  const active=document.getElementById(`${panel}-dot-${beat}`);
+  if(active) active.className=`beat-dot active-${practiceKid}`;
+}
+
+// ── BPM controls ──
+function changeBpm(panel, delta) {
+  bpmState[panel] = Math.max(40, Math.min(200, bpmState[panel]+delta));
+  document.getElementById(panel+'-bpm').textContent=bpmState[panel];
+  document.getElementById(panel+'-slider').value=bpmState[panel];
+  if(exRunning[panel]) { stopMetro(panel); startMetro(panel); }
+}
+function sliderBpm(panel, val) {
+  bpmState[panel]=parseInt(val);
+  document.getElementById(panel+'-bpm').textContent=bpmState[panel];
+  if(exRunning[panel]) { stopMetro(panel); startMetro(panel); }
+}
+
+// ══════════════════════════════════════════
+//  METRONOME + EXERCISE RUNNERS
+// ══════════════════════════════════════════
+function toggleExercise(panel) {
+  exRunning[panel] ? stopExercise(panel) : startExercise(panel);
+}
+
+function startExercise(panel) {
+  exRunning[panel]=true;
+  const btnId = panel+'-start-btn';
+  document.getElementById(btnId).textContent='⏹ 停止';
+  document.getElementById(btnId).className='btn-primary stop';
+
+  // Start real-time pitch chart
+  startPitchChart(panel);
+
+  if(panel==='breath') { startBreath(); return; }
+  startMetro(panel);
+}
+
+function stopExercise(panel) {
+  exRunning[panel]=false;
+  const btnId = panel+'-start-btn';
+  const btn=document.getElementById(btnId);
+  if(btn){ btn.textContent='▶ 開始練習'; btn.className=`btn-primary ${practiceKid}`; }
+  stopMetro(panel);
+  if(panel==='breath') stopBreath();
+  // Stop pitch chart
+  stopPitchChart(panel);
+  // Reset highlights
+  if(panel==='lip') { document.querySelectorAll('.p-note').forEach(n=>{n.className='p-note';}); metroBeat.lip=0; }
+  if(panel==='tongue') { document.querySelectorAll('.t-syllable').forEach(n=>{n.className='t-syllable';}); metroBeat.tongue=0; }
+  // Reset dots
+  const beats = currentEx?.beats||4;
+  for(let i=0;i<beats;i++){
+    const d=document.getElementById(`${panel}-dot-${i}`);
+    if(d) d.className='beat-dot'+(i===0?' accent':'');
+  }
+}
+
+let audioCtxMetro = null;
+function getMetroCtx() {
+  if(!audioCtxMetro || audioCtxMetro.state==='closed') audioCtxMetro=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtxMetro;
+}
+function beep(freq=880, dur=0.04, vol=0.3) {
+  try {
+    const ctx=getMetroCtx();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value=freq; g.gain.setValueAtTime(vol,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.start(); o.stop(ctx.currentTime+dur);
+  } catch(e){}
+}
+
+function startMetro(panel) {
+  const bpm=bpmState[panel];
+  const interval=60000/bpm;
+  const ex=currentEx;
+  const beats=ex?.beats||4;
+  const patternLen = panel==='lip' ? (ex?.pattern?.length||0) : (ex?.syllables?.length||0);
+
+  metroBeat[panel]=0;
+  let stepIdx=0;
+
+  metroIntervals[panel]=setInterval(()=>{
+    const beat=metroBeat[panel]%beats;
+    flashDot(panel, beat, beats);
+    beep(beat===0?1100:880, 0.04, beat===0?0.5:0.25);
+
+    // Highlight pattern/syllable
+    if(panel==='lip' && patternLen>0) {
+      document.querySelectorAll('.p-note').forEach((n,i)=>{ n.className='p-note'+(i===stepIdx%patternLen?` current-${practiceKid}`:stepIdx>i?' done':''); });
+    }
+    if(panel==='tongue' && patternLen>0) {
+      document.querySelectorAll('.t-syllable').forEach((n,i)=>{ n.className='t-syllable'+(i===stepIdx%patternLen?` current-${practiceKid}`:''); });
+    }
+    stepIdx++;
+    metroBeat[panel]++;
+  }, interval);
+}
+
+function stopMetro(panel) {
+  clearInterval(metroIntervals[panel]);
+  metroIntervals[panel]=null;
+}
+
+// ── Breath exercise ──
+// Pattern: 4 counts inhale, 2 hold, 4 exhale, 2 rest = 12 steps
+const BREATH_PATTERN = [
+  {phase:'inhale', label:'吸氣 🫁', counts:4},
+  {phase:'hold',   label:'保持 ✋', counts:2},
+  {phase:'exhale', label:'呼氣 🎵', counts:4},
+  {phase:'rest',   label:'休息 😌', counts:2},
+];
+
+function startBreath() {
+  breathCycle=0; breathStep=0; breathTotalCycles=4;
+  runBreathStep();
+}
+function stopBreath() {
+  clearTimeout(breathTimer);
+  document.getElementById('breath-instruction').textContent='準備好了嗎？';
+  document.getElementById('breath-count').textContent='–';
+  document.getElementById('breath-bar').style.width='0%';
+  document.getElementById('breath-bar').className='breath-bar-fill';
+  document.getElementById('breath-cycle-label').textContent='第 1 / 4 組';
+  breathStep=0; breathCycle=0;
+}
+function runBreathStep() {
+  if(!exRunning.breath) return;
+  const step=BREATH_PATTERN[breathStep % BREATH_PATTERN.length];
+  const totalTime=step.counts*1000;
+  document.getElementById('breath-instruction').textContent=step.label;
+  document.getElementById('breath-bar').className=`breath-bar-fill ${step.phase}`;
+  // Animate bar
+  const bar=document.getElementById('breath-bar');
+  bar.style.transition='none'; bar.style.width='0%';
+  setTimeout(()=>{
+    bar.style.transition=`width ${totalTime}ms linear`;
+    bar.style.width='100%';
+  },30);
+  // Count down
+  let count=step.counts;
+  document.getElementById('breath-count').textContent=count;
+  const countInterval=setInterval(()=>{
+    count--;
+    if(count>0) document.getElementById('breath-count').textContent=count;
+  },1000);
+  breathTimer=setTimeout(()=>{
+    clearInterval(countInterval);
+    breathStep++;
+    // Check cycle complete
+    if(breathStep % BREATH_PATTERN.length === 0) {
+      breathCycle++;
+      document.getElementById('breath-cycle-label').textContent=`第 ${Math.min(breathCycle+1,breathTotalCycles)} / ${breathTotalCycles} 組`;
+      if(breathCycle>=breathTotalCycles) {
+        stopExercise('breath');
+        document.getElementById('breath-instruction').textContent='✅ 完成！做得好！';
+        document.getElementById('breath-count').textContent='🎉';
+        return;
+      }
+    }
+    runBreathStep();
+  }, totalTime);
+}
+
+// ══════════════════════════════════════════
+//  PITCH DETECTOR
+// ══════════════════════════════════════════
+function togglePitch() { pitchOn ? stopPitch() : startPitch(); }
+
+async function startPitch() {
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
+    analyser=audioCtx.createAnalyser(); analyser.fftSize=8192; analyser.smoothingTimeConstant=0.85;
+    bufLen=analyser.fftSize; dataArr=new Float32Array(bufLen);
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
+    pitchOn=true;
+    document.getElementById('pitch-btn').textContent='⏹ 停止聆聽';
+    document.getElementById('pitch-btn').className='btn-primary stop';
+    document.getElementById('note-display').classList.add('listening-pulse');
+    setPFeedback('🎙️','正在聆聽...','開始吹奏吧！');
+    detectPitch();
+  } catch(e) { setPFeedback('❌','無法使用麥克風','請允許瀏覽器使用麥克風'); }
+}
+function stopPitch() {
+  pitchOn=false; cancelAnimationFrame(rafId);
+  if(audioCtx){audioCtx.close();audioCtx=null;}
+  document.getElementById('pitch-btn').textContent='🎙️ 開始聆聽';
+  document.getElementById('pitch-btn').className=`btn-primary ${practiceKid}`;
+  document.getElementById('note-display').classList.remove('listening-pulse');
+  resetPitchDisplay();
+}
+function resetPitchDisplay() {
+  document.getElementById('note-name').textContent='–';
+  document.getElementById('note-name').className='note-name note-idle';
+  document.getElementById('note-solfege').textContent='';
+  document.getElementById('note-freq').textContent='等待聲音...';
+  document.getElementById('note-display').className='note-display';
+  document.getElementById('tuning-fill').style.cssText='left:50%;width:0%';
+  document.getElementById('tuning-cents').textContent='–';
+  document.getElementById('vol-fill').style.width='0%';
+  document.getElementById('fingering-label').textContent='按鍵';
+  ['v1','v2','v3'].forEach(id=>document.getElementById(id).className='valve-circle');
+  highlightChip(null);
+  setPFeedback('🎸','按下按鈕開始聆聽','靠近麥克風吹奏');
+}
+function setPFeedback(icon,text,sub) {
+  document.getElementById('p-icon').textContent=icon;
+  document.getElementById('p-text').textContent=text;
+  document.getElementById('p-sub').textContent=sub;
+}
+function highlightChip(name) {
+  document.querySelectorAll('.note-chip').forEach(c=>c.className='note-chip');
+  if(!name) return;
+  const el=document.getElementById('chip-'+name.replace('#','s').replace('b','b'));
+  if(el) el.className=`note-chip active-${practiceKid}`;
+}
+function showFingering(writtenName) {
+  if(practiceKid!=='trumpet') return;
+  const f=TRUMPET_FINGERING[writtenName];
+  const isOpen=f&&f.every(v=>v===0);
+  document.getElementById('fingering-label').textContent=f?(isOpen?'開放（不按）':'按鍵：'+f.map((v,i)=>v?i+1:'').filter(Boolean).join(' + ')):'按鍵';
+  ['v1','v2','v3'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(!f){el.className='valve-circle';return;}
+    el.className=isOpen?'valve-circle open':(f[i]?'valve-circle pressed':'valve-circle');
+  });
+}
+function autoCorrelate(buf,sr) {
+  const SIZE=buf.length; let rms=0;
+  for(let i=0;i<SIZE;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/SIZE);
+  if(rms<0.01) return -1;
+  let r1=0,r2=SIZE-1;
+  for(let i=0;i<SIZE/2;i++){if(Math.abs(buf[i])<0.2){r1=i;break;}}
+  for(let i=1;i<SIZE/2;i++){if(Math.abs(buf[SIZE-i])<0.2){r2=SIZE-i;break;}}
+  const b=buf.slice(r1,r2); const c=new Array(b.length).fill(0);
+  for(let i=0;i<b.length;i++) for(let j=0;j<b.length-i;j++) c[i]+=b[j]*b[j+i];
+  let d=0; while(c[d]>c[d+1])d++;
+  let maxVal=-1,maxPos=-1;
+  for(let i=d;i<b.length;i++){if(c[i]>maxVal){maxVal=c[i];maxPos=i;}}
+  let T0=maxPos;
+  if(maxPos>0&&maxPos<b.length-1){const x1=c[maxPos-1],x2=c[maxPos],x3=c[maxPos+1];T0=maxPos+(x3-x1)/(2*(2*x2-x1-x3));}
+  return sr/T0;
+}
+function findClosest(freq) {
+  const notes=INSTRUMENTS[practiceKid].notes;
+  let best=null,bestC=Infinity;
+  notes.forEach(n=>{const c=1200*Math.log2(freq/n.cf);if(Math.abs(c)<Math.abs(bestC)){bestC=c;best=n;}});
+  return best&&Math.abs(bestC)<=70?{note:best,cents:bestC}:null;
+}
+function detectPitch() {
+  analyser.getFloatTimeDomainData(dataArr);
+  let rms=0; for(let i=0;i<bufLen;i++) rms+=dataArr[i]*dataArr[i]; rms=Math.sqrt(rms/bufLen);
+  document.getElementById('vol-fill').style.width=Math.min(rms*400,100)+'%';
+  if(rms>0.01){
+    const freq=autoCorrelate(dataArr,audioCtx.sampleRate);
+    if(freq>80&&freq<2000){ const r=findClosest(freq); if(r) updatePitch(r.note,r.cents,freq); }
+  }
+  rafId=requestAnimationFrame(detectPitch);
+}
+function updatePitch(note,cents,freq) {
+  const abs=Math.abs(cents);
+  let cls,icon,text,sub;
+  if(abs<=10){cls='perfect';icon='✅';text='非常準！';sub=`${note.name} · 偏差 ${cents.toFixed(1)} 音分`;}
+  else if(abs<=25){cls='close';icon='🔶';text=cents>0?'稍微偏高':'稍微偏低';sub=`${note.name} · 偏差 ${cents.toFixed(1)} 音分`;}
+  else{cls='off';icon=cents>0?'⬆️':'⬇️';text=cents>0?`偏高 ${abs.toFixed(0)} 音分`:`偏低 ${abs.toFixed(0)} 音分`;sub=`目標 ${note.name} · ${freq.toFixed(1)}Hz`;}
+
+  document.getElementById('note-display').className=`note-display listening-pulse ${cls}`;
+  const m=note.name.match(/^([A-Gb#]+)(\d)$/);
+  const letter=m?m[1]:note.name;
+  const nameEl=document.getElementById('note-name');
+  nameEl.textContent=letter; nameEl.className=`note-name note-${cls}`;
+  const solEl=document.getElementById('note-solfege');
+  solEl.textContent=SOLFEGE[letter]||'';
+  solEl.style.color=cls==='perfect'?'var(--green)':cls==='close'?'var(--yellow)':'var(--red)';
+  document.getElementById('note-freq').textContent=freq.toFixed(1)+' Hz';
+
+  const pct=Math.max(0,Math.min(100,(cents+50)/100*100));
+  const fill=document.getElementById('tuning-fill');
+  fill.style.left=Math.min(pct,50)+'%'; fill.style.width=Math.abs(pct-50)+'%';
+  fill.style.background=cls==='perfect'?'var(--green)':cls==='close'?'var(--yellow)':'var(--red)';
+  document.getElementById('tuning-cents').textContent=(cents>=0?'+':'')+cents.toFixed(1)+' 音分';
+
+  setPFeedback(icon,text,sub);
+  highlightChip(note.name);
+  showFingering(note.name);
+}
+
+// ══════════════════════════════════════════
+//  LIP SERIES SELECTOR
+// ══════════════════════════════════════════
+function renderLipSeriesSelector() {
+  // Series buttons
+  const seriesDiv = document.getElementById('lip-series-btns');
+  seriesDiv.innerHTML = LIP_SERIES.map((s, i) => `
+    <button class="series-btn ${i===currentLipSeries?'active':''}"
+      onclick="selectLipSeries(${i})">${s.emoji} ${s.label}</button>
+  `).join('');
+
+  // Pattern buttons
+  renderLipPatternBtns();
+}
+
+function renderLipPatternBtns() {
+  const series = LIP_SERIES[currentLipSeries];
+  const patDiv = document.getElementById('lip-pattern-btns');
+  patDiv.innerHTML = series.patterns.map((p, i) => `
+    <button class="pattern-btn ${i===currentLipPattern?'active':''}"
+      onclick="selectLipPattern(${i})">${p.label}</button>
+  `).join('');
+  refreshLipPattern();
+}
+
+function selectLipSeries(i) {
+  currentLipSeries = i;
+  currentLipPattern = 0;
+  document.querySelectorAll('.series-btn').forEach((b,j)=>b.className='series-btn'+(j===i?' active':''));
+  renderLipPatternBtns();
+  // Update valve display
+  const ex = currentEx;
+  if (ex) updateValves(LIP_SERIES[i].valves);
+}
+
+function selectLipPattern(i) {
+  currentLipPattern = i;
+  document.querySelectorAll('.pattern-btn').forEach((b,j)=>b.className='pattern-btn'+(j===i?' active':''));
+  refreshLipPattern();
+}
+
+function refreshLipPattern() {
+  const ex = EXERCISES.trumpet.find(e=>e.id==='lip');
+  if (!ex) return;
+  document.getElementById('lip-pattern-title').textContent = ex.patternLabel;
+  document.getElementById('lip-pattern').innerHTML = (ex.pattern||[]).map((n,i)=>
+    `<div class="p-note" id="pn-${i}">${n}<br><span style="font-size:10px;color:var(--muted)">${getSolfege(n)}</span></div>`
+  ).join('');
+}
+
+function updateValves(valves) {
+  ['v1','v2','v3'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = valves[i] ? 'valve-circle pressed' : 'valve-circle open';
+  });
+}
+
+// ══════════════════════════════════════════
+//  REAL-TIME PITCH CHART
+// ══════════════════════════════════════════
+let pitchChartState = {}; // { panel: { rafId, actx, analyser, historyPts, targetPts } }
+
+function startPitchChart(panel) {
+  stopPitchChart(panel);
+  const canvasEl = document.getElementById(panel+'-canvas');
+  const wrapEl = document.getElementById(panel+'-chart-wrap');
+  if (!canvasEl || !wrapEl) return;
+
+  wrapEl.style.display = 'block';
+
+  // Set canvas physical pixels
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvasEl.getBoundingClientRect();
+  canvasEl.width = (rect.width || 340) * dpr;
+  canvasEl.height = 160 * dpr;
+  const ctx2d = canvasEl.getContext('2d');
+  ctx2d.scale(dpr, dpr);
+  const CW = canvasEl.width / dpr;
+  const CH = 160;
+
+  // Get current exercise's note range
+  const inst = INSTRUMENTS[practiceKid];
+  const notes = inst ? inst.notes : [];
+
+  // freq range: from lowest note -1 semitone to highest +1 semitone
+  const getTargetPattern = () => {
+    if (panel === 'lip' && practiceKid === 'trumpet') {
+      return LIP_SERIES[currentLipSeries].patterns[currentLipPattern].notes;
+    }
+    return currentEx?.pattern || [];
+  };
+
+  const targetPatternNotes = getTargetPattern();
+  const targetFreqs = targetPatternNotes.map(n => {
+    const found = notes.find(x => x.name === n);
+    return found ? found.cf : null;
+  }).filter(Boolean);
+
+  const allFreqs = notes.map(n => n.cf);
+  const freqMin = targetFreqs.length ? Math.min(...targetFreqs) * Math.pow(2, -4/12) : (allFreqs[0] || 200);
+  const freqMax = targetFreqs.length ? Math.max(...targetFreqs) * Math.pow(2,  5/12) : (allFreqs[allFreqs.length-1] || 1200);
+
+  function freqToY(f) {
+    const ratio = (Math.log2(f) - Math.log2(freqMin)) / (Math.log2(freqMax) - Math.log2(freqMin));
+    return CH - 10 - ratio * (CH - 20);
+  }
+
+  // Build target segments (synced to beats)
+  const bpm = bpmState[panel] || 60;
+  const beatMs = 60000 / bpm;
+  const patLen = targetPatternNotes.length;
+  const segDurMs = beatMs; // 1 note per beat
+
+  // History: rolling 10s window
+  const WINDOW_MS = 10000;
+  const history = []; // {t, freq, cents}
+  let startT = null;
+
+  // Audio setup
+  navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })
+    .then(stream => {
+      const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+      const analyser = actx.createAnalyser();
+      analyser.fftSize = 8192;
+      analyser.smoothingTimeConstant = 0.85;
+      actx.createMediaStreamSource(stream).connect(analyser);
+      const buf = new Float32Array(analyser.fftSize);
+
+      pitchChartState[panel] = { actx, stream, rafId: null };
+
+      function drawFrame() {
+        const now = Date.now();
+        if (!startT) startT = now;
+        const elapsed = now - startT;
+
+        // Read pitch
+        analyser.getFloatTimeDomainData(buf);
+        let rms = 0;
+        for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
+        rms = Math.sqrt(rms / buf.length);
+
+        if (rms > 0.012) {
+          const freq = autoCorrelate(buf, actx.sampleRate);
+          if (freq > 60 && freq < 2500) {
+            const result = findClosest(freq);
+            if (result) history.push({ t: elapsed, freq, cents: result.cents });
+          }
+        }
+
+        // Prune old points
+        const cutoff = elapsed - WINDOW_MS;
+        while (history.length && history[0].t < cutoff) history.shift();
+
+        // ─── DRAW ───
+        ctx2d.fillStyle = '#0d0d14';
+        ctx2d.fillRect(0, 0, CW, CH);
+
+        // Draw note grid lines (only notes in range)
+        notes.forEach(n => {
+          if (n.cf < freqMin * 0.97 || n.cf > freqMax * 1.03) return;
+          const y = freqToY(n.cf);
+          const isC = n.name.startsWith('C');
+          ctx2d.strokeStyle = isC ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)';
+          ctx2d.lineWidth = isC ? 1 : 0.5;
+          ctx2d.setLineDash([]);
+          ctx2d.beginPath(); ctx2d.moveTo(0, y); ctx2d.lineTo(CW, y); ctx2d.stroke();
+          // Label
+          ctx2d.fillStyle = isC ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.2)';
+          ctx2d.font = `${isC?'bold ':''} 9px monospace`;
+          ctx2d.textAlign = 'left';
+          ctx2d.fillText(n.name, 4, y - 2);
+        });
+
+        // Draw target segments
+        if (patLen > 0) {
+          const cycleMs = patLen * segDurMs;
+          const cyclePos = elapsed % cycleMs;
+
+          targetPatternNotes.forEach((noteName, si) => {
+            const noteObj = notes.find(x => x.name === noteName);
+            if (!noteObj) return;
+            const y = freqToY(noteObj.cf);
+            const xStart = (si / patLen) * CW;
+            const xEnd = ((si + 1) / patLen) * CW;
+            const isCurrent = Math.floor(cyclePos / segDurMs) % patLen === si;
+
+            // ±25 cents tolerance band
+            const yUp = freqToY(noteObj.cf * Math.pow(2, 25/1200));
+            const yDown = freqToY(noteObj.cf * Math.pow(2, -25/1200));
+            ctx2d.fillStyle = isCurrent ? 'rgba(255,107,53,0.12)' : 'rgba(255,107,53,0.05)';
+            ctx2d.fillRect(xStart, yUp, xEnd - xStart, yDown - yUp);
+
+            // Target line
+            ctx2d.strokeStyle = isCurrent ? 'rgba(255,107,53,0.9)' : 'rgba(255,107,53,0.35)';
+            ctx2d.lineWidth = isCurrent ? 2.5 : 1.5;
+            ctx2d.setLineDash([6, 4]);
+            ctx2d.beginPath(); ctx2d.moveTo(xStart + 4, y); ctx2d.lineTo(xEnd - 4, y); ctx2d.stroke();
+            ctx2d.setLineDash([]);
+
+            // Note label
+            ctx2d.fillStyle = isCurrent ? 'rgba(255,107,53,1)' : 'rgba(255,107,53,0.5)';
+            ctx2d.font = `bold ${isCurrent?'11':'9'}px monospace`;
+            ctx2d.textAlign = 'center';
+            ctx2d.fillText(noteName, (xStart + xEnd) / 2, y - 6);
+          });
+
+          // Moving playhead (within current cycle)
+          const phX = (cyclePos / cycleMs) * CW;
+          ctx2d.strokeStyle = 'rgba(255,255,255,0.35)';
+          ctx2d.lineWidth = 1;
+          ctx2d.setLineDash([3, 3]);
+          ctx2d.beginPath(); ctx2d.moveTo(phX, 0); ctx2d.lineTo(phX, CH); ctx2d.stroke();
+          ctx2d.setLineDash([]);
+        }
+
+        // Draw actual pitch history (mapped into current 10s window → x axis)
+        if (history.length > 1) {
+          for (let i = 1; i < history.length; i++) {
+            const p = history[i], pp = history[i-1];
+            // x: map time within window to full width
+            const x1 = ((pp.t - (elapsed - WINDOW_MS)) / WINDOW_MS) * CW;
+            const x2 = ((p.t  - (elapsed - WINDOW_MS)) / WINDOW_MS) * CW;
+            const y1 = freqToY(pp.freq);
+            const y2 = freqToY(p.freq);
+            const abs = Math.abs(p.cents);
+            const color = abs <= 10 ? '#00ff88' : abs <= 25 ? '#ffcc00' : '#ff4466';
+            ctx2d.strokeStyle = color;
+            ctx2d.lineWidth = 2.5;
+            ctx2d.shadowColor = color;
+            ctx2d.shadowBlur = 5;
+            ctx2d.beginPath(); ctx2d.moveTo(x1, y1); ctx2d.lineTo(x2, y2); ctx2d.stroke();
+          }
+          ctx2d.shadowBlur = 0;
+          // Current pitch dot
+          const last = history[history.length - 1];
+          const dotX = CW - 2;
+          const dotY = freqToY(last.freq);
+          const dotColor = Math.abs(last.cents) <= 10 ? '#00ff88' : Math.abs(last.cents) <= 25 ? '#ffcc00' : '#ff4466';
+          ctx2d.fillStyle = dotColor;
+          ctx2d.shadowColor = dotColor;
+          ctx2d.shadowBlur = 10;
+          ctx2d.beginPath(); ctx2d.arc(dotX, dotY, 4, 0, Math.PI*2); ctx2d.fill();
+          ctx2d.shadowBlur = 0;
+        }
+
+        pitchChartState[panel].rafId = requestAnimationFrame(drawFrame);
+      }
+
+      drawFrame();
+    })
+    .catch(() => {
+      // mic denied — hide chart silently
+      const wrapEl2 = document.getElementById(panel+'-chart-wrap');
+      if (wrapEl2) wrapEl2.style.display = 'none';
+    });
+}
+
+function stopPitchChart(panel) {
+  const s = pitchChartState[panel];
+  if (!s) return;
+  if (s.rafId) cancelAnimationFrame(s.rafId);
+  if (s.stream) s.stream.getTracks().forEach(t => t.stop());
+  if (s.actx) s.actx.close();
+  pitchChartState[panel] = null;
+  const wrapEl = document.getElementById(panel+'-chart-wrap');
+  if (wrapEl) wrapEl.style.display = 'none';
+}
+
+
+
+// ══════════════════════════════════════════
+//  RECORDING + ANALYSIS
+// ══════════════════════════════════════════
+const ALIYUN_KEY = 'sk-a5a9b48f7bb34817a3811920aad62e12';
+const ALIYUN_URL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
+// CLOUDINARY defined in index.html (using REP_CLOUD below for practice module)
+
+let recState = {};  // { panel: { mediaRecorder, chunks, stream, analysisCtx, timerInterval, recording } }
+
+async function toggleRecording(panel) {
+  if (recState[panel]?.recording) {
+    stopRecording(panel);
+  } else {
+    await startRecording(panel);
+  }
+}
+
+async function startRecording(panel) {
+  const btn = document.getElementById(panel+'-rec-btn');
+  const box = document.getElementById(panel+'-analysis-box');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+
+    // Setup analyser for pitch tracking during recording
+    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+    const analyserNode = actx.createAnalyser();
+    analyserNode.fftSize = 8192;
+    analyserNode.smoothingTimeConstant = 0.8;
+    actx.createMediaStreamSource(stream).connect(analyserNode);
+
+    // MediaRecorder for audio capture
+    const chunks = [];
+    const mr = new MediaRecorder(stream, { mimeType: getSupportedMime() });
+    mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    mr.start(100);
+
+    // Pitch tracking data during recording
+    const pitchLog = [];   // { time, freq, note, cents }
+    const noteOnsets = []; // timestamps when a new note starts
+    let lastNote = null, silenceFrames = 0, totalFrames = 0;
+    const bufLen = analyserNode.fftSize;
+    const dataArr = new Float32Array(bufLen);
+    let recRafId = null;
+    const recStart = Date.now();
+
+    function trackFrame() {
+      analyserNode.getFloatTimeDomainData(dataArr);
+      let rms = 0;
+      for (let i = 0; i < bufLen; i++) rms += dataArr[i] * dataArr[i];
+      rms = Math.sqrt(rms / bufLen);
+      totalFrames++;
+
+      if (rms < 0.015) {
+        silenceFrames++;
+      } else {
+        const freq = autoCorrelate(dataArr, actx.sampleRate);
+        if (freq > 80 && freq < 2000) {
+          const result = findClosest(freq);
+          if (result) {
+            const t = Date.now() - recStart;
+            pitchLog.push({ time: t, freq, note: result.note.name, cents: result.cents });
+            if (result.note.name !== lastNote) {
+              noteOnsets.push(t);
+              lastNote = result.note.name;
+            }
+          }
+        }
+      }
+      recRafId = requestAnimationFrame(trackFrame);
+    }
+    trackFrame();
+
+    // Timer display
+    let secs = 0;
+    const timerEl = document.createElement('div');
+    timerEl.className = 'rec-timer';
+    timerEl.id = panel+'-timer';
+    btn.parentNode.insertBefore(timerEl, btn.nextSibling);
+    const timerInterval = setInterval(() => {
+      secs++;
+      timerEl.textContent = `🔴 錄音中 ${secs}s（再按停止並分析）`;
+    }, 1000);
+    timerEl.textContent = '🔴 錄音中 0s（再按停止並分析）';
+
+    btn.textContent = '⏹ 停止並分析';
+    btn.style.background = 'var(--red)';
+    box.style.display = 'none';
+
+    recState[panel] = { mediaRecorder: mr, chunks, stream, analysisCtx: actx, timerInterval, recording: true, recRafId, pitchLog, noteOnsets, silenceFrames, totalFrames: { ref: () => totalFrames }, recStart };
+
+  } catch(e) {
+    showAnalysisError(panel, '無法使用麥克風，請允許瀏覽器權限');
+  }
+}
+
+function getSupportedMime() {
+  const types = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'];
+  for (const t of types) { if (MediaRecorder.isTypeSupported(t)) return t; }
+  return '';
+}
+
+async function stopRecording(panel) {
+  const state = recState[panel];
+  if (!state) return;
+  state.recording = false;
+
+  const btn = document.getElementById(panel+'-rec-btn');
+  btn.textContent = '⏳ 分析中...';
+  btn.disabled = true;
+  btn.style.background = 'var(--muted)';
+
+  clearInterval(state.timerInterval);
+  cancelAnimationFrame(state.recRafId);
+
+  const timerEl = document.getElementById(panel+'-timer');
+  if (timerEl) timerEl.remove();
+
+  const box = document.getElementById(panel+'-analysis-box');
+  box.style.display = 'block';
+  box.innerHTML = '<div class="analysis-loading"><div class="analysis-spinner"></div>正在分析演奏數據...</div>';
+
+  // Stop recording
+  await new Promise(resolve => {
+    state.mediaRecorder.onstop = resolve;
+    state.mediaRecorder.stop();
+    state.stream.getTracks().forEach(t => t.stop());
+    state.analysisCtx.close();
+  });
+
+  // Compute analysis from pitchLog
+  const pitchLog = state.pitchLog;
+  const noteOnsets = state.noteOnsets;
+  const totalDuration = (Date.now() - state.recStart) / 1000;
+  const silenceRatio = state.silenceFrames / Math.max(1, state.totalFrames.ref());
+
+  let inTuneCount = 0, outTuneCount = 0;
+  const noteNames = {};
+  pitchLog.forEach(p => {
+    if (Math.abs(p.cents) <= 25) inTuneCount++; else outTuneCount++;
+    noteNames[p.note] = (noteNames[p.note] || 0) + 1;
+  });
+  const totalNotes = inTuneCount + outTuneCount;
+  const inTunePct = totalNotes > 0 ? Math.round(inTuneCount / totalNotes * 100) : 0;
+
+  // Rhythm regularity: std dev of note onset intervals
+  let rhythmScore = null;
+  if (noteOnsets.length >= 3) {
+    const intervals = [];
+    for (let i = 1; i < noteOnsets.length; i++) intervals.push(noteOnsets[i] - noteOnsets[i-1]);
+    const mean = intervals.reduce((a,b) => a+b, 0) / intervals.length;
+    const variance = intervals.reduce((a,b) => a + Math.pow(b-mean,2), 0) / intervals.length;
+    const stdDev = Math.sqrt(variance);
+    const cv = mean > 0 ? stdDev / mean : 1; // coefficient of variation
+    rhythmScore = Math.max(0, Math.round((1 - Math.min(cv, 1)) * 100));
+  }
+
+  // Most common notes played
+  const topNotes = Object.entries(noteNames).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>e[0]);
+
+  const ex = currentEx || {};
+  const kidName = practiceKid === 'trumpet' ? '添樂' : '悅琳';
+  const instrument = practiceKid === 'trumpet' ? 'Bb小號' : '長笛';
+
+  // Build analysis summary for AI
+  const analysisData = {
+    練習類型: ex.title || '自由練習',
+    樂器: instrument,
+    孩子: kidName,
+    錄音時長: `${totalDuration.toFixed(1)}秒`,
+    音準率: `${inTunePct}%（${inTuneCount}/${totalNotes} 個音在±25音分以內）`,
+    節奏穩定度: rhythmScore !== null ? `${rhythmScore}%` : '音符太少，無法分析',
+    靜音比例: `${Math.round(silenceRatio*100)}%`,
+    吹到的音符: topNotes.length > 0 ? topNotes.join(', ') : '未檢測到有效音符',
+  };
+
+  // Show scores while waiting for AI
+  const pitchCls = inTunePct >= 70 ? 'good' : inTunePct >= 40 ? 'ok' : 'poor';
+  const rhythmCls = rhythmScore === null ? 'ok' : rhythmScore >= 70 ? 'good' : rhythmScore >= 40 ? 'ok' : 'poor';
+  const rhythmLabel = rhythmScore !== null ? `節奏 ${rhythmScore}%` : '節奏 –';
+  box.innerHTML = `
+    <div class="analysis-score">
+      <div class="score-chip ${pitchCls}">音準 ${inTunePct}%</div>
+      <div class="score-chip ${rhythmCls}">${rhythmLabel}</div>
+      <div class="score-chip ok">時長 ${totalDuration.toFixed(0)}s</div>
+    </div>
+    <div class="analysis-loading"><div class="analysis-spinner"></div>AI 正在生成評語...</div>`;
+
+  // Call qwen-plus for comment
+  try {
+    const prompt = `你是一位專業兒童管樂老師，正在分析學生的練習錄音數據。
+
+學生資料：${kidName}，樂器：${instrument}，練習項目：${ex.title||'自由練習'}
+練習說明：${ex.desc||''}
+
+演奏分析數據：
+- 錄音時長：${analysisData.錄音時長}
+- 音準率：${analysisData.音準率}
+- 節奏穩定度：${analysisData.節奏穩定度}
+- 靜音比例（沒有吹奏的時間）：${analysisData.靜音比例}
+- 檢測到的音符：${analysisData.吹到的音符}
+
+請根據以上數據，用鼓勵的語氣給出2-3句具體的評語和1-2個改進建議。
+要求：
+1. 針對數據說具體問題，不要說空話
+2. 語氣溫暖，適合小學生
+3. 不超過100字
+4. 用繁體中文`;
+
+    const resp = await fetch(ALIYUN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ALIYUN_KEY}` },
+      body: JSON.stringify({
+        model: 'qwen-plus',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const comment = data.choices?.[0]?.message?.content || '無法獲取評語，請重試';
+
+    box.innerHTML = `
+      <div class="analysis-score">
+        <div class="score-chip ${pitchCls}">音準 ${inTunePct}%</div>
+        <div class="score-chip ${rhythmCls}">${rhythmLabel}</div>
+        <div class="score-chip ok">時長 ${totalDuration.toFixed(0)}s</div>
+      </div>
+      <div class="analysis-comment">${comment}</div>`;
+  } catch(e) {
+    box.innerHTML = `
+      <div class="analysis-score">
+        <div class="score-chip ${pitchCls}">音準 ${inTunePct}%</div>
+        <div class="score-chip ${rhythmCls}">${rhythmLabel}</div>
+      </div>
+      <div class="analysis-comment" style="color:var(--muted)">AI 評語暫時不可用，但你可以參考上面的數據。</div>`;
+  }
+
+  btn.textContent = '🔴 重新錄音分析';
+  btn.disabled = false;
+  btn.style.background = 'var(--purple)';
+  recState[panel] = null;
+}
+
+function showAnalysisError(panel, msg) {
+  const box = document.getElementById(panel+'-analysis-box');
+  box.style.display = 'block';
+  box.innerHTML = `<div style="color:var(--red);font-size:13px;">❌ ${msg}</div>`;
+}
+
+// ══════════════════════════════════════════
+//  REPERTOIRE
+// ══════════════════════════════════════════
+const DUR_SYMBOLS = { '1':'𝅝', '2':'𝅗𝅥', '4':'♩', '8':'♪', '16':'𝅘𝅥𝅯' };
+const DUR_BEATS   = { '1':4, '2':2, '4':1, '8':0.5, '16':0.25 };
+const REP_CLOUD = { cloud:'dfaap5ur8', preset:'chengzhang', imgUrl:'https://api.cloudinary.com/v1_1/dfaap5ur8/image/upload', audioUrl:'https://api.cloudinary.com/v1_1/dfaap5ur8/video/upload' };
+
+let repList = JSON.parse(localStorage.getItem('rep_list')||'[]');
+let repBpm = 80;
+let repNotes = [];
+let repScoreImageB64 = null;
+let repScoreUrl = null;
+let activeRepId = null;
+let repPracticeRunning = false;
+let repMetroRef = null;
+let repCalYear = new Date().getFullYear();
+let repCalMonth = new Date().getMonth();
+let demoContour = null; // stored pitch contour of demo recording
+let demoRecState = null;
+
+// ── Practice log (by date) ──
+function getRepLog() { return JSON.parse(localStorage.getItem('rep_log')||'{}'); }
+function saveRepLog(log) { localStorage.setItem('rep_log', JSON.stringify(log)); }
+function addRepLogEntry(entry) {
+  const log = getRepLog();
+  const today = new Date().toISOString().slice(0,10);
+  if (!log[today]) log[today] = [];
+  log[today].push(entry);
+  saveRepLog(log);
+}
+
+// ── View switching ──
+function showRepList() {
+  document.getElementById('rep-list-view').style.display='block';
+  document.getElementById('rep-add-view').style.display='none';
+  document.getElementById('rep-practice-view').style.display='none';
+  stopRepPractice();
+  stopPitchChart('rep');
+  renderRepCards();
+}
+function showRepAdd() {
+  document.getElementById('rep-list-view').style.display='none';
+  document.getElementById('rep-add-view').style.display='block';
+  document.getElementById('rep-practice-view').style.display='none';
+  document.getElementById('rep-name-input').value='';
+  document.getElementById('rep-yt-input').value='';
+  document.getElementById('rep-img-preview').style.display='none';
+  document.getElementById('rep-upload-hint').style.display='block';
+  document.getElementById('rep-editor').style.display='none';
+  document.getElementById('rep-loading').style.display='none';
+  document.getElementById('rep-bpm-display').textContent=repBpm;
+  document.getElementById('hum-status').textContent='準備就緒';
+  document.getElementById('hum-rec-btn').textContent='🎙 開始吹奏';
+  document.getElementById('hum-rec-btn').className='btn-primary trumpet';
+  document.getElementById('audio-upload-hint').style.display='block';
+  document.getElementById('audio-upload-done').style.display='none';
+  document.getElementById('audio-analyze-btn').disabled=true;
+  switchInputTab('hum');
+  repNotes=[]; repScoreImageB64=null; repScoreUrl=null;
+  humRecState=null; uploadedAudioFile=null; pendingDemoBlob=null; pendingDemoContour=null;
+}
+function showRepPractice(id) {
+  const item=repList.find(r=>r.id===id); if(!item) return;
+  activeRepId=id;
+  document.getElementById('rep-list-view').style.display='none';
+  document.getElementById('rep-add-view').style.display='none';
+  document.getElementById('rep-practice-view').style.display='block';
+  document.getElementById('rep-practice-title').textContent=item.name;
+  // Score image
+  const scoreWrap=document.getElementById('rep-score-wrap');
+  const scoreImg=document.getElementById('rep-score-img');
+  if(item.scoreUrl){ scoreImg.src=item.scoreUrl; scoreWrap.style.display='block'; }
+  else { scoreWrap.style.display='none'; }
+  // Demo recording
+  renderDemoControls(item);
+  // YouTube
+  const ytWrap=document.getElementById('rep-yt-wrap');
+  if(item.ytId){ document.getElementById('rep-yt-iframe').src=`https://www.youtube.com/embed/${item.ytId}`; ytWrap.style.display='block'; }
+  else { ytWrap.style.display='none'; }
+  // Reset practice
+  document.getElementById('rep-pitch-chart-wrap').style.display='none';
+  document.getElementById('rep-practice-btn').textContent='▶ 開始練習';
+  document.getElementById('rep-practice-btn').className='btn-primary trumpet';
+  document.getElementById('rep-analysis-box').style.display='none';
+  document.getElementById('rep-rec-btn').textContent='🔴 錄音分析';
+  document.getElementById('rep-rec-btn').style.background='var(--purple)';
+  // Load demo contour if exists
+  demoContour = item.demoContour || null;
+}
+
+function switchRepView(v) {
+  document.getElementById('rep-library-view').style.display = v==='library'?'block':'none';
+  document.getElementById('rep-calendar-view').style.display = v==='calendar'?'block':'none';
+  document.getElementById('rvb-library').className='rep-view-btn'+(v==='library'?' active':'');
+  document.getElementById('rvb-calendar').className='rep-view-btn'+(v==='calendar'?' active':'');
+  if(v==='calendar') renderRepCalendar();
+}
+
+// ── Cards ──
+function renderRepCards() {
+  const container=document.getElementById('rep-cards');
+  const empty=document.getElementById('rep-empty');
+  const kidItems = repList.filter(r=>!r.kid||r.kid===practiceKid);
+  if(kidItems.length===0){empty.style.display='block';container.innerHTML='';return;}
+  empty.style.display='none';
+  container.innerHTML=kidItems.map(r=>`
+    <div class="rep-card" onclick="showRepPractice('${r.id}')">
+      <div class="rep-card-thumb">
+        ${r.scoreUrl?`<img src="${r.scoreUrl}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;">`:'🎼'}
+      </div>
+      <div class="rep-card-info">
+        <div class="rep-card-title">${r.name}</div>
+        <div class="rep-card-meta">${r.notes.length} 個音符 · ${r.bpm} BPM${r.ytId?' · ▶':''} ${r.demoContour?'· 🎙示範':''}</div>
+        <div class="rep-card-meta" style="margin-top:2px;">${r.savedAt||''}</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteRep('${r.id}')"
+        style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;">🗑</button>
+    </div>`).join('');
+}
+function deleteRep(id) {
+  if(!confirm('確認刪除？')) return;
+  repList=repList.filter(r=>r.id!==id);
+  localStorage.setItem('rep_list',JSON.stringify(repList));
+  renderRepCards();
+}
+
+// ── Score image upload → Cloudinary ──
+function onScoreImageSelected(e) {
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    repScoreImageB64=ev.target.result.split(',')[1];
+    const img=document.getElementById('rep-img-preview');
+    img.src=ev.target.result; img.style.display='block';
+    document.getElementById('rep-upload-hint').style.display='none';
+    document.getElementById('rep-recognize-btn').disabled=false;
+  };
+  reader.readAsDataURL(file);
+}
+async function uploadScoreToCloudinary() {
+  if(!repScoreImageB64) return null;
+  const fd=new FormData();
+  fd.append('file','data:image/jpeg;base64,'+repScoreImageB64);
+  fd.append('upload_preset', REP_CLOUD.preset);
+  try {
+    const r=await fetch(REP_CLOUD.imgUrl,{method:'POST',body:fd});
+    const d=await r.json(); return d.secure_url||null;
+  } catch(e){ return null; }
+}
+
+// ── Input tab switch ──
+function switchInputTab(tab) {
+  document.getElementById('input-panel-hum').style.display    = tab==='hum'    ? 'block' : 'none';
+  document.getElementById('input-panel-upload').style.display = tab==='upload' ? 'block' : 'none';
+  document.getElementById('input-tab-hum').className    = 'rep-view-btn' + (tab==='hum'    ? ' active' : '');
+  document.getElementById('input-tab-upload').className = 'rep-view-btn' + (tab==='upload' ? ' active' : '');
+}
+
+// ── Hum / blow-in recording ──
+let humRecState = null;
+let pendingDemoBlob = null;
+let pendingDemoContour = null;
+
+function toggleHumRecording() {
+  humRecState?.recording ? stopHumRecording() : startHumRecording();
+}
+
+async function startHumRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+    const analyser = actx.createAnalyser();
+    analyser.fftSize = 8192; analyser.smoothingTimeConstant = 0.85;
+    actx.createMediaStreamSource(stream).connect(analyser);
+    const buf = new Float32Array(analyser.fftSize);
+
+    // MediaRecorder for saving demo audio
+    const chunks = [];
+    const mr = new MediaRecorder(stream, { mimeType: getSupportedMime() });
+    mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    mr.start(100);
+
+    // Pitch tracking
+    const rawPitchLog = []; // {t, freq, note}
+    let startT = Date.now();
+    let rafId;
+    const canvasEl = document.getElementById('hum-canvas');
+    const ctx2d = canvasEl.getContext('2d');
+    const pitchHistory = []; // rolling display buffer
+
+    function frame() {
+      analyser.getFloatTimeDomainData(buf);
+      let rms = 0; for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
+      rms = Math.sqrt(rms / buf.length);
+      const t = Date.now() - startT;
+
+      let detectedNote = null;
+      if (rms > 0.015) {
+        const freq = autoCorrelate(buf, actx.sampleRate);
+        if (freq > 60 && freq < 2500) {
+          const r = findClosest(freq);
+          if (r) {
+            rawPitchLog.push({ t, freq, note: r.note.name, cents: r.cents });
+            pitchHistory.push({ t, freq });
+            detectedNote = r.note.name;
+          }
+        }
+      } else {
+        rawPitchLog.push({ t, freq: null, note: null });
+      }
+
+      // Draw waveform viz
+      const W = canvasEl.offsetWidth || 300, H = 60;
+      if (canvasEl.width !== W * devicePixelRatio) {
+        canvasEl.width = W * devicePixelRatio; canvasEl.height = H * devicePixelRatio;
+        ctx2d.scale(devicePixelRatio, devicePixelRatio);
+      }
+      ctx2d.fillStyle = '#0d0d14'; ctx2d.fillRect(0, 0, W, H);
+      // Draw recent waveform
+      ctx2d.strokeStyle = rms > 0.015 ? 'var(--trumpet)' : 'var(--muted)';
+      ctx2d.lineWidth = 1.5;
+      ctx2d.beginPath();
+      const step = Math.ceil(buf.length / W);
+      for (let i = 0; i < W; i++) {
+        const v = buf[i * step] || 0;
+        const y = (1 - (v + 1) / 2) * H;
+        i === 0 ? ctx2d.moveTo(i, y) : ctx2d.lineTo(i, y);
+      }
+      ctx2d.stroke();
+
+      // Note display
+      document.getElementById('hum-note-display').textContent = detectedNote || '';
+      document.getElementById('hum-status').textContent =
+        `🔴 錄製中 ${(t/1000).toFixed(1)}s · ${rawPitchLog.filter(p=>p.note).length} 個音`;
+
+      rafId = requestAnimationFrame(frame);
+    }
+    frame();
+
+    humRecState = { mr, chunks, stream, actx, rafId, rawPitchLog, recording: true, startT };
+    document.getElementById('hum-rec-btn').textContent = '⏹ 停止並提取音符';
+    document.getElementById('hum-rec-btn').className = 'btn-primary stop';
+
+  } catch (e) { alert('無法使用麥克風：' + e.message); }
+}
+
+async function stopHumRecording() {
+  if (!humRecState) return;
+  humRecState.recording = false;
+  cancelAnimationFrame(humRecState.rafId);
+
+  document.getElementById('hum-rec-btn').disabled = true;
+  document.getElementById('hum-rec-btn').textContent = '⏳ 提取音符中...';
+  document.getElementById('rep-loading').style.display = 'block';
+  document.getElementById('rep-loading-msg').textContent = '正在提取音符序列...';
+
+  const { mr, chunks, stream, actx, rawPitchLog } = humRecState;
+  await new Promise(res => { mr.onstop = res; mr.stop(); stream.getTracks().forEach(t => t.stop()); actx.close(); });
+  pendingDemoBlob = new Blob(chunks, { type: getSupportedMime() || 'audio/webm' });
+
+  // Extract notes from rawPitchLog using segmentation
+  repNotes = extractNotesFromPitchLog(rawPitchLog);
+  // Store contour for demo comparison
+  const totalT = rawPitchLog[rawPitchLog.length-1]?.t || 1;
+  pendingDemoContour = rawPitchLog.filter(p=>p.freq).map(p=>({t:p.t/totalT, freq:p.freq}));
+
+  document.getElementById('rep-loading').style.display = 'none';
+  document.getElementById('hum-rec-btn').disabled = false;
+  document.getElementById('hum-rec-btn').textContent = '🔄 重新錄製';
+  document.getElementById('hum-rec-btn').className = 'btn-primary trumpet';
+  document.getElementById('hum-status').textContent = `✅ 完成 · 提取到 ${repNotes.length} 個音符`;
+
+  if (repNotes.length > 0) {
+    renderNoteEditor();
+    drawRepPreview();
+    document.getElementById('rep-editor').style.display = 'block';
+    document.getElementById('rep-note-count').textContent = `${repNotes.length} 個音符`;
+    // Auto-detect BPM from note durations
+    const avgBeatMs = estimateBpm(rawPitchLog);
+    if (avgBeatMs) {
+      repBpm = Math.round(Math.min(200, Math.max(40, 60000 / avgBeatMs)));
+      document.getElementById('rep-bpm-display').textContent = repBpm;
+    }
+  } else {
+    alert('未能識別到音符，請確認麥克風正常並重試。');
+  }
+  humRecState = null;
+}
+
+// Extract discrete note events from continuous pitch log
+function extractNotesFromPitchLog(log) {
+  const SILENCE_THRESH_MS = 80;   // gap ≥ this = note boundary
+  const MIN_NOTE_MS = 60;         // note must be ≥ this to count
+  const notes = [];
+  let noteStart = null, noteFreqs = [];
+
+  for (let i = 0; i <= log.length; i++) {
+    const p = log[i];
+    const isSilent = !p || !p.note;
+
+    if (!isSilent) {
+      if (!noteStart) { noteStart = p.t; noteFreqs = []; }
+      noteFreqs.push(p.freq);
+    } else {
+      if (noteStart !== null) {
+        const prevP = log[i - 1];
+        const dur = (prevP?.t || 0) - noteStart;
+        if (dur >= MIN_NOTE_MS && noteFreqs.length > 0) {
+          // Median freq for robustness
+          const sorted = [...noteFreqs].sort((a, b) => a - b);
+          const medFreq = sorted[Math.floor(sorted.length / 2)];
+          const r = findClosest(medFreq);
+          if (r) notes.push({ full: r.note.name, dur: '4', durationMs: dur, startT: noteStart });
+        }
+        noteStart = null; noteFreqs = [];
+      }
+    }
+  }
+
+  // Assign dur values based on relative durations
+  if (notes.length > 1) {
+    const durations = notes.map(n => n.durationMs);
+    const medDur = [...durations].sort((a,b)=>a-b)[Math.floor(durations.length/2)];
+    notes.forEach(n => {
+      const ratio = n.durationMs / medDur;
+      if      (ratio >= 3.5) n.dur = '1';
+      else if (ratio >= 1.7) n.dur = '2';
+      else if (ratio <= 0.4) n.dur = '16';
+      else if (ratio <= 0.7) n.dur = '8';
+      else                   n.dur = '4';
+    });
+  }
+  return notes.map(n => ({ full: n.full, dur: n.dur }));
+}
+
+function estimateBpm(log) {
+  // Find note onsets and estimate average interval
+  const onsets = [];
+  let wasNote = false;
+  log.forEach(p => {
+    if (p.note && !wasNote) { onsets.push(p.t); wasNote = true; }
+    if (!p.note) wasNote = false;
+  });
+  if (onsets.length < 3) return null;
+  const intervals = onsets.slice(1).map((t, i) => t - onsets[i]);
+  return intervals.reduce((a, b) => a + b, 0) / intervals.length;
+}
+
+// ── Audio file upload + pitch extraction ──
+let uploadedAudioFile = null;
+function onAudioFileSelected(e) {
+  const file = e.target.files[0]; if (!file) return;
+  uploadedAudioFile = file;
+  document.getElementById('audio-upload-hint').style.display = 'none';
+  document.getElementById('audio-upload-done').style.display = 'block';
+  document.getElementById('audio-upload-name').textContent = file.name;
+  document.getElementById('audio-analyze-btn').disabled = false;
+}
+
+async function analyzeUploadedAudio() {
+  if (!uploadedAudioFile) return;
+  document.getElementById('rep-loading').style.display = 'block';
+  document.getElementById('rep-loading-msg').textContent = '正在解碼音頻...';
+  document.getElementById('audio-analyze-btn').disabled = true;
+
+  try {
+    const arrayBuf = await uploadedAudioFile.arrayBuffer();
+    // Decode at lower sample rate to speed up processing
+    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 22050 });
+    const audioBuf = await actx.decodeAudioData(arrayBuf);
+    await actx.close();
+
+    document.getElementById('rep-loading-msg').textContent = `正在提取音符... 0%`;
+    // Async batched extraction — yields to UI every 20 frames
+    const rawLog = await extractPitchAsync(audioBuf, pct => {
+      document.getElementById('rep-loading-msg').textContent = `正在提取音符... ${pct}%`;
+    });
+
+    pendingDemoBlob = uploadedAudioFile;
+    const totalT = rawLog[rawLog.length-1]?.t || 1;
+    pendingDemoContour = rawLog.filter(p=>p.freq).map(p=>({t:p.t/totalT, freq:p.freq}));
+
+    repNotes = extractNotesFromPitchLog(rawLog);
+    if (!repNotes.length) throw new Error('未能識別到音符，請使用清晰的單旋律錄音');
+
+    const avgBeatMs = estimateBpm(rawLog);
+    if (avgBeatMs) {
+      repBpm = Math.round(Math.min(200, Math.max(40, 60000 / avgBeatMs)));
+      document.getElementById('rep-bpm-display').textContent = repBpm;
+    }
+
+    renderNoteEditor();
+    drawRepPreview();
+    document.getElementById('rep-editor').style.display = 'block';
+    document.getElementById('rep-note-count').textContent = `${repNotes.length} 個音符`;
+  } catch (e) {
+    alert('分析失敗：' + e.message);
+    console.error(e);
+  } finally {
+    document.getElementById('rep-loading').style.display = 'none';
+    document.getElementById('audio-analyze-btn').disabled = false;
+  }
+}
+
+// Async pitch extraction — processes in batches, yields UI between batches
+function extractPitchAsync(audioBuf, onProgress) {
+  return new Promise(resolve => {
+    const sr = audioBuf.sampleRate;
+    const data = audioBuf.getChannelData(0);
+    const frameSize = 4096;                     // smaller frame = faster
+    const hopSize = Math.floor(sr * 0.1);       // 100ms hops (was 50ms)
+    const totalFrames = Math.floor((data.length - frameSize) / hopSize);
+    const BATCH = 20;                           // frames per batch before yielding
+    const log = [];
+    let frameIdx = 0;
+
+    function processBatch() {
+      const end = Math.min(frameIdx + BATCH, totalFrames);
+      for (; frameIdx < end; frameIdx++) {
+        const offset = frameIdx * hopSize;
+        const t = Math.round((offset / sr) * 1000);
+        // Compute RMS without slice() — avoids allocations
+        let rms = 0;
+        for (let i = offset; i < offset + frameSize; i++) rms += data[i] * data[i];
+        rms = Math.sqrt(rms / frameSize);
+        if (rms > 0.012) {
+          // Pass subarray view instead of slice
+          const frame = data.subarray(offset, offset + frameSize);
+          const freq = autoCorrelate(frame, sr);
+          if (freq > 60 && freq < 2500) {
+            const r = findClosest(freq);
+            log.push({ t, freq, note: r?.note.name || null });
+          } else {
+            log.push({ t, freq: null, note: null });
+          }
+        } else {
+          log.push({ t, freq: null, note: null });
+        }
+      }
+      if (frameIdx < totalFrames) {
+        onProgress(Math.round(frameIdx / totalFrames * 100));
+        setTimeout(processBatch, 0);  // yield to browser
+      } else {
+        onProgress(100);
+        resolve(log);
+      }
+    }
+    processBatch();
+  });
+}
+
+// ── Note editor ──
+let activeChipIdx=null;
+function renderNoteEditor() {
+  const container=document.getElementById('rep-note-editor');
+  container.innerHTML=repNotes.map((n,i)=>`
+    <div class="note-chip ${activeChipIdx===i?'active-chip':''}" id="chip-${i}" onclick="toggleDurPicker(${i})">
+      <div class="note-chip-name">${n.full}</div>
+      <div class="note-chip-dur">${DUR_SYMBOLS[n.dur]||'♩'}</div>
+      ${activeChipIdx===i?`<div class="dur-picker" onclick="event.stopPropagation()">
+        ${Object.entries(DUR_SYMBOLS).map(([k,v])=>`
+          <div class="dur-opt ${n.dur===k?'selected':''}" onclick="setNoteDur(${i},'${k}')" title="${{1:'全音符',2:'二分',4:'四分',8:'八分',16:'十六分'}[k]}">${v}</div>
+        `).join('')}</div>`:''}
+    </div>`).join('');
+}
+function toggleDurPicker(i){ activeChipIdx=activeChipIdx===i?null:i; renderNoteEditor(); }
+function setNoteDur(i,dur){ repNotes[i].dur=dur; activeChipIdx=null; renderNoteEditor(); drawRepPreview(); }
+document.addEventListener('click',()=>{ if(activeChipIdx!==null){activeChipIdx=null;renderNoteEditor();} });
+
+function changeRepBpm(d){ repBpm=Math.max(40,Math.min(200,repBpm+d)); document.getElementById('rep-bpm-display').textContent=repBpm; }
+
+function drawRepPreview() {
+  const canvas=document.getElementById('rep-preview-canvas');
+  if(!canvas||repNotes.length===0) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.offsetWidth||340,H=120;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx2d=canvas.getContext('2d'); ctx2d.scale(dpr,dpr);
+  ctx2d.fillStyle='#0d0d14'; ctx2d.fillRect(0,0,W,H);
+  const inst=INSTRUMENTS[practiceKid];
+  const freqs=repNotes.map(n=>inst.notes.find(x=>x.name===n.full)?.cf).filter(Boolean);
+  if(!freqs.length) return;
+  const fMin=Math.min(...freqs)*Math.pow(2,-2/12), fMax=Math.max(...freqs)*Math.pow(2,2/12);
+  const toY=f=>H-8-((Math.log2(f)-Math.log2(fMin))/(Math.log2(fMax)-Math.log2(fMin)))*(H-16);
+  const total=repNotes.reduce((s,n)=>s+(DUR_BEATS[n.dur]||1),0);
+  let x=0;
+  repNotes.forEach(n=>{
+    const obj=inst.notes.find(o=>o.name===n.full);
+    const w=((DUR_BEATS[n.dur]||1)/total)*W;
+    if(obj){
+      const y=toY(obj.cf);
+      ctx2d.fillStyle='rgba(255,107,53,0.07)';
+      ctx2d.fillRect(x,toY(obj.cf*Math.pow(2,25/1200)),w,toY(obj.cf*Math.pow(2,-25/1200))-toY(obj.cf*Math.pow(2,25/1200)));
+      ctx2d.strokeStyle='rgba(255,107,53,0.75)'; ctx2d.lineWidth=2; ctx2d.setLineDash([4,3]);
+      ctx2d.beginPath(); ctx2d.moveTo(x+2,y); ctx2d.lineTo(x+w-2,y); ctx2d.stroke(); ctx2d.setLineDash([]);
+      ctx2d.fillStyle='rgba(255,107,53,0.9)'; ctx2d.font='bold 9px monospace'; ctx2d.textAlign='center';
+      ctx2d.fillText(n.full,x+w/2,y-3);
+    }
+    x+=w;
+  });
+}
+
+// ── Save ──
+async function saveRepertoire() {
+  const name=document.getElementById('rep-name-input').value.trim();
+  if(!name){alert('請輸入曲目名稱');return;}
+  if(!repNotes.length){alert('請先錄入音符');return;}
+  const saveBtn=document.querySelector('#rep-editor .btn-primary');
+  if(saveBtn){saveBtn.textContent='⏳ 上傳中...';saveBtn.disabled=true;}
+
+  // Upload score image
+  repScoreUrl = await uploadScoreToCloudinary();
+
+  // Upload demo audio (from hum or file upload)
+  let demoAudioUrl = null;
+  if (pendingDemoBlob) {
+    const fd=new FormData();
+    fd.append('file', pendingDemoBlob, `demo_${Date.now()}.webm`);
+    fd.append('upload_preset', REP_CLOUD.preset);
+    try {
+      const r=await fetch(REP_CLOUD.audioUrl,{method:'POST',body:fd});
+      const d=await r.json(); demoAudioUrl=d.secure_url||null;
+    } catch(e){}
+  }
+
+  const ytRaw=document.getElementById('rep-yt-input').value.trim();
+  const ytId=extractYtId(ytRaw);
+  const id='rep_'+Date.now();
+  const item={id,name,notes:repNotes,bpm:repBpm,ytId,
+    scoreUrl:repScoreUrl,
+    demoAudioUrl,
+    demoContour: pendingDemoContour||null,
+    savedAt:new Date().toLocaleDateString('zh-HK'),
+    kid:practiceKid, practiceLog:[]};
+  repList.unshift(item);
+  localStorage.setItem('rep_list',JSON.stringify(repList));
+  if(saveBtn){saveBtn.textContent='💾 保存曲目';saveBtn.disabled=false;}
+  showRepList();
+}
+function extractYtId(url){
+  if(!url) return null;
+  const m=url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m?m[1]:null;
+}
+
+// ── Demo recording ──
+function renderDemoControls(item) {
+  const ctrl=document.getElementById('rep-demo-controls');
+  const status=document.getElementById('rep-demo-status');
+  const audio=document.getElementById('rep-demo-audio');
+  if(item.demoAudioUrl){
+    audio.src=item.demoAudioUrl; audio.style.display='block';
+    status.textContent='';
+    ctrl.innerHTML=`<button onclick="startDemoRec()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card2);color:var(--muted);font-size:11px;cursor:pointer;">🔄 重新錄示範</button>`;
+  } else {
+    audio.style.display='none';
+    status.textContent='尚未錄製示範';
+    ctrl.innerHTML=`<button onclick="startDemoRec()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--green);background:rgba(0,255,136,0.1);color:var(--green);font-size:11px;cursor:pointer;">🎙 錄製示範</button>`;
+  }
+}
+
+async function startDemoRec() {
+  if(demoRecState?.recording){ await stopDemoRec(); return; }
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
+    const analyser=actx.createAnalyser(); analyser.fftSize=8192; analyser.smoothingTimeConstant=0.85;
+    actx.createMediaStreamSource(stream).connect(analyser);
+    const chunks=[]; const mr=new MediaRecorder(stream,{mimeType:getSupportedMime()});
+    mr.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);}; mr.start(100);
+    const buf=new Float32Array(analyser.fftSize); const pitchContour=[]; let startT=Date.now();
+    let rafId;
+    function track(){
+      analyser.getFloatTimeDomainData(buf);
+      let rms=0; for(let i=0;i<buf.length;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/buf.length);
+      if(rms>0.012){const freq=autoCorrelate(buf,actx.sampleRate); if(freq>60&&freq<2500) pitchContour.push({t:Date.now()-startT,freq});}
+      rafId=requestAnimationFrame(track);
+    }
+    track();
+    demoRecState={mr,chunks,stream,actx,rafId,pitchContour,recording:true};
+    const ctrl=document.getElementById('rep-demo-controls');
+    ctrl.innerHTML=`<button onclick="startDemoRec()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--red);background:rgba(255,68,102,0.1);color:var(--red);font-size:11px;cursor:pointer;">⏹ 停止示範錄音</button>`;
+    document.getElementById('rep-demo-status').textContent='🔴 錄製中...';
+  } catch(e){ alert('無法使用麥克風'); }
+}
+
+async function stopDemoRec() {
+  if(!demoRecState) return;
+  const {mr,chunks,stream,actx,rafId,pitchContour}=demoRecState;
+  demoRecState.recording=false;
+  cancelAnimationFrame(rafId);
+  document.getElementById('rep-demo-status').textContent='⏳ 上傳中...';
+  await new Promise(res=>{mr.onstop=res; mr.stop(); stream.getTracks().forEach(t=>t.stop()); actx.close();});
+  // Upload audio to Cloudinary
+  const blob=new Blob(chunks,{type:getSupportedMime()||'audio/webm'});
+  const fd=new FormData(); fd.append('file',blob,`demo_${activeRepId}.webm`); fd.append('upload_preset',REP_CLOUD.preset);
+  let audioUrl=null;
+  try{const r=await fetch(REP_CLOUD.audioUrl,{method:'POST',body:fd}); const d=await r.json(); audioUrl=d.secure_url||null;}catch(e){}
+  // Normalize contour to 0-1 time range
+  const dur=pitchContour.length?pitchContour[pitchContour.length-1].t:1;
+  const normContour=pitchContour.map(p=>({t:p.t/dur,freq:p.freq}));
+  // Save to item
+  const item=repList.find(r=>r.id===activeRepId);
+  if(item){ item.demoAudioUrl=audioUrl; item.demoContour=normContour; repList=repList.map(r=>r.id===activeRepId?item:r); localStorage.setItem('rep_list',JSON.stringify(repList)); }
+  demoContour=normContour;
+  demoRecState=null;
+  renderDemoControls(item||{});
+  document.getElementById('rep-demo-audio').src=audioUrl||''; document.getElementById('rep-demo-audio').style.display=audioUrl?'block':'none';
+}
+
+// ── Practice mode ──
+let repMetroStep=0;
+function toggleRepPractice(){ repPracticeRunning?stopRepPractice():startRepPractice(); }
+function startRepPractice(){
+  const item=repList.find(r=>r.id===activeRepId); if(!item) return;
+  repPracticeRunning=true; repMetroStep=0;
+  document.getElementById('rep-practice-btn').textContent='⏹ 停止';
+  document.getElementById('rep-practice-btn').className='btn-primary stop';
+  document.getElementById('rep-pitch-chart-wrap').style.display='block';
+  startRepPitchChart(item);
+  const beatMs=60000/(item.bpm||80);
+  function tick(){
+    if(!repPracticeRunning) return;
+    const notes=item.notes; if(!notes.length) return;
+    repMetroStep++;
+    repMetroRef=setTimeout(tick, beatMs*(DUR_BEATS[notes[repMetroStep%notes.length]?.dur]||1));
+  }
+  repMetroRef=setTimeout(tick, beatMs*(DUR_BEATS[item.notes[0]?.dur]||1));
+}
+function stopRepPractice(){
+  repPracticeRunning=false;
+  if(repMetroRef) clearTimeout(repMetroRef);
+  stopPitchChart('rep');
+  const btn=document.getElementById('rep-practice-btn');
+  if(btn){btn.textContent='▶ 開始練習';btn.className='btn-primary trumpet';}
+}
+
+function startRepPitchChart(item){
+  stopPitchChart('rep');
+  const canvasEl=document.getElementById('rep-canvas'); if(!canvasEl) return;
+  const dpr=window.devicePixelRatio||1;
+  const cw=canvasEl.offsetWidth||340, ch=160;
+  canvasEl.width=cw*dpr; canvasEl.height=ch*dpr;
+  const ctx2d=canvasEl.getContext('2d'); ctx2d.scale(dpr,dpr);
+  const CW=cw, CH=ch;
+  const inst=INSTRUMENTS[practiceKid]; const noteObjs=inst.notes;
+  const freqs=item.notes.map(n=>noteObjs.find(x=>x.name===n.full)?.cf).filter(Boolean);
+  if(!freqs.length) return;
+  const fMin=Math.min(...freqs)*Math.pow(2,-3/12), fMax=Math.max(...freqs)*Math.pow(2,4/12);
+  const toY=f=>CH-8-((Math.log2(f)-Math.log2(fMin))/(Math.log2(fMax)-Math.log2(fMin)))*(CH-16);
+
+  // Build note timeline: each note has absolute start/end time in ms
+  const beatMs = 60000 / (item.bpm || 80);
+  const noteTimeline = []; // {note, startMs, endMs, freq}
+  let cursor = 0;
+  item.notes.forEach(n => {
+    const dur = (DUR_BEATS[n.dur] || 1) * beatMs;
+    const obj = noteObjs.find(o => o.name === n.full);
+    noteTimeline.push({ note: n.full, startMs: cursor, endMs: cursor + dur, freq: obj?.cf || null });
+    cursor += dur;
+  });
+  const totalMs = cursor; // full piece duration in ms
+
+  // Window = 2 bars = 8 beats
+  const WINDOW_MS = beatMs * 8;
+  const history = [];
+
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})
+    .then(stream=>{
+      const actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
+      const analyser=actx.createAnalyser(); analyser.fftSize=8192; analyser.smoothingTimeConstant=0.85;
+      actx.createMediaStreamSource(stream).connect(analyser);
+      const buf=new Float32Array(analyser.fftSize);
+      pitchChartState['rep']={actx,stream,rafId:null};
+      let startT=null;
+
+      function frame(){
+        const now=Date.now();
+        if(!startT) startT=now;
+        const elapsed=now-startT;
+
+        // Mic input
+        analyser.getFloatTimeDomainData(buf);
+        let rms=0; for(let i=0;i<buf.length;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/buf.length);
+        if(rms>0.012){
+          const freq=autoCorrelate(buf,actx.sampleRate);
+          if(freq>60&&freq<2500){const r=findClosest(freq);if(r) history.push({t:elapsed,freq,cents:r.cents});}
+        }
+
+        // Scrolling window: keep current note near center (70% from left)
+        // Window starts so that elapsed is at 70% of window width
+        const CURSOR_POS = 0.7; // current time sits at 70% of screen
+        const winStart = elapsed - WINDOW_MS * CURSOR_POS;
+        const winEnd   = winStart + WINDOW_MS;
+        const tToX = t => ((t - winStart) / WINDOW_MS) * CW;
+
+        ctx2d.fillStyle='#0d0d14'; ctx2d.fillRect(0,0,CW,CH);
+
+        // Pitch grid lines (horizontal)
+        noteObjs.forEach(n=>{
+          if(n.cf<fMin*0.92||n.cf>fMax*1.08) return;
+          const y=toY(n.cf); const isC=n.name.startsWith('C');
+          ctx2d.strokeStyle=isC?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.04)';
+          ctx2d.lineWidth=isC?1:0.5;
+          ctx2d.beginPath(); ctx2d.moveTo(0,y); ctx2d.lineTo(CW,y); ctx2d.stroke();
+          ctx2d.fillStyle='rgba(255,255,255,0.25)'; ctx2d.font='8px monospace'; ctx2d.textAlign='left';
+          ctx2d.fillText(n.name,2,y-2);
+        });
+
+        // Beat grid lines (vertical, subtle)
+        for(let b=0; b<totalMs; b+=beatMs){
+          const x=tToX(b);
+          if(x<0||x>CW) continue;
+          const isBar=(b % (beatMs*4))<1;
+          ctx2d.strokeStyle=isBar?'rgba(255,255,255,0.12)':'rgba(255,255,255,0.04)';
+          ctx2d.lineWidth=isBar?1:0.5;
+          ctx2d.beginPath(); ctx2d.moveTo(x,0); ctx2d.lineTo(x,CH); ctx2d.stroke();
+        }
+
+        // Target note lanes (time-based width)
+        noteTimeline.forEach(n=>{
+          if(!n.freq) return;
+          const x1=tToX(n.startMs), x2=tToX(n.endMs);
+          if(x2<0||x1>CW) return; // out of view
+          const xA=Math.max(0,x1), xB=Math.min(CW,x2), w=xB-xA;
+          const y=toY(n.freq);
+          const yU=toY(n.freq*Math.pow(2,25/1200)), yD=toY(n.freq*Math.pow(2,-25/1200));
+          // Is this the "current" note (elapsed falls within it)?
+          const isCur=elapsed>=n.startMs&&elapsed<n.endMs;
+          // Is this upcoming (in the future)?
+          const isUpcoming=n.startMs>elapsed;
+          ctx2d.fillStyle=isCur?'rgba(255,107,53,0.18)':isUpcoming?'rgba(255,107,53,0.06)':'rgba(255,107,53,0.03)';
+          ctx2d.fillRect(xA,yU,w,Math.max(1,yD-yU));
+          ctx2d.strokeStyle=isCur?'rgba(255,107,53,0.95)':isUpcoming?'rgba(255,107,53,0.35)':'rgba(255,107,53,0.15)';
+          ctx2d.lineWidth=isCur?2.5:1.2;
+          ctx2d.setLineDash(isCur?[]:[4,3]);
+          ctx2d.beginPath(); ctx2d.moveTo(xA+1,y); ctx2d.lineTo(xB-1,y); ctx2d.stroke();
+          ctx2d.setLineDash([]);
+          // Note label
+          if(w>14){
+            ctx2d.fillStyle=isCur?'rgba(255,107,53,1)':isUpcoming?'rgba(255,107,53,0.5)':'rgba(255,107,53,0.25)';
+            ctx2d.font=`bold ${isCur?10:8}px monospace`; ctx2d.textAlign='center';
+            ctx2d.fillText(n.note, xA+w/2, y-4);
+          }
+        });
+
+        // Playhead (current time cursor)
+        const px=tToX(elapsed);
+        ctx2d.strokeStyle='rgba(255,255,255,0.35)'; ctx2d.lineWidth=1.5; ctx2d.setLineDash([4,3]);
+        ctx2d.beginPath(); ctx2d.moveTo(px,0); ctx2d.lineTo(px,CH); ctx2d.stroke(); ctx2d.setLineDash([]);
+
+        // Actual pitch trace
+        const cutoff=winStart-200; // keep a tiny bit before window for smooth entry
+        while(history.length&&history[0].t<cutoff) history.shift();
+        if(history.length>1){
+          for(let i=1;i<history.length;i++){
+            const p=history[i], pp=history[i-1];
+            const x1=tToX(pp.t), x2=tToX(p.t);
+            if(x2<0||x1>CW) continue;
+            const col=Math.abs(p.cents)<=10?'#00ff88':Math.abs(p.cents)<=25?'#ffcc00':'#ff4466';
+            ctx2d.strokeStyle=col; ctx2d.lineWidth=2.5; ctx2d.shadowColor=col; ctx2d.shadowBlur=5;
+            ctx2d.beginPath(); ctx2d.moveTo(x1,toY(pp.freq)); ctx2d.lineTo(x2,toY(p.freq)); ctx2d.stroke();
+          }
+          ctx2d.shadowBlur=0;
+          const last=history[history.length-1];
+          const dotC=Math.abs(last.cents)<=10?'#00ff88':Math.abs(last.cents)<=25?'#ffcc00':'#ff4466';
+          ctx2d.fillStyle=dotC; ctx2d.shadowColor=dotC; ctx2d.shadowBlur=12;
+          ctx2d.beginPath(); ctx2d.arc(tToX(last.t),toY(last.freq),4,0,Math.PI*2); ctx2d.fill();
+          ctx2d.shadowBlur=0;
+        }
+
+        pitchChartState['rep'].rafId=requestAnimationFrame(frame);
+      }
+      frame();
+    }).catch(()=>{});
+}
+
+// ── Recording + Full analysis ──
+async function toggleRepRecording(){
+  if(recState['rep']?.recording){ await stopRepRecording(); }
+  else { await startRecording('rep'); document.getElementById('rep-rec-btn').textContent='⏹ 停止分析'; document.getElementById('rep-rec-btn').style.background='var(--red)'; }
+}
+
+async function stopRepRecording(){
+  const state=recState['rep']; if(!state) return;
+  state.recording=false;
+  document.getElementById('rep-rec-btn').textContent='⏳ 分析中...';
+  document.getElementById('rep-rec-btn').disabled=true;
+  document.getElementById('rep-rec-btn').style.background='var(--muted)';
+  cancelAnimationFrame(state.recRafId);
+  clearInterval(state.timerInterval);
+  const timerEl=document.getElementById('rep-timer'); if(timerEl) timerEl.remove();
+  await new Promise(res=>{state.mediaRecorder.onstop=res; state.mediaRecorder.stop(); state.stream.getTracks().forEach(t=>t.stop()); state.analysisCtx.close();});
+  // Compute metrics
+  const pitchLog=state.pitchLog; const noteOnsets=state.noteOnsets;
+  const totalDuration=(Date.now()-state.recStart)/1000;
+  const silenceRatio=state.silenceFrames/Math.max(1,state.totalFrames.ref());
+  // Pitch accuracy
+  let inTune=0,outTune=0; const centsBuckets=new Array(21).fill(0); // -100 to +100 in 10-cent bins
+  pitchLog.forEach(p=>{
+    const abs=Math.abs(p.cents); if(abs<=25)inTune++;else outTune++;
+    const bin=Math.min(20,Math.floor((p.cents+105)/10)); if(bin>=0&&bin<21) centsBuckets[bin]++;
+  });
+  const totalNotes=inTune+outTune;
+  const inTunePct=totalNotes>0?Math.round(inTune/totalNotes*100):0;
+  // Rhythm regularity
+  let rhythmScore=null;
+  if(noteOnsets.length>=3){
+    const intervals=noteOnsets.slice(1).map((t,i)=>t-noteOnsets[i]);
+    const mean=intervals.reduce((a,b)=>a+b,0)/intervals.length;
+    const cv=mean>0?Math.sqrt(intervals.reduce((a,b)=>a+(b-mean)**2,0)/intervals.length)/mean:1;
+    rhythmScore=Math.max(0,Math.round((1-Math.min(cv,1))*100));
+  }
+  // Continuity: count silence gaps >0.3s
+  const silenceGaps=Math.round(silenceRatio*totalDuration/0.3);
+  // Demo comparison
+  const practiceContour=pitchLog.map(p=>({t:p.time/1000,freq:p.freq}));
+  let compareScore=null;
+  if(demoContour&&demoContour.length>5&&practiceContour.length>5){
+    compareScore=computeContourSimilarity(demoContour,practiceContour);
+  }
+  // Show analysis UI
+  showRepAnalysis({inTunePct,rhythmScore,silenceGaps,totalDuration,centsBuckets,compareScore,pitchLog,practiceContour});
+  // AI comment
+  await generateRepComment({inTunePct,rhythmScore,silenceGaps,totalDuration,compareScore});
+  document.getElementById('rep-rec-btn').textContent='🔴 重新錄音';
+  document.getElementById('rep-rec-btn').disabled=false;
+  document.getElementById('rep-rec-btn').style.background='var(--purple)';
+  recState['rep']=null;
+}
+
+function computeContourSimilarity(demo,practice){
+  // Resample both contours to 50 points, compare log-freq distance
+  const resample=(contour,n)=>{
+    const dur=contour[contour.length-1].t-contour[0].t||1;
+    return Array.from({length:n},(_,i)=>{
+      const target=contour[0].t+(i/n)*dur;
+      const closest=contour.reduce((a,b)=>Math.abs(b.t-target)<Math.abs(a.t-target)?b:a);
+      return Math.log2(closest.freq);
+    });
+  };
+  const N=50; const d=resample(demo,N); const p=resample(practice,N);
+  const dMean=d.reduce((a,b)=>a+b,0)/N, pMean=p.reduce((a,b)=>a+b,0)/N;
+  const dN=d.map(x=>x-dMean), pN=p.map(x=>x-pMean);
+  const dot=dN.reduce((s,v,i)=>s+v*pN[i],0);
+  const mag=Math.sqrt(dN.reduce((s,v)=>s+v*v,0))*Math.sqrt(pN.reduce((s,v)=>s+v*v,0));
+  return mag>0?Math.round(((dot/mag+1)/2)*100):0;
+}
+
+function showRepAnalysis({inTunePct,rhythmScore,silenceGaps,totalDuration,centsBuckets,compareScore,pitchLog,practiceContour}){
+  const box=document.getElementById('rep-analysis-box');
+  box.style.display='block';
+  // Scores row
+  const pitchCls=inTunePct>=70?'good':inTunePct>=40?'ok':'poor';
+  const rhythmCls=rhythmScore===null?'ok':rhythmScore>=70?'good':rhythmScore>=40?'ok':'poor';
+  const contCls=silenceGaps<=2?'good':silenceGaps<=5?'ok':'poor';
+  let scoresHTML=`
+    <div class="score-chip ${pitchCls}">音準 ${inTunePct}%</div>
+    <div class="score-chip ${rhythmCls}">${rhythmScore!==null?`節奏 ${rhythmScore}%`:'節奏 –'}</div>
+    <div class="score-chip ${contCls}">連貫 ${silenceGaps<=2?'好':silenceGaps<=5?'一般':'差'}</div>
+    <div class="score-chip ok">時長 ${totalDuration.toFixed(0)}s</div>`;
+  if(compareScore!==null) scoresHTML+=`<div class="score-chip ${compareScore>=70?'good':compareScore>=40?'ok':'poor'}">示範相似 ${compareScore}%</div>`;
+  document.getElementById('rep-scores-row').innerHTML=scoresHTML;
+  // Histogram
+  if(pitchLog.length>10){
+    document.getElementById('rep-hist-wrap').style.display='block';
+    drawCentsHistogram(centsBuckets);
+  }
+  // Comparison chart
+  if(compareScore!==null&&demoContour){
+    document.getElementById('rep-compare-wrap').style.display='block';
+    drawCompareChart(demoContour,practiceContour);
+  }
+  document.getElementById('rep-ai-comment').textContent='AI 評語生成中...';
+}
+
+function drawCentsHistogram(buckets){
+  const canvas=document.getElementById('rep-hist-canvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.offsetWidth||340,H=70;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx2d=canvas.getContext('2d'); ctx2d.scale(dpr,dpr);
+  ctx2d.fillStyle='#0d0d14'; ctx2d.fillRect(0,0,W,H);
+  const max=Math.max(...buckets,1);
+  const bw=W/buckets.length;
+  buckets.forEach((v,i)=>{
+    const cents=(i*10)-100;
+    const color=Math.abs(cents)<=10?'#00ff88':Math.abs(cents)<=30?'#ffcc00':'#ff4466';
+    const h=(v/max)*(H-12);
+    ctx2d.fillStyle=color+'80'; ctx2d.fillRect(i*bw,H-h-2,bw-1,h);
+    if(i===10){ ctx2d.strokeStyle='rgba(255,255,255,0.3)'; ctx2d.lineWidth=1; ctx2d.setLineDash([3,3]); ctx2d.beginPath(); ctx2d.moveTo(i*bw+bw/2,0); ctx2d.lineTo(i*bw+bw/2,H); ctx2d.stroke(); ctx2d.setLineDash([]); }
+  });
+  ctx2d.fillStyle='rgba(255,255,255,0.3)'; ctx2d.font='8px monospace'; ctx2d.textAlign='center';
+  ctx2d.fillText('-100¢',5,H-1); ctx2d.fillText('0¢',W/2,H-1); ctx2d.fillText('+100¢',W-10,H-1);
+}
+
+function drawCompareChart(demo,practice){
+  const canvas=document.getElementById('rep-compare-canvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.offsetWidth||340,H=100;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx2d=canvas.getContext('2d'); ctx2d.scale(dpr,dpr);
+  ctx2d.fillStyle='#0d0d14'; ctx2d.fillRect(0,0,W,H);
+  const allFreqs=[...demo,...practice].map(p=>Math.log2(p.freq));
+  const fMin=Math.min(...allFreqs),fMax=Math.max(...allFreqs);
+  const toY=lf=>H-6-((lf-fMin)/(fMax-fMin||1))*(H-12);
+  function drawContour(contour,color){
+    if(contour.length<2) return;
+    const dur=contour[contour.length-1].t-contour[0].t||1;
+    ctx2d.strokeStyle=color; ctx2d.lineWidth=2; ctx2d.shadowColor=color; ctx2d.shadowBlur=3;
+    ctx2d.beginPath();
+    contour.forEach((p,i)=>{
+      const x=((p.t-contour[0].t)/dur)*W;
+      const y=toY(Math.log2(p.freq));
+      i===0?ctx2d.moveTo(x,y):ctx2d.lineTo(x,y);
+    });
+    ctx2d.stroke(); ctx2d.shadowBlur=0;
+  }
+  drawContour(demo,'rgba(255,107,53,0.7)');
+  drawContour(practice,'rgba(0,255,136,0.8)');
+  // Legend
+  ctx2d.font='9px monospace'; ctx2d.textAlign='left';
+  ctx2d.fillStyle='rgba(255,107,53,0.9)'; ctx2d.fillText('▬ 示範',4,10);
+  ctx2d.fillStyle='rgba(0,255,136,0.9)'; ctx2d.fillText('▬ 本次',60,10);
+}
+
+async function generateRepComment({inTunePct,rhythmScore,silenceGaps,totalDuration,compareScore}){
+  const item=repList.find(r=>r.id===activeRepId)||{};
+  const kid=practiceKid==='trumpet'?'添樂':'悅琳';
+  const instrument=practiceKid==='trumpet'?'Bb小號':'長笛';
+  const prompt=`你是專業兒童管樂老師，分析學生演奏數據後給評語。
+學生：${kid}，樂器：${instrument}，曲目：${item.name||'自選曲'}
+數據：音準率${inTunePct}%，${rhythmScore!==null?`節奏穩定度${rhythmScore}%`:'節奏數據不足'}，氣息中斷約${silenceGaps}次，演奏時長${totalDuration.toFixed(0)}秒${compareScore!==null?`，與示範相似度${compareScore}%`:''}
+請給出2-3句鼓勵性具體評語 + 1-2個改進建議。語氣溫暖適合小學生，不超過120字，用繁體中文。`;
+  try{
+    const r=await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer sk-a5a9b48f7bb34817a3811920aad62e12'},
+      body:JSON.stringify({model:'qwen-plus',max_tokens:200,messages:[{role:'user',content:prompt}]})
+    });
+    const d=await r.json();
+    const comment=d.choices?.[0]?.message?.content||'';
+    document.getElementById('rep-ai-comment').textContent=comment;
+    // Save to log
+    const item2=repList.find(r=>r.id===activeRepId)||{};
+    addRepLogEntry({repId:activeRepId,repName:item2.name||'',comment,scores:{pitch:inTunePct,rhythm:rhythmScore,compare:compareScore},kid:practiceKid,duration:Math.round(totalDuration)});
+    // Offer save button
+    const box=document.getElementById('rep-analysis-box');
+    if(!document.getElementById('rep-save-btn')){
+      const btn=document.createElement('button');
+      btn.id='rep-save-btn'; btn.className='btn-primary trumpet'; btn.style.marginTop='12px';
+      btn.textContent='☁️ 保存練習記錄'; btn.onclick=saveRepPracticeLog; box.appendChild(btn);
+    }
+  }catch(e){document.getElementById('rep-ai-comment').textContent='AI 評語暫不可用';}
+}
+
+async function saveRepPracticeLog(){
+  const btn=document.getElementById('rep-save-btn');
+  if(btn){btn.textContent='✅ 已保存';btn.disabled=true;}
+}
+
+// ── Calendar ──
+let repCalSelectedDate=null;
+function renderRepCalendar(){
+  const log=getRepLog();
+  const year=repCalYear, month=repCalMonth;
+  document.getElementById('rep-cal-title').textContent=`${year}年${month+1}月`;
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const todayStr=new Date().toISOString().slice(0,10);
+  const days=['日','一','二','三','四','五','六'];
+  let html=days.map(d=>`<div style="text-align:center;font-size:10px;color:var(--muted);padding:4px 0;">${d}</div>`).join('');
+  // Empty cells before first day
+  for(let i=0;i<firstDay;i++) html+=`<div></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hasPractice=!!log[dateStr]?.length;
+    const isToday=dateStr===todayStr;
+    const isSelected=dateStr===repCalSelectedDate;
+    const dotCount=log[dateStr]?.length||0;
+    html+=`<div class="rep-cal-day ${hasPractice?'has-practice':''} ${isToday?'today':''} ${isSelected?'selected':''}"
+      onclick="repCalSelectDay('${dateStr}')">
+      <div>${d}</div>
+      ${hasPractice?`<div style="font-size:8px;margin-top:1px;">${'•'.repeat(Math.min(dotCount,3))}</div>`:''}
+    </div>`;
+  }
+  document.getElementById('rep-cal-grid').innerHTML=html;
+  if(repCalSelectedDate) showRepCalDetail(repCalSelectedDate);
+}
+function repCalShift(d){ repCalMonth+=d; if(repCalMonth>11){repCalMonth=0;repCalYear++;} if(repCalMonth<0){repCalMonth=11;repCalYear--;} renderRepCalendar(); }
+function repCalSelectDay(dateStr){
+  repCalSelectedDate=dateStr; renderRepCalendar(); showRepCalDetail(dateStr);
+}
+function showRepCalDetail(dateStr){
+  const log=getRepLog();
+  const entries=log[dateStr]||[];
+  const detail=document.getElementById('rep-cal-detail');
+  const dateEl=document.getElementById('rep-cal-detail-date');
+  const list=document.getElementById('rep-cal-detail-list');
+  if(!entries.length){detail.style.display='none';return;}
+  detail.style.display='block';
+  dateEl.textContent=`${dateStr} 的練習記錄`;
+  list.innerHTML=entries.map(e=>`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px;">${e.repName||'未命名'}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        ${e.scores?.pitch!=null?`<div class="score-chip ${e.scores.pitch>=70?'good':e.scores.pitch>=40?'ok':'poor'}">音準 ${e.scores.pitch}%</div>`:''}
+        ${e.scores?.rhythm!=null?`<div class="score-chip ${e.scores.rhythm>=70?'good':e.scores.rhythm>=40?'ok':'poor'}">節奏 ${e.scores.rhythm}%</div>`:''}
+        ${e.scores?.compare!=null?`<div class="score-chip ${e.scores.compare>=70?'good':e.scores.compare>=40?'ok':'poor'}">相似 ${e.scores.compare}%</div>`:''}
+        ${e.duration?`<div class="score-chip ok">${e.duration}s</div>`:''}
+      </div>
+      ${e.comment?`<div style="font-size:12px;color:var(--muted);line-height:1.6;">${e.comment}</div>`:''}
+    </div>`).join('');
+}
+
+// ── Global init ──
+// ── Practice module loaded ──
+
 </script>
 </body>
 </html>
