@@ -1328,6 +1328,27 @@ function getDefaultTraining() {
 // ══════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════
+function migrateHistoryDateKeys() {
+  // One-time migration: convert "2026/3/9" -> "2026-03-09" in localStorage
+  [1, 2].forEach(kid => {
+    const key = 'kid' + kid + '_history';
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const history = JSON.parse(raw);
+      let changed = false;
+      history.forEach(d => {
+        if (d.dateKey && /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(d.dateKey)) {
+          const p = d.dateKey.split('/');
+          d.dateKey = p[0]+'-'+p[1].padStart(2,'0')+'-'+p[2].padStart(2,'0');
+          changed = true;
+        }
+      });
+      if (changed) localStorage.setItem(key, JSON.stringify(history));
+    } catch(e) {}
+  });
+}
+
 function todayISO() {
   const d = new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -1337,6 +1358,7 @@ window.onload = function() {
   setDate();
   checkAutoArchive();
   histSelectedDate = todayISO(); // default select today
+  migrateHistoryDateKeys();
   renderDashboard();
   renderExamList();
   renderArtsGrid();
