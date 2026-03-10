@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>音準測試器</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --card: #12121a;
+  --border: #1e1e2e;
+  --text: #e8e8f0;
+  --muted: #5a5a7a;
+  --trumpet: #FF6B35;
+  --flute: #4FACDE;
+  --green: #00ff88;
+  --yellow: #ffcc00;
+  --red: #ff4466;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px 40px;
+}
+
+h1 {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  margin-top: 12px;
+}
+
+/* Kid selector */
+.kid-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 360px;
+}
+.kid-tab {
+  flex: 1;
+  padding: 12px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.kid-tab.active-trumpet {
+  border-color: var(--trumpet);
+  color: var(--trumpet);
+  background: rgba(255,107,53,0.08);
+}
+.kid-tab.active-flute {
+  border-color: var(--flute);
+  color: var(--flute);
+  background: rgba(79,172,222,0.08);
+}
+
+/* Big note display */
+.note-display {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  position: relative;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--card);
+}
+.note-display.perfect {
+  border-color: var(--green);
+  box-shadow: 0 0 40px rgba(0,255,136,0.3);
+}
+.note-display.close {
+  border-color: var(--yellow);
+  box-shadow: 0 0 30px rgba(255,204,0,0.2);
+}
+.note-display.off {
+  border-color: var(--red);
+  box-shadow: 0 0 20px rgba(255,68,102,0.15);
+}
+.note-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.note-octave {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.note-freq {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.note-idle { color: var(--muted); }
+.note-perfect { color: var(--green); }
+.note-close { color: var(--yellow); }
+.note-off { color: var(--red); }
+
+/* Tuning bar */
+.tuning-wrap {
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 20px;
+}
+.tuning-label {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-family: 'Space Mono', monospace;
+}
+.tuning-bar-outer {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.tuning-bar-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--muted);
+  transform: translateX(-50%);
+}
+.tuning-bar-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 6px;
+  transition: left 0.1s, width 0.1s, background 0.2s;
+  background: var(--green);
+}
+.tuning-cents {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 6px;
+}
+
+/* Status feedback */
+.feedback-box {
+  width: 100%;
+  max-width: 360px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.feedback-icon { font-size: 22px; }
+.feedback-text { font-size: 14px; font-weight: 700; color: var(--text); }
+.feedback-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* Note range display */
+.range-title {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 10px;
+  width: 100%;
+  max-width: 360px;
+}
+.note-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 24px;
+}
+.note-chip {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--card);
+  transition: all 0.15s;
+}
+.note-chip.active-trumpet { border-color: var(--trumpet); color: var(--trumpet); background: rgba(255,107,53,0.12); }
+.note-chip.active-flute   { border-color: var(--flute);   color: var(--flute);   background: rgba(79,172,222,0.12); }
+
+/* Start button */
+.start-btn {
+  width: 100%;
+  max-width: 360px;
+  padding: 18px;
+  border-radius: 18px;
+  border: none;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.05em;
+}
+.start-btn.trumpet {
+  background: var(--trumpet);
+  color: white;
+  box-shadow: 0 8px 30px rgba(255,107,53,0.35);
+}
+.start-btn.flute {
+  background: var(--flute);
+  color: white;
+  box-shadow: 0 8px 30px rgba(79,172,222,0.35);
+}
+.start-btn.listening {
+  background: var(--red);
+  box-shadow: 0 8px 30px rgba(255,68,102,0.35);
+}
+.start-btn:active { transform: scale(0.97); }
+
+/* Volume meter */
+.vol-wrap {
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 16px;
+}
+.vol-bar-outer {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+.vol-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
+  width: 0%;
+  transition: width 0.05s;
+}
+
+/* Pulse animation */
+@keyframes pulse {
+  0%,100% { transform: scale(1); opacity:1; }
+  50% { transform: scale(1.04); opacity:0.85; }
+}
+.listening-pulse { animation: pulse 1.2s ease-in-out infinite; }
+
+.divider {
+  width: 100%;
+  max-width: 360px;
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+</style>
+</head>
+<body>
+
+<h1>🎵 音準測試器 · Pitch Detector</h1>
+
+<!-- Kid selector -->
+<div class="kid-tabs">
+  <button class="kid-tab active-trumpet" id="btn-trumpet" onclick="selectKid('trumpet')">
+    🦁 添樂<br><span style="font-size:11px;font-weight:400">小號</span>
+  </button>
+  <button class="kid-tab" id="btn-flute" onclick="selectKid('flute')">
+    🐰 悅琳<br><span style="font-size:11px;font-weight:400">長笛</span>
+  </button>
+</div>
+
+<!-- Note display -->
+<div class="note-display" id="note-display">
+  <div class="note-name note-idle" id="note-name">–</div>
+  <div class="note-octave" id="note-octave"></div>
+  <div class="note-freq" id="note-freq">等待聲音...</div>
+</div>
+
+<!-- Tuning bar -->
+<div class="tuning-wrap">
+  <div class="tuning-label">音準偏差</div>
+  <div class="tuning-bar-outer">
+    <div class="tuning-bar-center"></div>
+    <div class="tuning-bar-fill" id="tuning-fill" style="left:50%;width:0%"></div>
+  </div>
+  <div class="tuning-cents" id="tuning-cents">–</div>
+</div>
+
+<!-- Volume -->
+<div class="vol-wrap">
+  <div class="tuning-label">音量</div>
+  <div class="vol-bar-outer">
+    <div class="vol-bar-fill" id="vol-fill"></div>
+  </div>
+</div>
+
+<!-- Feedback -->
+<div class="feedback-box" id="feedback-box">
+  <div class="feedback-icon">🎸</div>
+  <div>
+    <div class="feedback-text" id="feedback-text">按下按鈕開始聆聽</div>
+    <div class="feedback-sub" id="feedback-sub">靠近麥克風吹奏</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Note range -->
+<div class="range-title" id="range-title">小號音域（concert pitch）</div>
+<div class="note-grid" id="note-grid"></div>
+
+<!-- Start button -->
+<button class="start-btn trumpet" id="start-btn" onclick="toggleListen()">
+  🎙️ 開始聆聽
+</button>
+
+<script>
+// ── Note data ──
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTE_DISPLAY_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// Instrument configs
+const INSTRUMENTS = {
+  trumpet: {
+    name: '小號（Concert Pitch）',
+    color: 'var(--trumpet)',
+    colorName: 'trumpet',
+    emoji: '🦁',
+    // Bb trumpet: written range F#3-C6, concert pitch Eb3-Bb5
+    // Common beginner notes: concert Bb3 to G5
+    notes: [
+      {name:'E3', freq:164.8}, {name:'F3', freq:174.6}, {name:'F#3', freq:185.0},
+      {name:'G3', freq:196.0}, {name:'G#3', freq:207.7}, {name:'A3', freq:220.0},
+      {name:'Bb3', freq:233.1}, {name:'B3', freq:246.9},
+      {name:'C4', freq:261.6}, {name:'C#4', freq:277.2}, {name:'D4', freq:293.7},
+      {name:'Eb4', freq:311.1}, {name:'E4', freq:329.6}, {name:'F4', freq:349.2},
+      {name:'F#4', freq:370.0}, {name:'G4', freq:392.0}, {name:'Ab4', freq:415.3},
+      {name:'A4', freq:440.0}, {name:'Bb4', freq:466.2}, {name:'B4', freq:493.9},
+      {name:'C5', freq:523.3}, {name:'D5', freq:587.3}, {name:'E5', freq:659.3},
+      {name:'F5', freq:698.5}, {name:'G5', freq:784.0},
+    ]
+  },
+  flute: {
+    name: '長笛音域',
+    color: 'var(--flute)',
+    colorName: 'flute',
+    emoji: '🐰',
+    // Concert flute: C4 to D7 (beginners: C4-A6)
+    notes: [
+      {name:'C4', freq:261.6}, {name:'D4', freq:293.7}, {name:'E4', freq:329.6},
+      {name:'F4', freq:349.2}, {name:'G4', freq:392.0}, {name:'A4', freq:440.0},
+      {name:'Bb4', freq:466.2}, {name:'B4', freq:493.9},
+      {name:'C5', freq:523.3}, {name:'D5', freq:587.3}, {name:'E5', freq:659.3},
+      {name:'F5', freq:698.5}, {name:'G5', freq:784.0}, {name:'A5', freq:880.0},
+      {name:'Bb5', freq:932.3}, {name:'B5', freq:987.8},
+      {name:'C6', freq:1046.5}, {name:'D6', freq:1174.7}, {name:'E6', freq:1318.5},
+      {name:'F6', freq:1396.9}, {name:'G6', freq:1568.0}, {name:'A6', freq:1760.0},
+    ]
+  }
+};
+
+let currentKid = 'trumpet';
+let audioCtx = null;
+let analyser = null;
+let bufferLen = null;
+let dataArray = null;
+let rafId = null;
+let isListening = false;
+let lastNote = null;
+let stableCount = 0;
+
+// ── UI ──
+function selectKid(kid) {
+  currentKid = kid;
+  document.getElementById('btn-trumpet').className = 'kid-tab' + (kid==='trumpet' ? ' active-trumpet' : '');
+  document.getElementById('btn-flute').className   = 'kid-tab' + (kid==='flute'   ? ' active-flute'   : '');
+  document.getElementById('start-btn').className = `start-btn ${kid}` + (isListening ? ' listening' : '');
+  renderNoteGrid();
+  resetDisplay();
+}
+
+function renderNoteGrid() {
+  const inst = INSTRUMENTS[currentKid];
+  const grid = document.getElementById('note-grid');
+  document.getElementById('range-title').textContent = inst.name;
+  grid.innerHTML = inst.notes.map(n =>
+    `<div class="note-chip" id="chip-${n.name.replace('#','s').replace('b','b')}">${n.name}</div>`
+  ).join('');
+}
+
+function highlightChip(noteName) {
+  document.querySelectorAll('.note-chip').forEach(c => c.className = 'note-chip');
+  if (!noteName) return;
+  const id = 'chip-' + noteName.replace('#','s').replace('b','b');
+  const el = document.getElementById(id);
+  if (el) el.className = `note-chip active-${currentKid}`;
+}
+
+function resetDisplay() {
+  document.getElementById('note-name').textContent = '–';
+  document.getElementById('note-name').className = 'note-name note-idle';
+  document.getElementById('note-octave').textContent = '';
+  document.getElementById('note-freq').textContent = '等待聲音...';
+  document.getElementById('note-display').className = 'note-display';
+  document.getElementById('tuning-fill').style.width = '0%';
+  document.getElementById('tuning-fill').style.left = '50%';
+  document.getElementById('tuning-cents').textContent = '–';
+  document.getElementById('vol-fill').style.width = '0%';
+  highlightChip(null);
+  setFeedback('🎸', '按下按鈕開始聆聽', '靠近麥克風吹奏');
+}
+
+function setFeedback(icon, text, sub) {
+  document.getElementById('feedback-box').querySelector('.feedback-icon').textContent = icon;
+  document.getElementById('feedback-text').textContent = text;
+  document.getElementById('feedback-sub').textContent = sub;
+}
+
+// ── Audio ──
+async function toggleListen() {
+  if (isListening) {
+    stopListen();
+  } else {
+    await startListen();
+  }
+}
+
+async function startListen() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 8192;
+    analyser.smoothingTimeConstant = 0.85;
+    bufferLen = analyser.fftSize;
+    dataArray = new Float32Array(bufferLen);
+
+    const source = audioCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
+
+    isListening = true;
+    const btn = document.getElementById('start-btn');
+    btn.textContent = '⏹ 停止聆聽';
+    btn.className = `start-btn listening`;
+    document.getElementById('note-display').classList.add('listening-pulse');
+    setFeedback('🎙️', '正在聆聽...', '開始吹奏吧！');
+    detect();
+  } catch(e) {
+    setFeedback('❌', '無法使用麥克風', '請允許瀏覽器使用麥克風');
+  }
+}
+
+function stopListen() {
+  isListening = false;
+  cancelAnimationFrame(rafId);
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  const btn = document.getElementById('start-btn');
+  btn.textContent = '🎙️ 開始聆聽';
+  btn.className = `start-btn ${currentKid}`;
+  document.getElementById('note-display').classList.remove('listening-pulse');
+  resetDisplay();
+}
+
+// ── Pitch detection: YIN-inspired autocorrelation ──
+function autoCorrelate(buf, sampleRate) {
+  const SIZE = buf.length;
+  let rms = 0;
+  for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.01) return -1; // too quiet
+
+  let r1 = 0, r2 = SIZE - 1;
+  for (let i = 0; i < SIZE / 2; i++) { if (Math.abs(buf[i]) < 0.2) { r1 = i; break; } }
+  for (let i = 1; i < SIZE / 2; i++) { if (Math.abs(buf[SIZE - i]) < 0.2) { r2 = SIZE - i; break; } }
+  const buf2 = buf.slice(r1, r2);
+  const c = new Array(buf2.length).fill(0);
+  for (let i = 0; i < buf2.length; i++) for (let j = 0; j < buf2.length - i; j++) c[i] += buf2[j] * buf2[j + i];
+
+  let d = 0;
+  while (c[d] > c[d + 1]) d++;
+  let maxVal = -1, maxPos = -1;
+  for (let i = d; i < buf2.length; i++) { if (c[i] > maxVal) { maxVal = c[i]; maxPos = i; } }
+
+  // Parabolic interpolation for sub-sample precision
+  let T0 = maxPos;
+  if (maxPos > 0 && maxPos < buf2.length - 1) {
+    const x1 = c[maxPos - 1], x2 = c[maxPos], x3 = c[maxPos + 1];
+    T0 = maxPos + (x3 - x1) / (2 * (2 * x2 - x1 - x3));
+  }
+  return sampleRate / T0;
+}
+
+// ── Find closest note ──
+function freqToNote(freq) {
+  if (freq <= 0) return null;
+  // Standard: A4=440Hz, MIDI note 69
+  const midi = Math.round(12 * Math.log2(freq / 440) + 69);
+  const noteName = NOTE_NAMES[((midi % 12) + 12) % 12];
+  const octave = Math.floor(midi / 12) - 1;
+  const noteFreq = 440 * Math.pow(2, (midi - 69) / 12);
+  const cents = 1200 * Math.log2(freq / noteFreq);
+  return { midi, name: noteName, octave, freq: noteFreq, detectedFreq: freq, cents };
+}
+
+// Find closest instrument note
+function findInstNote(detectedFreq) {
+  const notes = INSTRUMENTS[currentKid].notes;
+  let best = null, bestDist = Infinity;
+  notes.forEach(n => {
+    const d = Math.abs(Math.log2(detectedFreq / n.freq));
+    if (d < bestDist) { bestDist = d; best = n; }
+  });
+  // Only return if within 1 semitone
+  return bestDist < 0.06 ? best : null;
+}
+
+function detect() {
+  analyser.getFloatTimeDomainData(dataArray);
+
+  // Volume
+  let rms = 0;
+  for (let i = 0; i < bufferLen; i++) rms += dataArray[i] * dataArray[i];
+  rms = Math.sqrt(rms / bufferLen);
+  document.getElementById('vol-fill').style.width = Math.min(rms * 400, 100) + '%';
+
+  if (rms > 0.01) {
+    const freq = autoCorrelate(dataArray, audioCtx.sampleRate);
+    if (freq > 50 && freq < 4000) {
+      const note = freqToNote(freq);
+      if (note) updateDisplay(note, freq);
+    }
+  } else {
+    // Quiet: gradually fade display
+    document.getElementById('note-freq').textContent = '...';
+  }
+
+  rafId = requestAnimationFrame(detect);
+}
+
+function updateDisplay(note, detectedFreq) {
+  const cents = note.cents;
+  const absCents = Math.abs(cents);
+  const noteLabel = note.name + note.octave;
+
+  // Stability check
+  if (lastNote === noteLabel) { stableCount++; } else { stableCount = 0; lastNote = noteLabel; }
+
+  // Determine accuracy class
+  let cls, feedIcon, feedText, feedSub;
+  if (absCents <= 10) {
+    cls = 'perfect';
+    feedIcon = '✅';
+    feedText = '非常準！';
+    feedSub = `${note.name}${note.octave} · 偏差 ${cents.toFixed(1)} 音分`;
+  } else if (absCents <= 25) {
+    cls = 'close';
+    feedIcon = '🔶';
+    feedText = cents > 0 ? '稍微偏高' : '稍微偏低';
+    feedSub = `${note.name}${note.octave} · 偏差 ${cents.toFixed(1)} 音分`;
+  } else {
+    cls = 'off';
+    feedIcon = cents > 0 ? '⬆️' : '⬇️';
+    feedText = cents > 0 ? `偏高 ${absCents.toFixed(0)} 音分` : `偏低 ${absCents.toFixed(0)} 音分`;
+    feedSub = `目標 ${note.name}${note.octave}，頻率 ${detectedFreq.toFixed(1)}Hz`;
+  }
+
+  // Update circle
+  const disp = document.getElementById('note-display');
+  disp.className = 'note-display listening-pulse ' + cls;
+
+  const nameEl = document.getElementById('note-name');
+  nameEl.textContent = note.name;
+  nameEl.className = `note-name note-${cls}`;
+  document.getElementById('note-octave').textContent = note.octave;
+  document.getElementById('note-freq').textContent = detectedFreq.toFixed(1) + ' Hz';
+
+  // Tuning bar: map cents (-50 to +50) to position
+  const pct = Math.max(0, Math.min(100, (cents + 50) / 100 * 100));
+  const fill = document.getElementById('tuning-fill');
+  const halfW = Math.abs(pct - 50);
+  fill.style.left = Math.min(pct, 50) + '%';
+  fill.style.width = halfW + '%';
+  fill.style.background = cls === 'perfect' ? 'var(--green)' : cls === 'close' ? 'var(--yellow)' : 'var(--red)';
+
+  const sign = cents >= 0 ? '+' : '';
+  document.getElementById('tuning-cents').textContent = `${sign}${cents.toFixed(1)} 音分`;
+
+  // Feedback
+  setFeedback(feedIcon, feedText, feedSub);
+
+  // Highlight instrument note
+  const instNote = findInstNote(detectedFreq);
+  highlightChip(instNote ? instNote.name : null);
+}
+
+// ── Init ──
+renderNoteGrid();
+</script>
+</body>
+</html>
