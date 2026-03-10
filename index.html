@@ -1207,12 +1207,85 @@ const ARTS = [
 
 const ALL_SUBJECTS = [...SUBJECTS, ...ARTS];
 
-// Storage helpers - localStorage + Firebase cloud sync
+// ══════════════════════════════════════════════
+//  STORAGE + VERSIONED MIGRATION SYSTEM
+// ══════════════════════════════════════════════
+const DB_VERSION = 2; // bump this when data format changes
+
 function loadData(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
 }
 function saveData(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+// Convert any date string to ISO YYYY-MM-DD
+function toISODate(v) {
+  if (!v) return todayISO();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v; // already ISO
+  // zh-HK format: "2026/3/9"
+  if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(v)) {
+    const p = v.split('/');
+    return p[0]+'-'+p[1].padStart(2,'0')+'-'+p[2].padStart(2,'0');
+  }
+  // Legacy text: "今天", "明天", "本週"
+  const d = new Date();
+  if (v === '明天') d.setDate(d.getDate()+1);
+  else if (v === '本週') d.setDate(d.getDate()+(5-d.getDay()));
+  // else "今天" or unknown -> today
+  return d.toISOString().slice(0,10);
+}
+
+// ── Migration definitions ──
+// Each migration: { version, up(data) } where data = { kid1: {...}, kid2: {...} }
+const MIGRATIONS = [
+  {
+    version: 2,
+    description: 'Normalize all date formats to ISO YYYY-MM-DD',
+    up(store) {
+      [1, 2].forEach(kid => {
+        // history: dateKey
+        const hKey = `kid${kid}_history`;
+        try {
+          const h = JSON.parse(localStorage.getItem(hKey) || '[]');
+          h.forEach(d => { if (d.dateKey) d.dateKey = toISODate(d.dateKey); });
+          localStorage.setItem(hKey, JSON.stringify(h));
+        } catch(e) {}
+
+        // tasks: due date
+        const tKey = `kid${kid}_tasks`;
+        try {
+          const tasks = JSON.parse(localStorage.getItem(tKey) || '[]');
+          tasks.forEach(t => { if (t.due) t.due = toISODate(t.due); });
+          localStorage.setItem(tKey, JSON.stringify(tasks));
+        } catch(e) {}
+
+        // lastDate
+        const ldKey = `kid${kid}_lastDate`;
+        try {
+          const ld = localStorage.getItem(ldKey);
+          if (ld) localStorage.setItem(ldKey, toISODate(ld));
+        } catch(e) {}
+      });
+    }
+  }
+  // Add future migrations here:
+  // { version: 3, description: '...', up(store) { ... } }
+];
+
+function runMigrations() {
+  const currentVersion = loadData('db_version', 0);
+  if (currentVersion >= DB_VERSION) return;
+  const toRun = MIGRATIONS.filter(m => m.version > currentVersion);
+  toRun.forEach(m => {
+    try {
+      m.up({});
+      console.log(`[Migration v${m.version}] ${m.description} ✅`);
+    } catch(e) {
+      console.error(`[Migration v${m.version}] failed:`, e);
+    }
+  });
+  saveData('db_version', DB_VERSION);
 }
 
 // Per-kid data
@@ -1328,27 +1401,6 @@ function getDefaultTraining() {
 // ══════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════
-function migrateHistoryDateKeys() {
-  // One-time migration: convert "2026/3/9" -> "2026-03-09" in localStorage
-  [1, 2].forEach(kid => {
-    const key = 'kid' + kid + '_history';
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return;
-      const history = JSON.parse(raw);
-      let changed = false;
-      history.forEach(d => {
-        if (d.dateKey && /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(d.dateKey)) {
-          const p = d.dateKey.split('/');
-          d.dateKey = p[0]+'-'+p[1].padStart(2,'0')+'-'+p[2].padStart(2,'0');
-          changed = true;
-        }
-      });
-      if (changed) localStorage.setItem(key, JSON.stringify(history));
-    } catch(e) {}
-  });
-}
-
 function todayISO() {
   const d = new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -1358,7 +1410,7 @@ window.onload = function() {
   setDate();
   checkAutoArchive();
   histSelectedDate = todayISO(); // default select today
-  migrateHistoryDateKeys();
+  runMigrations();
   renderDashboard();
   renderExamList();
   renderArtsGrid();
