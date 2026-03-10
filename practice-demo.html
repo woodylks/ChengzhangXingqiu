@@ -571,29 +571,80 @@ body {
       <button onclick="showRepList()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">←</button>
       <div style="font-size:15px;font-weight:700;">新增曲目</div>
     </div>
+
+    <!-- Name -->
     <div class="rep-field">
       <div class="rep-label">曲目名稱</div>
-      <input class="form-input" id="rep-name-input" placeholder="例：小星星、長城謠..." />
+      <input class="form-input" id="rep-name-input" placeholder="例：小星星、Hering No.1..." />
     </div>
+
+    <!-- Score image (display only) -->
     <div class="rep-field">
-      <div class="rep-label">上傳曲譜圖片</div>
+      <div class="rep-label">曲譜圖片 <span style="color:var(--muted);font-size:11px;">（選填，僅供練習時參考）</span></div>
       <div class="rep-upload-box" id="rep-upload-box" onclick="document.getElementById('rep-img-input').click()">
         <div id="rep-upload-hint"><div style="font-size:28px;margin-bottom:8px;">📄</div>
           <div style="font-size:13px;color:var(--muted);">點擊選擇圖片</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">支援 JPG / PNG</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">JPG / PNG</div></div>
         <img id="rep-img-preview" style="display:none;width:100%;border-radius:8px;max-height:200px;object-fit:contain;" />
       </div>
       <input type="file" id="rep-img-input" accept="image/*" style="display:none" onchange="onScoreImageSelected(event)" />
     </div>
+
+    <!-- YouTube -->
     <div class="rep-field">
       <div class="rep-label">YouTube 參考連結 <span style="color:var(--muted);font-size:11px;">（選填）</span></div>
       <input class="form-input" id="rep-yt-input" placeholder="https://www.youtube.com/watch?v=..." />
     </div>
-    <button class="btn-primary trumpet" id="rep-recognize-btn" onclick="recognizeScore()" style="margin-bottom:16px;" disabled>
-      🤖 AI 識別曲譜
-    </button>
+
+    <!-- Input method selector -->
+    <div class="rep-field">
+      <div class="rep-label">錄入音符（示範錄音）</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="rep-view-btn active" id="input-tab-hum" onclick="switchInputTab('hum')" style="flex:1;">🎙 哼唱錄入</button>
+        <button class="rep-view-btn" id="input-tab-upload" onclick="switchInputTab('upload')" style="flex:1;">📤 上傳音頻</button>
+      </div>
+
+      <!-- Hum tab -->
+      <div id="input-panel-hum">
+        <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">吹奏一遍，App 自動識別音符和時值，同時作為示範錄音保存。</div>
+          <div id="hum-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;font-family:'Space Mono',monospace;">準備就緒</div>
+          <div id="hum-viz" style="height:60px;background:#0d0d14;border-radius:8px;margin-bottom:10px;overflow:hidden;position:relative;">
+            <canvas id="hum-canvas" style="width:100%;height:100%;display:block;"></canvas>
+            <div id="hum-note-display" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--trumpet);"></div>
+          </div>
+          <button class="btn-primary trumpet" id="hum-rec-btn" onclick="toggleHumRecording()" style="width:100%;">🎙 開始吹奏</button>
+        </div>
+      </div>
+
+      <!-- Upload tab -->
+      <div id="input-panel-upload" style="display:none;">
+        <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">上傳一段示範音頻（MP3/WAV/M4A），自動提取音符序列。</div>
+          <div class="rep-upload-box" onclick="document.getElementById('rep-audio-input').click()" style="min-height:60px;">
+            <div id="audio-upload-hint" style="text-align:center;">
+              <div style="font-size:24px;margin-bottom:6px;">🎵</div>
+              <div style="font-size:12px;color:var(--muted);">點擊選擇音頻文件</div>
+            </div>
+            <div id="audio-upload-done" style="display:none;text-align:center;">
+              <div style="font-size:13px;color:var(--green);">✅ 已選擇音頻</div>
+              <div id="audio-upload-name" style="font-size:11px;color:var(--muted);margin-top:4px;"></div>
+            </div>
+          </div>
+          <input type="file" id="rep-audio-input" accept="audio/*" style="display:none" onchange="onAudioFileSelected(event)" />
+          <button class="btn-primary trumpet" id="audio-analyze-btn" onclick="analyzeUploadedAudio()" style="width:100%;margin-top:10px;" disabled>
+            🔍 分析音符
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result editor (shared by both methods) -->
     <div id="rep-editor" style="display:none;">
-      <div class="rep-label" style="margin-bottom:10px;">識別結果 <span style="color:var(--muted);font-size:11px;">— 點擊音符可修改時值</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="rep-label" style="margin-bottom:0;">識別結果 <span style="color:var(--muted);font-size:11px;">— 點擊音符可修改時值</span></div>
+        <div style="font-size:11px;color:var(--muted);" id="rep-note-count"></div>
+      </div>
       <div id="rep-note-editor" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <div class="rep-label" style="margin-bottom:0;">練習速度</div>
@@ -606,9 +657,10 @@ body {
       <canvas id="rep-preview-canvas" style="width:100%;height:120px;background:#0d0d14;border-radius:10px;display:block;margin-bottom:16px;"></canvas>
       <button class="btn-primary trumpet" onclick="saveRepertoire()">💾 保存曲目</button>
     </div>
+
     <div id="rep-loading" style="display:none;text-align:center;padding:24px;">
       <div class="analysis-spinner" style="margin:0 auto 10px;"></div>
-      <div style="font-size:13px;color:var(--muted);">AI 正在識別曲譜...</div>
+      <div style="font-size:13px;color:var(--muted);" id="rep-loading-msg">處理中...</div>
     </div>
   </div>
 
@@ -1882,9 +1934,16 @@ function showRepAdd() {
   document.getElementById('rep-upload-hint').style.display='block';
   document.getElementById('rep-editor').style.display='none';
   document.getElementById('rep-loading').style.display='none';
-  document.getElementById('rep-recognize-btn').disabled=true;
   document.getElementById('rep-bpm-display').textContent=repBpm;
+  document.getElementById('hum-status').textContent='準備就緒';
+  document.getElementById('hum-rec-btn').textContent='🎙 開始吹奏';
+  document.getElementById('hum-rec-btn').className='btn-primary trumpet';
+  document.getElementById('audio-upload-hint').style.display='block';
+  document.getElementById('audio-upload-done').style.display='none';
+  document.getElementById('audio-analyze-btn').disabled=true;
+  switchInputTab('hum');
   repNotes=[]; repScoreImageB64=null; repScoreUrl=null;
+  humRecState=null; uploadedAudioFile=null; pendingDemoBlob=null; pendingDemoContour=null;
 }
 function showRepPractice(id) {
   const item=repList.find(r=>r.id===id); if(!item) return;
@@ -1975,41 +2034,279 @@ async function uploadScoreToCloudinary() {
   } catch(e){ return null; }
 }
 
-// ── AI recognition ──
-async function recognizeScore() {
-  if(!repScoreImageB64) return;
-  document.getElementById('rep-loading').style.display='block';
-  document.getElementById('rep-editor').style.display='none';
-  document.getElementById('rep-recognize-btn').disabled=true;
-  const instrument=currentKid==='trumpet'?'Bb小號（記譜音）':'長笛（Concert Pitch）';
-  const prompt=`你是樂譜識別AI。分析這張樂譜圖片，提取旋律音符。樂器：${instrument}。
-只返回JSON，不要任何其他文字：
-{"title":"曲目名稱或空字串","notes":[{"note":"C4","dur":"4"},{"note":"G4","dur":"8"}]}
-音符格式：音名+八度，如 C4 D#4 Bb3 G5。時值：全音符=1 二分=2 四分=4 八分=8 十六分=16。不確定時值填4。只識別旋律聲部。`;
+// ── Input tab switch ──
+function switchInputTab(tab) {
+  document.getElementById('input-panel-hum').style.display    = tab==='hum'    ? 'block' : 'none';
+  document.getElementById('input-panel-upload').style.display = tab==='upload' ? 'block' : 'none';
+  document.getElementById('input-tab-hum').className    = 'rep-view-btn' + (tab==='hum'    ? ' active' : '');
+  document.getElementById('input-tab-upload').className = 'rep-view-btn' + (tab==='upload' ? ' active' : '');
+}
+
+// ── Hum / blow-in recording ──
+let humRecState = null;
+let pendingDemoBlob = null;
+let pendingDemoContour = null;
+
+function toggleHumRecording() {
+  humRecState?.recording ? stopHumRecording() : startHumRecording();
+}
+
+async function startHumRecording() {
   try {
-    const resp=await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer sk-a5a9b48f7bb34817a3811920aad62e12'},
-      body:JSON.stringify({model:'qwen-vl-max',max_tokens:2000,messages:[{role:'user',content:[
-        {type:'image_url',image_url:{url:`data:image/jpeg;base64,${repScoreImageB64}`}},
-        {type:'text',text:prompt}
-      ]}]})
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
     });
-    const data=await resp.json();
-    let raw=data.choices?.[0]?.message?.content||'';
-    raw=raw.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(raw);
-    if(parsed.title&&!document.getElementById('rep-name-input').value)
-      document.getElementById('rep-name-input').value=parsed.title;
-    repNotes=(parsed.notes||[]).map(n=>({full:n.note,dur:n.dur||'4'}));
+    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+    const analyser = actx.createAnalyser();
+    analyser.fftSize = 8192; analyser.smoothingTimeConstant = 0.85;
+    actx.createMediaStreamSource(stream).connect(analyser);
+    const buf = new Float32Array(analyser.fftSize);
+
+    // MediaRecorder for saving demo audio
+    const chunks = [];
+    const mr = new MediaRecorder(stream, { mimeType: getSupportedMime() });
+    mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    mr.start(100);
+
+    // Pitch tracking
+    const rawPitchLog = []; // {t, freq, note}
+    let startT = Date.now();
+    let rafId;
+    const canvasEl = document.getElementById('hum-canvas');
+    const ctx2d = canvasEl.getContext('2d');
+    const pitchHistory = []; // rolling display buffer
+
+    function frame() {
+      analyser.getFloatTimeDomainData(buf);
+      let rms = 0; for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
+      rms = Math.sqrt(rms / buf.length);
+      const t = Date.now() - startT;
+
+      let detectedNote = null;
+      if (rms > 0.015) {
+        const freq = autoCorrelate(buf, actx.sampleRate);
+        if (freq > 60 && freq < 2500) {
+          const r = findClosest(freq);
+          if (r) {
+            rawPitchLog.push({ t, freq, note: r.note.name, cents: r.cents });
+            pitchHistory.push({ t, freq });
+            detectedNote = r.note.name;
+          }
+        }
+      } else {
+        rawPitchLog.push({ t, freq: null, note: null });
+      }
+
+      // Draw waveform viz
+      const W = canvasEl.offsetWidth || 300, H = 60;
+      if (canvasEl.width !== W * devicePixelRatio) {
+        canvasEl.width = W * devicePixelRatio; canvasEl.height = H * devicePixelRatio;
+        ctx2d.scale(devicePixelRatio, devicePixelRatio);
+      }
+      ctx2d.fillStyle = '#0d0d14'; ctx2d.fillRect(0, 0, W, H);
+      // Draw recent waveform
+      ctx2d.strokeStyle = rms > 0.015 ? 'var(--trumpet)' : 'var(--muted)';
+      ctx2d.lineWidth = 1.5;
+      ctx2d.beginPath();
+      const step = Math.ceil(buf.length / W);
+      for (let i = 0; i < W; i++) {
+        const v = buf[i * step] || 0;
+        const y = (1 - (v + 1) / 2) * H;
+        i === 0 ? ctx2d.moveTo(i, y) : ctx2d.lineTo(i, y);
+      }
+      ctx2d.stroke();
+
+      // Note display
+      document.getElementById('hum-note-display').textContent = detectedNote || '';
+      document.getElementById('hum-status').textContent =
+        `🔴 錄製中 ${(t/1000).toFixed(1)}s · ${rawPitchLog.filter(p=>p.note).length} 個音`;
+
+      rafId = requestAnimationFrame(frame);
+    }
+    frame();
+
+    humRecState = { mr, chunks, stream, actx, rafId, rawPitchLog, recording: true, startT };
+    document.getElementById('hum-rec-btn').textContent = '⏹ 停止並提取音符';
+    document.getElementById('hum-rec-btn').className = 'btn-primary stop';
+
+  } catch (e) { alert('無法使用麥克風：' + e.message); }
+}
+
+async function stopHumRecording() {
+  if (!humRecState) return;
+  humRecState.recording = false;
+  cancelAnimationFrame(humRecState.rafId);
+
+  document.getElementById('hum-rec-btn').disabled = true;
+  document.getElementById('hum-rec-btn').textContent = '⏳ 提取音符中...';
+  document.getElementById('rep-loading').style.display = 'block';
+  document.getElementById('rep-loading-msg').textContent = '正在提取音符序列...';
+
+  const { mr, chunks, stream, actx, rawPitchLog } = humRecState;
+  await new Promise(res => { mr.onstop = res; mr.stop(); stream.getTracks().forEach(t => t.stop()); actx.close(); });
+  pendingDemoBlob = new Blob(chunks, { type: getSupportedMime() || 'audio/webm' });
+
+  // Extract notes from rawPitchLog using segmentation
+  repNotes = extractNotesFromPitchLog(rawPitchLog);
+  // Store contour for demo comparison
+  const totalT = rawPitchLog[rawPitchLog.length-1]?.t || 1;
+  pendingDemoContour = rawPitchLog.filter(p=>p.freq).map(p=>({t:p.t/totalT, freq:p.freq}));
+
+  document.getElementById('rep-loading').style.display = 'none';
+  document.getElementById('hum-rec-btn').disabled = false;
+  document.getElementById('hum-rec-btn').textContent = '🔄 重新錄製';
+  document.getElementById('hum-rec-btn').className = 'btn-primary trumpet';
+  document.getElementById('hum-status').textContent = `✅ 完成 · 提取到 ${repNotes.length} 個音符`;
+
+  if (repNotes.length > 0) {
     renderNoteEditor();
     drawRepPreview();
-    document.getElementById('rep-editor').style.display='block';
-  } catch(e){ alert('識別失敗，請重試。'); }
-  finally{
-    document.getElementById('rep-loading').style.display='none';
-    document.getElementById('rep-recognize-btn').disabled=false;
+    document.getElementById('rep-editor').style.display = 'block';
+    document.getElementById('rep-note-count').textContent = `${repNotes.length} 個音符`;
+    // Auto-detect BPM from note durations
+    const avgBeatMs = estimateBpm(rawPitchLog);
+    if (avgBeatMs) {
+      repBpm = Math.round(Math.min(200, Math.max(40, 60000 / avgBeatMs)));
+      document.getElementById('rep-bpm-display').textContent = repBpm;
+    }
+  } else {
+    alert('未能識別到音符，請確認麥克風正常並重試。');
   }
+  humRecState = null;
+}
+
+// Extract discrete note events from continuous pitch log
+function extractNotesFromPitchLog(log) {
+  const SILENCE_THRESH_MS = 80;   // gap ≥ this = note boundary
+  const MIN_NOTE_MS = 60;         // note must be ≥ this to count
+  const notes = [];
+  let noteStart = null, noteFreqs = [];
+
+  for (let i = 0; i <= log.length; i++) {
+    const p = log[i];
+    const isSilent = !p || !p.note;
+
+    if (!isSilent) {
+      if (!noteStart) { noteStart = p.t; noteFreqs = []; }
+      noteFreqs.push(p.freq);
+    } else {
+      if (noteStart !== null) {
+        const prevP = log[i - 1];
+        const dur = (prevP?.t || 0) - noteStart;
+        if (dur >= MIN_NOTE_MS && noteFreqs.length > 0) {
+          // Median freq for robustness
+          const sorted = [...noteFreqs].sort((a, b) => a - b);
+          const medFreq = sorted[Math.floor(sorted.length / 2)];
+          const r = findClosest(medFreq);
+          if (r) notes.push({ full: r.note.name, dur: '4', durationMs: dur, startT: noteStart });
+        }
+        noteStart = null; noteFreqs = [];
+      }
+    }
+  }
+
+  // Assign dur values based on relative durations
+  if (notes.length > 1) {
+    const durations = notes.map(n => n.durationMs);
+    const medDur = [...durations].sort((a,b)=>a-b)[Math.floor(durations.length/2)];
+    notes.forEach(n => {
+      const ratio = n.durationMs / medDur;
+      if      (ratio >= 3.5) n.dur = '1';
+      else if (ratio >= 1.7) n.dur = '2';
+      else if (ratio <= 0.4) n.dur = '16';
+      else if (ratio <= 0.7) n.dur = '8';
+      else                   n.dur = '4';
+    });
+  }
+  return notes.map(n => ({ full: n.full, dur: n.dur }));
+}
+
+function estimateBpm(log) {
+  // Find note onsets and estimate average interval
+  const onsets = [];
+  let wasNote = false;
+  log.forEach(p => {
+    if (p.note && !wasNote) { onsets.push(p.t); wasNote = true; }
+    if (!p.note) wasNote = false;
+  });
+  if (onsets.length < 3) return null;
+  const intervals = onsets.slice(1).map((t, i) => t - onsets[i]);
+  return intervals.reduce((a, b) => a + b, 0) / intervals.length;
+}
+
+// ── Audio file upload + pitch extraction ──
+let uploadedAudioFile = null;
+function onAudioFileSelected(e) {
+  const file = e.target.files[0]; if (!file) return;
+  uploadedAudioFile = file;
+  document.getElementById('audio-upload-hint').style.display = 'none';
+  document.getElementById('audio-upload-done').style.display = 'block';
+  document.getElementById('audio-upload-name').textContent = file.name;
+  document.getElementById('audio-analyze-btn').disabled = false;
+}
+
+async function analyzeUploadedAudio() {
+  if (!uploadedAudioFile) return;
+  document.getElementById('rep-loading').style.display = 'block';
+  document.getElementById('rep-loading-msg').textContent = '正在解碼音頻...';
+  document.getElementById('audio-analyze-btn').disabled = true;
+
+  try {
+    const arrayBuf = await uploadedAudioFile.arrayBuffer();
+    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+    const audioBuf = await actx.decodeAudioData(arrayBuf);
+    await actx.close();
+
+    document.getElementById('rep-loading-msg').textContent = '正在提取音符...';
+    const rawLog = extractPitchFromAudioBuffer(audioBuf);
+
+    pendingDemoBlob = uploadedAudioFile;
+    const totalT = rawLog[rawLog.length-1]?.t || 1;
+    pendingDemoContour = rawLog.filter(p=>p.freq).map(p=>({t:p.t/totalT,freq:p.freq}));
+
+    repNotes = extractNotesFromPitchLog(rawLog);
+    if (!repNotes.length) throw new Error('未能識別到音符，請使用清晰的單聲道錄音');
+
+    const avgBeatMs = estimateBpm(rawLog);
+    if (avgBeatMs) {
+      repBpm = Math.round(Math.min(200, Math.max(40, 60000 / avgBeatMs)));
+      document.getElementById('rep-bpm-display').textContent = repBpm;
+    }
+
+    renderNoteEditor();
+    drawRepPreview();
+    document.getElementById('rep-editor').style.display = 'block';
+    document.getElementById('rep-note-count').textContent = `${repNotes.length} 個音符`;
+  } catch (e) {
+    alert('分析失敗：' + e.message);
+  } finally {
+    document.getElementById('rep-loading').style.display = 'none';
+    document.getElementById('audio-analyze-btn').disabled = false;
+  }
+}
+
+// Offline pitch extraction from AudioBuffer
+function extractPitchFromAudioBuffer(audioBuf) {
+  const sr = audioBuf.sampleRate;
+  const data = audioBuf.getChannelData(0); // mono
+  const frameSize = 8192;
+  const hopSize = Math.floor(sr * 0.05); // 50ms hops
+  const log = [];
+
+  for (let offset = 0; offset + frameSize < data.length; offset += hopSize) {
+    const frame = data.slice(offset, offset + frameSize);
+    const t = Math.round((offset / sr) * 1000);
+    let rms = 0; for (let i = 0; i < frame.length; i++) rms += frame[i] * frame[i];
+    rms = Math.sqrt(rms / frame.length);
+    if (rms > 0.01) {
+      const freq = autoCorrelate(frame, sr);
+      if (freq > 60 && freq < 2500) {
+        const r = findClosest(freq);
+        log.push({ t, freq, note: r?.note.name || null });
+      } else { log.push({ t, freq: null, note: null }); }
+    } else { log.push({ t, freq: null, note: null }); }
+  }
+  return log;
 }
 
 // ── Note editor ──
@@ -2067,18 +2364,34 @@ function drawRepPreview() {
 async function saveRepertoire() {
   const name=document.getElementById('rep-name-input').value.trim();
   if(!name){alert('請輸入曲目名稱');return;}
-  if(!repNotes.length){alert('請先識別曲譜');return;}
+  if(!repNotes.length){alert('請先錄入音符');return;}
   const saveBtn=document.querySelector('#rep-editor .btn-primary');
   if(saveBtn){saveBtn.textContent='⏳ 上傳中...';saveBtn.disabled=true;}
-  // Upload score image to Cloudinary
+
+  // Upload score image
   repScoreUrl = await uploadScoreToCloudinary();
+
+  // Upload demo audio (from hum or file upload)
+  let demoAudioUrl = null;
+  if (pendingDemoBlob) {
+    const fd=new FormData();
+    fd.append('file', pendingDemoBlob, `demo_${Date.now()}.webm`);
+    fd.append('upload_preset', REP_CLOUD.preset);
+    try {
+      const r=await fetch(REP_CLOUD.audioUrl,{method:'POST',body:fd});
+      const d=await r.json(); demoAudioUrl=d.secure_url||null;
+    } catch(e){}
+  }
+
   const ytRaw=document.getElementById('rep-yt-input').value.trim();
   const ytId=extractYtId(ytRaw);
   const id='rep_'+Date.now();
   const item={id,name,notes:repNotes,bpm:repBpm,ytId,
     scoreUrl:repScoreUrl,
+    demoAudioUrl,
+    demoContour: pendingDemoContour||null,
     savedAt:new Date().toLocaleDateString('zh-HK'),
-    kid:currentKid, practiceLog:[], demoContour:null, demoAudioUrl:null};
+    kid:currentKid, practiceLog:[]};
   repList.unshift(item);
   localStorage.setItem('rep_list',JSON.stringify(repList));
   if(saveBtn){saveBtn.textContent='💾 保存曲目';saveBtn.disabled=false;}
