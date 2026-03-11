@@ -1935,11 +1935,31 @@ function renderGreeting() {
 }
 
 function renderTaskList() {
-  const tasks = getTasks();
+  const todayStr = todayISO();
+  let tasks = getTasks();
+  // Auto-clean completed tasks: remove if done on a previous day
+  // Auto-clean overdue tasks: remove if due before today and not done
+  const cleaned = tasks.filter(t => {
+    const due = t.due || todayStr; // no due = treat as today
+    const dueISO = /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : todayStr;
+    if (t.done) {
+      // Keep only if completed today
+      const doneDate = t.doneDate || todayStr;
+      return doneDate >= todayStr;
+    } else {
+      // Keep only if due today or in the future
+      return dueISO >= todayStr;
+    }
+  });
+  if (cleaned.length !== tasks.length) {
+    saveTasks(cleaned);
+    tasks = cleaned;
+  }
+  const visibleTasks = tasks; // already filtered above
   const el = document.getElementById('task-list');
   if (!el) return;
-  if (!tasks.length) { el.innerHTML = '<div class="empty-state"><div class="emoji">📋</div><p>暫無任務，點擊下方新增</p></div>'; return; }
-  el.innerHTML = tasks.map(t => {
+  if (!visibleTasks.length) { el.innerHTML = '<div class="empty-state"><div class="emoji">📋</div><p>暫無任務，點擊下方新增</p></div>'; return; }
+  el.innerHTML = visibleTasks.map(t => {
     const subj = ALL_SUBJECTS.find(s=>s.id===t.subject);
     const colors = { high:'var(--red)', medium:'var(--accent)', low:'var(--green)' };
     const checkClass = t.done ? `checked-${currentKid}` : '';
@@ -1981,7 +2001,10 @@ function typeLabel(t) {
 function toggleTask(id) {
   const tasks = getTasks();
   const t = tasks.find(t=>t.id===id);
-  if (t) t.done = !t.done;
+  if (t) {
+    t.done = !t.done;
+    t.doneDate = t.done ? todayISO() : null; // record when it was completed
+  }
   saveTasks(tasks);
   renderTaskList();
   renderGreeting();
