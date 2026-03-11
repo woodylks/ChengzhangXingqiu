@@ -868,6 +868,9 @@ body {
   window.syncTrainingToCloud = async function(kid, training) {
     await fbSet(`data/kid${kid}/training/main`, { items: training, updatedAt: Date.now() });
   };
+  window.syncQBankToCloud = async function(kid, qbank) {
+    await fbSet(`data/kid${kid}/qbank/main`, { items: qbank, updatedAt: Date.now() });
+  };
   window.syncExamsToCloud = async function(kid, exams) {
     await fbSet(`data/kid${kid}/exams/main`, { items: exams, updatedAt: Date.now() });
   };
@@ -875,13 +878,14 @@ body {
     await fbSet(`data/kid${kid}/syllabuses/main`, { items: syllabuses, updatedAt: Date.now() });
   };
   window.loadAllFromCloud = async function(kid) {
-    const [tasks, notices, progress, training, exams, syllabuses, hwPhotos] = await Promise.all([
+    const [tasks, notices, progress, training, exams, syllabuses, qbank, hwPhotos] = await Promise.all([
       fbGet(`data/kid${kid}/tasks/main`),
       fbGet(`data/kid${kid}/notices/main`),
       fbGet(`data/kid${kid}/progress/main`),
       fbGet(`data/kid${kid}/training/main`),
       fbGet(`data/kid${kid}/exams/main`),
       fbGet(`data/kid${kid}/syllabuses/main`),
+      fbGet(`data/kid${kid}/qbank/main`),
       fbGet(`data/shared/hwPhotos/main`),
     ]);
     return {
@@ -891,6 +895,7 @@ body {
       training: training?.items || null,
       exams: exams?.items || null,
       syllabuses: syllabuses?.items || null,
+      qbank: qbank?.items || null,
       hwPhotos: hwPhotos?.items || null,
     };
   };
@@ -1008,12 +1013,15 @@ body {
   <!-- ── 學業 ── -->
   <div class="section" id="sec-academic">
     <!-- Sub-tabs -->
-    <div style="display:flex;gap:8px;padding:0 4px 14px;">
+    <div style="display:flex;gap:6px;padding:0 2px 14px;overflow-x:auto;">
       <button id="atab-exam" onclick="switchAcademicTab('exam')"
-        style="flex:1;padding:10px;border-radius:20px;border:none;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;background:var(--kid1);color:white;">🎯 考試計劃</button>
+        style="flex:1;min-width:80px;padding:10px 8px;border-radius:20px;border:none;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;background:var(--kid1);color:white;white-space:nowrap;">🎯 考試計劃</button>
       <button id="atab-syllabus" onclick="switchAcademicTab('syllabus')"
-        style="flex:1;padding:10px;border-radius:20px;border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;background:white;color:var(--text);">📚 學習大綱</button>
+        style="flex:1;min-width:80px;padding:10px 8px;border-radius:20px;border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;background:white;color:var(--text);white-space:nowrap;">📚 學習大綱</button>
+      <button id="atab-qbank" onclick="switchAcademicTab('qbank')"
+        style="flex:1;min-width:80px;padding:10px 8px;border-radius:20px;border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;background:white;color:var(--text);white-space:nowrap;">📁 題庫</button>
     </div>
+
     <!-- Exam tab -->
     <div id="sec-exam">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -1023,41 +1031,92 @@ body {
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;" id="exam-subject-filter"></div>
       <div id="exam-list"></div>
     </div>
+
     <!-- Syllabus tab -->
     <div id="sec-syllabus" style="display:none;">
+      <!-- Upload card -->
       <div class="card" style="margin-bottom:12px;">
-        <div class="card-title"><span class="icon">📄</span> 導入學習大綱</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">解析課次內容 + 保存PDF原檔到GitHub</div>
-
-        <!-- Step 1: Subject -->
+        <div class="card-title"><span class="icon">📚</span> 上傳學習大綱</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">上傳照片 → AI自動識別課次內容</div>
         <div class="form-group" style="margin-bottom:10px;">
           <label class="form-label">學科</label>
-          <select id="syllabus-subject" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:700;background:white;">
+          <select id="syllabus-subject" class="form-input">
             <option value="chinese">📖 中文</option>
             <option value="math">📐 數學</option>
             <option value="english">🔤 英語</option>
             <option value="science">🔬 常識</option>
             <option value="it">💻 IT</option>
-          <option value="humanities">🌏 人文</option>
-          <option value="other">📚 其他</option>
+            <option value="humanities">🌏 人文</option>
+            <option value="other">📚 其他</option>
           </select>
         </div>
-
-        <!-- Step 2: PDF name for GitHub -->
-        <div class="form-group" style="margin-bottom:10px;">
-          <label class="form-label">PDF檔案名稱（上傳到GitHub後填寫）</label>
-          <div style="display:flex;gap:8px;">
-            <input id="syllabus-pdf-name" class="form-input" placeholder="例：悅琳_中文_第三學段.pdf" style="flex:1;">
-            <button onclick="savePdfLink()" style="padding:10px 14px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">💾 保存連結</button>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">只填文件名，例：第三學段學習大綱-中文科.pdf</div>
+        <input type="file" id="syllabus-photo-file" accept="image/*" style="display:none;" onchange="handleSyllabusPhotoUpload(event)">
+        <div id="syllabus-upload-area" onclick="document.getElementById('syllabus-photo-file').click()"
+          style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:8px;">
+          <div style="font-size:32px;margin-bottom:6px;">📸</div>
+          <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:2px;">點擊上傳學習大綱照片</div>
+          <div style="font-size:12px;color:var(--muted);">支援 JPG / PNG，可多頁</div>
         </div>
-
-
-
-        <div id="syllabus-upload-status" style="margin-top:8px;"></div>
+        <div id="syllabus-upload-progress" style="display:none;margin-bottom:8px;">
+          <div style="height:5px;border-radius:3px;background:var(--border);overflow:hidden;">
+            <div id="syllabus-upload-bar" style="height:100%;border-radius:3px;background:var(--kid1);width:0%;transition:width 0.2s;"></div>
+          </div>
+          <div id="syllabus-upload-pct" style="font-size:11px;color:var(--muted);text-align:center;margin-top:2px;">上傳中…</div>
+        </div>
+        <div id="syllabus-upload-status"></div>
       </div>
       <div id="syllabus-list"></div>
+    </div>
+
+    <!-- Question Bank tab -->
+    <div id="sec-qbank" style="display:none;">
+      <!-- Upload card -->
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title"><span class="icon">📁</span> 新增題庫資料</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">上傳工作紙、測驗卷等，AI自動分析內容</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <div class="form-group" style="flex:1;margin-bottom:0;">
+            <label class="form-label">學科</label>
+            <select id="qbank-subject" class="form-input">
+              <option value="chinese">📖 中文</option>
+              <option value="math">📐 數學</option>
+              <option value="english">🔤 英語</option>
+              <option value="science">🔬 常識</option>
+              <option value="it">💻 IT</option>
+              <option value="humanities">🌏 人文</option>
+              <option value="other">📚 其他</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1;margin-bottom:0;">
+            <label class="form-label">類別</label>
+            <select id="qbank-category" class="form-input">
+              <option value="worksheet">📝 工作紙</option>
+              <option value="quiz">📋 小測</option>
+              <option value="exam">📘 考試卷</option>
+              <option value="notes">📒 筆記</option>
+              <option value="other">📎 其他</option>
+            </select>
+          </div>
+        </div>
+        <input type="file" id="qbank-photo-file" accept="image/*" style="display:none;" onchange="handleQBankUpload(event)">
+        <div id="qbank-upload-area" onclick="document.getElementById('qbank-photo-file').click()"
+          style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:8px;">
+          <div style="font-size:32px;margin-bottom:6px;">📤</div>
+          <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:2px;">點擊上傳題目照片</div>
+          <div style="font-size:12px;color:var(--muted);">支援 JPG / PNG</div>
+        </div>
+        <div id="qbank-upload-progress" style="display:none;margin-bottom:8px;">
+          <div style="height:5px;border-radius:3px;background:var(--border);overflow:hidden;">
+            <div id="qbank-upload-bar" style="height:100%;border-radius:3px;background:var(--kid1);width:0%;transition:width 0.2s;"></div>
+          </div>
+          <div id="qbank-upload-pct" style="font-size:11px;color:var(--muted);text-align:center;margin-top:2px;">上傳中…</div>
+        </div>
+        <div id="qbank-upload-status"></div>
+      </div>
+      <!-- Filter row -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="qbank-subject-filter"></div>
+      <!-- List -->
+      <div id="qbank-list"></div>
     </div>
   </div>
 
@@ -1208,7 +1267,7 @@ body {
       <input class="form-input" id="exam-date" type="date">
     </div>
     <div class="form-group">
-      <label class="form-label">複習範圍 <button onclick="openSyllabusPickModal()" style="margin-left:8px;padding:2px 10px;border-radius:12px;border:1.5px solid var(--kid1);background:white;color:var(--kid1);font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">從大綱選取</button></label>
+      <label class="form-label">複習範圍 <button onclick="openSyllabusPickModal()" style="margin-left:8px;padding:2px 10px;border-radius:12px;border:1.5px solid var(--kid1);background:white;color:var(--kid1);font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">從大綱選取</button> <button onclick="openQBankPickModal()" style="margin-left:4px;padding:2px 10px;border-radius:12px;border:1.5px solid var(--kid1);background:white;color:var(--kid1);font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">從題庫選取</button></label>
       <textarea class="form-input" id="exam-topics" rows="5" placeholder="例：&#10;第22課 燕子&#10;第24課 砍、感激&#10;第25課 商店、剛好" style="resize:none;"></textarea>
     </div>
     <div id="exam-score-section" style="display:none;">
@@ -1242,6 +1301,18 @@ body {
     <div style="display:flex;gap:10px;margin-top:12px;">
       <button onclick="closeModal('syllabus-pick-modal')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">取消</button>
       <button onclick="confirmSyllabusPick()" style="flex:2;padding:14px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">加入複習範圍</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="qbank-pick-modal">
+  <div class="modal-box">
+    <div class="modal-title">📁 從題庫選取</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="qbank-pick-label">選擇要作為出題參考的題庫資料</div>
+    <div id="qbank-pick-list" style="max-height:45vh;overflow-y:auto;"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button onclick="closeModal('qbank-pick-modal')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">取消</button>
+      <button onclick="confirmQBankPick()" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;" id="qbank-pick-confirm-btn">✅ 確認選取</button>
     </div>
   </div>
 </div>
@@ -1690,6 +1761,7 @@ async function loadFromCloud(kid) {
     if (data.training) { saveData(`kid${kid}_training`, data.training); changed = true; }
     if (data.exams) { saveData(`kid${kid}_exams`, data.exams); changed = true; }
     if (data.syllabuses) { saveData(`kid${kid}_syllabuses`, data.syllabuses); changed = true; }
+    if (data.qbank) { saveData(`kid${kid}_qbank`, data.qbank); changed = true; }
     if (data.hwPhotos) { saveData('hw_photos', data.hwPhotos); changed = true; }
     if (changed) {
       renderDashboard();
@@ -2127,16 +2199,19 @@ function saveSyllabuses(s) {
 function switchAcademicTab(tab) {
   currentAcademicTab = tab;
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
-  document.getElementById('atab-exam').style.background = tab==='exam' ? kidColor : 'white';
-  document.getElementById('atab-exam').style.color = tab==='exam' ? 'white' : 'var(--text)';
-  document.getElementById('atab-exam').style.border = tab==='exam' ? 'none' : '1.5px solid var(--border)';
-  document.getElementById('atab-syllabus').style.background = tab==='syllabus' ? kidColor : 'white';
-  document.getElementById('atab-syllabus').style.color = tab==='syllabus' ? 'white' : 'var(--text)';
-  document.getElementById('atab-syllabus').style.border = tab==='syllabus' ? 'none' : '1.5px solid var(--border)';
+  ['exam','syllabus','qbank'].forEach(t => {
+    const btn = document.getElementById('atab-'+t);
+    if (!btn) return;
+    btn.style.background = t===tab ? kidColor : 'white';
+    btn.style.color = t===tab ? 'white' : 'var(--text)';
+    btn.style.border = t===tab ? 'none' : '1.5px solid var(--border)';
+  });
   document.getElementById('sec-exam').style.display = tab==='exam' ? '' : 'none';
   document.getElementById('sec-syllabus').style.display = tab==='syllabus' ? '' : 'none';
+  document.getElementById('sec-qbank').style.display = tab==='qbank' ? '' : 'none';
   if (tab==='exam') renderExamList();
-  else renderSyllabusList();
+  else if (tab==='syllabus') renderSyllabusList();
+  else if (tab==='qbank') renderQBank();
 }
 
 const EXAM_TYPES = { quiz:'📝 小測', monthly:'📋 統測', midterm:'📘 期中考', final:'🏆 期末考' };
@@ -2356,6 +2431,260 @@ function deleteExam(examId) {
 // ── Syllabus import ──
 const GITHUB_PDF_BASE = 'https://github.com/woodylks/ChengzhangXingqiu/blob/main/pdfs/';
 
+
+// ══════════════════════════════════════════════
+//  📚 SYLLABUS PHOTO UPLOAD
+// ══════════════════════════════════════════════
+async function handleSyllabusPhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  const subject = document.getElementById('syllabus-subject').value;
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  const prog = document.getElementById('syllabus-upload-progress');
+  const bar = document.getElementById('syllabus-upload-bar');
+  const pct = document.getElementById('syllabus-upload-pct');
+  const area = document.getElementById('syllabus-upload-area');
+  const status = document.getElementById('syllabus-upload-status');
+  bar.style.background = kidColor;
+  prog.style.display = 'block';
+  area.style.pointerEvents = 'none';
+  status.innerHTML = '';
+  try {
+    const folder = 'chengzhang/syllabuses/kid' + currentKid;
+    const url = await uploadToCloudinary(file, folder, p => {
+      bar.style.width = p + '%';
+      pct.textContent = p + '% 上傳中…';
+    });
+    prog.style.display = 'none';
+    bar.style.width = '0%';
+    area.style.pointerEvents = '';
+    area.innerHTML = '<div style="font-size:32px;margin-bottom:6px;">✅</div><div style="font-size:14px;font-weight:800;color:var(--green);">上傳成功！AI識別中…</div>';
+    status.innerHTML = '<div style="padding:10px;background:var(--accent-light);border-radius:10px;font-size:13px;font-weight:700;text-align:center;">⏳ AI正在識別學習大綱…</div>';
+    // Save photo to syllabuses
+    const syllabuses = getSyllabuses();
+    const photoEntry = {
+      id: Date.now(),
+      subject,
+      kid: currentKid,
+      imageUrl: url,
+      uploadedAt: todayISO(),
+      items: [],
+    };
+    syllabuses.push(photoEntry);
+    saveSyllabuses(syllabuses);
+    renderSyllabusList();
+    // AI scan
+    await scanSyllabusFromUrl(url, photoEntry.id);
+    area.innerHTML = '<div style="font-size:32px;margin-bottom:6px;">📸</div><div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:2px;">點擊上傳學習大綱照片</div><div style="font-size:12px;color:var(--muted);">支援 JPG / PNG，可多頁</div>';
+    status.innerHTML = '';
+  } catch(err) {
+    prog.style.display = 'none';
+    area.style.pointerEvents = '';
+    status.innerHTML = '<div style="padding:10px;background:#ffe4e4;border-radius:10px;font-size:13px;font-weight:700;color:var(--red);">❌ 上傳失敗：' + err + '</div>';
+  }
+}
+
+async function scanSyllabusFromUrl(imageUrl, entryId) {
+  const status = document.getElementById('syllabus-upload-status');
+  const prompt = '這是一張學習大綱或課程內容的照片。請識別所有課次/章節的內容，用JSON格式回應：{"items":[{"lesson":"課次名稱或編號","title":"內容標題","topics":["重點1","重點2"]}]}\n只回JSON，不要其他文字，不要markdown。';
+  try {
+    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-a5a9b48f7bb34817a3811920aad62e12' },
+      body: JSON.stringify({
+        model: 'qwen-vl-max',
+        messages: [{ role: 'user', content: [
+          { type: 'image_url', image_url: { url: imageUrl } },
+          { type: 'text', text: prompt }
+        ]}]
+      })
+    });
+    const data = await response.json();
+    const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
+    let json;
+    try { json = JSON.parse(text); } catch(e) { const m = text.match(/\{[\s\S]*\}/); json = m ? JSON.parse(m[0]) : { items: [] }; }
+    const items = json.items || [];
+    // Update the entry
+    const syllabuses = getSyllabuses();
+    const entry = syllabuses.find(s => s.id === entryId);
+    if (entry) { entry.items = items; saveSyllabuses(syllabuses); }
+    if (status) status.innerHTML = '<div style="padding:10px;background:#e8f5e8;border-radius:10px;font-size:13px;font-weight:700;color:var(--green);">✅ AI識別完成！識別出 ' + items.length + ' 個課次</div>';
+    setTimeout(() => { if (status) status.innerHTML = ''; }, 3000);
+    renderSyllabusList();
+  } catch(e) {
+    if (status) status.innerHTML = '<div style="padding:10px;background:#ffe4e4;border-radius:10px;font-size:13px;font-weight:700;color:var(--red);">❌ AI識別失敗</div>';
+  }
+}
+
+// ══════════════════════════════════════════════
+//  📁 QUESTION BANK
+// ══════════════════════════════════════════════
+function getQBank() { return loadData(kkey('qbank'), []); }
+function saveQBank(q) {
+  saveData(kkey('qbank'), q);
+  if (window.fbReady) window.syncQBankToCloud(currentKid, q);
+}
+
+let qbankSubjectFilter = 'all';
+
+async function handleQBankUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  const subject = document.getElementById('qbank-subject').value;
+  const category = document.getElementById('qbank-category').value;
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  const prog = document.getElementById('qbank-upload-progress');
+  const bar = document.getElementById('qbank-upload-bar');
+  const pct = document.getElementById('qbank-upload-pct');
+  const area = document.getElementById('qbank-upload-area');
+  const status = document.getElementById('qbank-upload-status');
+  bar.style.background = kidColor;
+  prog.style.display = 'block';
+  area.style.pointerEvents = 'none';
+  status.innerHTML = '';
+  try {
+    const folder = 'chengzhang/qbank/kid' + currentKid;
+    const url = await uploadToCloudinary(file, folder, p => {
+      bar.style.width = p + '%';
+      pct.textContent = p + '% 上傳中…';
+    });
+    prog.style.display = 'none';
+    bar.style.width = '0%';
+    area.style.pointerEvents = '';
+    area.innerHTML = '<div style="font-size:32px;margin-bottom:6px;">✅</div><div style="font-size:14px;font-weight:800;color:var(--green);">上傳成功！AI分析中…</div>';
+    status.innerHTML = '<div style="padding:10px;background:var(--accent-light);border-radius:10px;font-size:13px;font-weight:700;text-align:center;">⏳ AI正在分析題目內容…</div>';
+    const entry = {
+      id: Date.now(),
+      subject, category, kid: currentKid,
+      imageUrl: url,
+      uploadedAt: todayISO(),
+      title: '',
+      topics: [],
+      aiSummary: '',
+    };
+    const qbank = getQBank();
+    qbank.unshift(entry);
+    saveQBank(qbank);
+    renderQBank();
+    await scanQBankFromUrl(url, entry.id);
+    area.innerHTML = '<div style="font-size:32px;margin-bottom:6px;">📤</div><div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:2px;">點擊上傳題目照片</div><div style="font-size:12px;color:var(--muted);">支援 JPG / PNG</div>';
+    status.innerHTML = '';
+  } catch(err) {
+    prog.style.display = 'none';
+    area.style.pointerEvents = '';
+    status.innerHTML = '<div style="padding:10px;background:#ffe4e4;border-radius:10px;font-size:13px;font-weight:700;color:var(--red);">❌ 上傳失敗：' + err + '</div>';
+  }
+}
+
+async function scanQBankFromUrl(imageUrl, entryId) {
+  const status = document.getElementById('qbank-upload-status');
+  const CAT_NAMES = { worksheet:'工作紙', quiz:'小測', exam:'考試卷', notes:'筆記', other:'其他' };
+  const prompt = '這是一張學校題目/測驗卷的照片。請識別題目內容，用JSON格式回應：{"title":"卷子標題（如果有）","topics":["考核範圍1","考核範圍2"],"summary":"一句話描述這份題目的主要內容"}\n只回JSON，不要其他文字，不要markdown。';
+  try {
+    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-a5a9b48f7bb34817a3811920aad62e12' },
+      body: JSON.stringify({
+        model: 'qwen-vl-max',
+        messages: [{ role: 'user', content: [
+          { type: 'image_url', image_url: { url: imageUrl } },
+          { type: 'text', text: prompt }
+        ]}]
+      })
+    });
+    const data = await response.json();
+    const text = (data.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
+    let json;
+    try { json = JSON.parse(text); } catch(e) { const m = text.match(/\{[\s\S]*\}/); json = m ? JSON.parse(m[0]) : {}; }
+    const qbank = getQBank();
+    const entry = qbank.find(q => q.id === entryId);
+    if (entry) {
+      entry.title = json.title || '';
+      entry.topics = json.topics || [];
+      entry.aiSummary = json.summary || '';
+      saveQBank(qbank);
+    }
+    if (status) status.innerHTML = '<div style="padding:10px;background:#e8f5e8;border-radius:10px;font-size:13px;font-weight:700;color:var(--green);">✅ AI分析完成！</div>';
+    setTimeout(() => { if (status) status.innerHTML = ''; }, 2500);
+    renderQBank();
+  } catch(e) {
+    if (status) status.innerHTML = '<div style="padding:10px;background:#ffe4e4;border-radius:10px;font-size:13px;font-weight:700;color:var(--red);">❌ AI分析失敗</div>';
+  }
+}
+
+function renderQBank() {
+  const el = document.getElementById('qbank-list');
+  if (!el) return;
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  const allItems = getQBank();
+
+  // Subject filter buttons
+  const filterEl = document.getElementById('qbank-subject-filter');
+  if (filterEl) {
+    const subjects = ['all', ...new Set(allItems.map(q => q.subject))];
+    filterEl.innerHTML = subjects.map(s => {
+      const active = qbankSubjectFilter === s;
+      const label = s === 'all' ? '全部' : (SUBJ_MAP[s] || s);
+      return `<button onclick="qbankFilter('${s}')" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;border:1.5px solid ${active ? kidColor : 'var(--border)'};background:${active ? kidColor : 'white'};color:${active ? 'white' : 'var(--text)'};">${label}</button>`;
+    }).join('');
+  }
+
+  const items = qbankSubjectFilter === 'all' ? allItems : allItems.filter(q => q.subject === qbankSubjectFilter);
+
+  if (!items.length) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📁</div><p>還沒有題庫資料</p><p style="font-size:12px;color:var(--muted)">上傳工作紙或測驗卷</p></div>';
+    return;
+  }
+
+  const CAT_EMOJI = { worksheet:'📝', quiz:'📋', exam:'📘', notes:'📒', other:'📎' };
+  const CAT_NAMES = { worksheet:'工作紙', quiz:'小測', exam:'考試卷', notes:'筆記', other:'其他' };
+
+  // Group by subject
+  const grouped = {};
+  items.forEach(q => {
+    if (!grouped[q.subject]) grouped[q.subject] = [];
+    grouped[q.subject].push(q);
+  });
+
+  el.innerHTML = Object.entries(grouped).map(([subj, qs]) => `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:900;color:${kidColor};margin-bottom:8px;padding:6px 12px;background:${kidColor}18;border-radius:10px;">
+        ${SUBJ_MAP[subj] || subj}
+      </div>
+      ${qs.map(q => `
+        <div class="card" style="margin-bottom:8px;padding:12px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <img src="${q.imageUrl}" onclick="viewFullImage('${q.imageUrl}')"
+              style="width:64px;height:64px;border-radius:8px;object-fit:cover;cursor:pointer;flex-shrink:0;border:1.5px solid var(--border);">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                <span style="font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;background:${kidColor}18;color:${kidColor};">${CAT_EMOJI[q.category]||'📎'} ${CAT_NAMES[q.category]||q.category}</span>
+                <span style="font-size:11px;color:var(--muted);">${q.uploadedAt}</span>
+              </div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:3px;">${q.title || '(AI識別中…)'}</div>
+              ${q.aiSummary ? `<div style="font-size:12px;color:var(--muted);line-height:1.4;">${q.aiSummary}</div>` : ''}
+              ${q.topics.length ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${q.topics.slice(0,3).map(t=>'#'+t).join(' ')}</div>` : ''}
+            </div>
+            <button onclick="deleteQBankEntry(${q.id})" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;flex-shrink:0;">🗑️</button>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function qbankFilter(s) {
+  qbankSubjectFilter = s;
+  renderQBank();
+}
+
+function deleteQBankEntry(id) {
+  if (!confirm('確定刪除這份題庫資料？')) return;
+  const qbank = getQBank().filter(q => q.id !== id);
+  saveQBank(qbank);
+  renderQBank();
+}
+
 function savePdfLink() {
   const subject = document.getElementById('syllabus-subject').value;
   const fileName = document.getElementById('syllabus-pdf-name').value.trim();
@@ -2389,66 +2718,71 @@ function renderSyllabusList() {
   const syllabuses = getSyllabuses().filter(s => s.kid === currentKid);
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
 
-  const SUBJ_EMOJI = { math:'📐', chinese:'📖', english:'🔤', science:'🔬', it:'💻', humanities:'🌏', other:'📚' };
-
   if (!syllabuses.length) {
-    el.innerHTML = `<div class="empty-state"><div class="emoji">📚</div><p>還沒有學習大綱</p><p style="font-size:12px;color:var(--muted)">上傳PDF自動解析</p></div>`;
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📚</div><p>還沒有學習大綱</p><p style="font-size:12px;color:var(--muted)">上傳照片自動識別</p></div>';
     return;
   }
 
-  // Grid of subject cards
-  const gridHtml = `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
-      ${syllabuses.map(s => {
-        const emoji = SUBJ_EMOJI[s.subject] || '📚';
-        const label = (SUBJ_MAP[s.subject]||s.subject).split(' ').slice(1).join(' ') || s.subject;
-        const isSelected = selectedSyllabus === s.subject;
-        return `
-        <div onclick="selectSyllabus('${s.subject}')" style="
-          padding:14px 8px;border-radius:14px;text-align:center;cursor:pointer;
-          background:${isSelected ? kidColor : 'white'};
-          border:2px solid ${isSelected ? kidColor : 'var(--border)'};
-          transition:all 0.2s;">
-          <div style="font-size:26px;margin-bottom:4px;">${emoji}</div>
-          <div style="font-size:12px;font-weight:800;color:${isSelected?'white':'var(--text)'};">${label}</div>
-          <div style="font-size:10px;color:${isSelected?'rgba(255,255,255,0.8)':'var(--muted)'};margin-top:2px;">${s.items.length}個課次</div>
-        </div>`;
-      }).join('')}
-    </div>`;
+  // Group by subject
+  const grouped = {};
+  syllabuses.forEach(s => {
+    if (!grouped[s.subject]) grouped[s.subject] = [];
+    grouped[s.subject].push(s);
+  });
 
-  // Detail panel for selected syllabus
-  let detailHtml = '';
-  if (selectedSyllabus) {
-    const s = syllabuses.find(s => s.subject === selectedSyllabus);
-    if (s) {
-      detailHtml = `
-      <div class="card">
-        <div style="margin-bottom:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <div style="font-size:15px;font-weight:900;">${SUBJ_MAP[s.subject]||s.subject}</div>
-            <button onclick="deleteSyllabus('${s.subject}')" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>
-          </div>
-          <div style="font-size:11px;color:var(--muted);word-break:break-all;margin-bottom:8px;">${s.fileName||''}</div>
-          ${s.pdfUrl ? `<div style="display:flex;gap:8px;">
-            <button onclick="openPdfViewer('${s.pdfUrl}','${(s.fileName||'').replace(/'/g,'')}')" style="flex:1;padding:8px;border-radius:12px;border:1.5px solid ${kidColor};background:white;color:${kidColor};font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">👁️ 預覽</button>
-            <button onclick="downloadPdf('${s.pdfUrl}','${(s.fileName||'').replace(/'/g,'')}')" style="flex:1;padding:8px;border-radius:12px;border:1.5px solid var(--border);background:white;color:var(--text);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">⬇️ 下載</button>
-          </div>` : ''}
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          ${s.items.length ? s.items.map(item => `
-          <div style="display:flex;gap:10px;padding:8px 10px;background:var(--bg);border-radius:8px;align-items:flex-start;">
-            <span style="font-size:11px;color:${kidColor};font-weight:700;min-width:36px;padding-top:1px;">${item.month||''}</span>
-            <div>
-              <div style="font-size:13px;font-weight:700;">${item.lesson||''}</div>
-              ${item.title?`<div style="font-size:11px;color:var(--muted);margin-top:1px;">${item.title}</div>`:''}
+  el.innerHTML = Object.entries(grouped).map(([subj, entries]) => `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:900;color:${kidColor};margin-bottom:8px;padding:6px 12px;background:${kidColor}18;border-radius:10px;">
+        ${SUBJ_MAP[subj] || subj} · ${entries.reduce((n,e)=>n+e.items.length,0)} 個課次
+      </div>
+      ${entries.map(s => `
+        <div class="card" style="margin-bottom:8px;padding:12px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            ${s.imageUrl ? `<img src="${s.imageUrl}" onclick="viewFullImage('${s.imageUrl}')"
+              style="width:64px;height:64px;border-radius:8px;object-fit:cover;cursor:pointer;flex-shrink:0;border:1.5px solid var(--border);">` :
+              `<div style="width:64px;height:64px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;border:1.5px solid var(--border);">📄</div>`}
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <span style="font-size:12px;color:var(--muted);">${s.uploadedAt || ''}</span>
+                <button onclick="deleteSyllabusEntry(${s.id})" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:white;font-size:11px;cursor:pointer;">🗑️</button>
+              </div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${s.items.length ? s.items.length + ' 個課次' : 'AI識別中…'}</div>
+              ${s.items.length ? `
+                <div style="display:flex;flex-direction:column;gap:3px;">
+                  ${s.items.slice(0,3).map(item => `
+                    <div style="font-size:11px;color:var(--muted);padding:3px 8px;background:var(--bg);border-radius:6px;">
+                      <span style="color:${kidColor};font-weight:700;">${item.lesson||''}</span> ${item.title||''}
+                    </div>`).join('')}
+                  ${s.items.length > 3 ? `<div style="font-size:11px;color:var(--muted);padding-left:8px;">…還有 ${s.items.length-3} 個課次</div>` : ''}
+                </div>` : ''}
             </div>
-          </div>`).join('') : `<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">還沒有課次資料<br>請貼上課次代碼導入</div>`}
-        </div>
-      </div>`;
-    }
-  }
+          </div>
+          ${s.items.length > 3 ? `<button onclick="toggleSyllabusDetail(${s.id})" style="width:100%;margin-top:8px;padding:7px;border-radius:10px;border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:700;cursor:pointer;" id="sylbtn-${s.id}">▼ 展開全部課次</button>
+          <div id="syldetail-${s.id}" style="display:none;margin-top:8px;">
+            ${s.items.map(item => `
+              <div style="font-size:12px;padding:5px 10px;background:var(--bg);border-radius:7px;margin-bottom:3px;">
+                <span style="color:${kidColor};font-weight:700;">${item.lesson||''}</span> ${item.title||''}
+                ${(item.topics||[]).length ? '<br><span style="font-size:11px;color:var(--muted);">' + item.topics.join('、') + '</span>' : ''}
+              </div>`).join('')}
+          </div>` : ''}
+        </div>`).join('')}
+    </div>`).join('');
+}
 
-  el.innerHTML = gridHtml + detailHtml;
+function toggleSyllabusDetail(id) {
+  const el = document.getElementById('syldetail-'+id);
+  const btn = document.getElementById('sylbtn-'+id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '▼ 展開全部課次' : '▲ 收起';
+}
+
+function deleteSyllabusEntry(id) {
+  if (!confirm('確定刪除這份學習大綱？')) return;
+  const syllabuses = getSyllabuses().filter(s => s.id !== id);
+  saveSyllabuses(syllabuses);
+  renderSyllabusList();
 }
 
 function selectSyllabus(subject) {
@@ -2487,17 +2821,19 @@ function closePdfViewer() {
 // Pick topics from syllabus
 function openSyllabusPickModal() {
   const subject = document.getElementById('exam-subject').value;
-  const syllabus = getSyllabuses().find(s => s.subject===subject && s.kid===currentKid);
+  // Support new multi-entry structure (array of {id, subject, items[]})
+  const allEntries = getSyllabuses().filter(s => s.subject===subject && s.kid===currentKid);
+  const allItems = allEntries.flatMap(e => e.items || []);
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
   const labelEl = document.getElementById('syllabus-pick-subject-label');
   const listEl = document.getElementById('syllabus-pick-list');
 
-  if (!syllabus || !syllabus.items.length) {
-    alert(`${SUBJ_MAP[subject]}還沒有學習大綱，請先上傳PDF`);
+  if (!allItems.length) {
+    alert(`${SUBJ_MAP[subject]}還沒有學習大綱，請先上傳照片`);
     return;
   }
-  labelEl.textContent = `${SUBJ_MAP[subject]} · ${syllabus.items.length}個課次`;
-  listEl.innerHTML = syllabus.items.map((item,i) => `
+  labelEl.textContent = `${SUBJ_MAP[subject]} · ${allItems.length}個課次`;
+  listEl.innerHTML = allItems.map((item,i) => `
     <div onclick="this.dataset.sel=this.dataset.sel==='1'?'0':'1'; this.style.background=this.dataset.sel==='1'?'${kidColor}15':'var(--bg)'; this.querySelector('.pick-check').style.background=this.dataset.sel==='1'?'${kidColor}':'white'; this.querySelector('.pick-check').style.borderColor=this.dataset.sel==='1'?'${kidColor}':'var(--border)'; this.querySelector('.pick-check').innerHTML=this.dataset.sel==='1'?'<span style=color:white;font-size:11px;font-weight:900>✓</span>':'';"
       data-sel="0" data-text="${item.lesson||''} ${item.title||''}".trim()
       style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--bg);margin-bottom:4px;cursor:pointer;">
@@ -2510,6 +2846,53 @@ function openSyllabusPickModal() {
     </div>
   `).join('');
   openModal('syllabus-pick-modal');
+}
+
+
+// ── Question Bank Picker for AI Assistant ──
+function openQBankPickModal() {
+  const subject = document.getElementById('exam-subject').value;
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  const qbank = getQBank().filter(q => !subject || subject === 'all' || q.subject === subject);
+  const listEl = document.getElementById('qbank-pick-list');
+  const labelEl = document.getElementById('qbank-pick-label');
+  const btn = document.getElementById('qbank-pick-confirm-btn');
+  btn.style.background = kidColor;
+  labelEl.textContent = qbank.length ? `${SUBJ_MAP[subject]||'全部'} · ${qbank.length}份題庫資料` : '此科目暫無題庫資料';
+  if (!qbank.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">暫無題庫，請先在學業→題庫上傳</div>';
+    openModal('qbank-pick-modal');
+    return;
+  }
+  const CAT_EMOJI = { worksheet:'📝', quiz:'📋', exam:'📘', notes:'📒', other:'📎' };
+  const CAT_NAMES = { worksheet:'工作紙', quiz:'小測', exam:'考試卷', notes:'筆記', other:'其他' };
+  listEl.innerHTML = qbank.map(q => `
+    <div onclick="this.dataset.sel=this.dataset.sel==='1'?'0':'1'; this.style.background=this.dataset.sel==='1'?'${kidColor}15':'var(--bg)'; this.querySelector('.pick-check').style.background=this.dataset.sel==='1'?'${kidColor}':'white'; this.querySelector('.pick-check').style.borderColor=this.dataset.sel==='1'?'${kidColor}':'var(--border)'; this.querySelector('.pick-check').innerHTML=this.dataset.sel==='1'?'<span style=color:white;font-size:11px;font-weight:900>✓</span>':'';"
+      data-sel="0" data-summary="${(q.aiSummary||q.title||'').replace(/"/g,'')}" data-topics="${(q.topics||[]).join(',')}"
+      style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--bg);margin-bottom:6px;cursor:pointer;">
+      <div class="pick-check" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>
+      ${q.imageUrl ? `<img src="${q.imageUrl}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0;">` : `<div style="width:48px;height:48px;border-radius:8px;background:white;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${CAT_EMOJI[q.category]||'📎'}</div>`}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:700;margin-bottom:2px;">${CAT_NAMES[q.category]||q.category} · ${q.uploadedAt}</div>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${q.aiSummary || q.title || '題庫資料'}</div>
+        ${q.topics.length ? `<div style="font-size:11px;color:${kidColor};margin-top:2px;">${q.topics.slice(0,3).map(t=>'#'+t).join(' ')}</div>` : ''}
+      </div>
+    </div>`).join('');
+  openModal('qbank-pick-modal');
+}
+
+function confirmQBankPick() {
+  const items = document.querySelectorAll('#qbank-pick-list [data-sel="1"]');
+  if (!items.length) { closeModal('qbank-pick-modal'); return; }
+  const existing = document.getElementById('exam-topics').value.trim();
+  const lines = Array.from(items).map(el => {
+    const summary = el.dataset.summary || '';
+    const topics = el.dataset.topics || '';
+    return summary + (topics ? ' (' + topics + ')' : '');
+  });
+  const combined = existing ? existing + '\n' + lines.join('\n') : lines.join('\n');
+  document.getElementById('exam-topics').value = combined;
+  closeModal('qbank-pick-modal');
 }
 
 function confirmSyllabusPick() {
@@ -3852,6 +4235,7 @@ function startAcadAI(fromPaper) {
   const diffMap = { easy: '簡單（小學1-2年級）', med: '中等（小學3-4年級）', hard: '挑戰（高難度）' };
   const kidName = KIDS[currentKid].name;
   const grade = KIDS[currentKid].grade;
+  const topicsRaw = document.getElementById('exam-topics')?.value?.trim() || '';
   let prompt;
   if (fromPaper) {
     const url = document.getElementById('exam-paper-url')?.value?.trim();
@@ -3859,7 +4243,8 @@ function startAcadAI(fromPaper) {
       ? `這是${kidName}的${subjectName}試卷圖片：${url}\n請根據試卷內容，出5道相似題（${diffMap[acadState.diff]}），每題附ABCD選項和正確答案，最後給解題思路。`
       : `請幫${kidName}（${grade}）出5道${subjectName}練習題（${diffMap[acadState.diff]}），包含選擇題，附選項、答案和引導式解題思路。`;
   } else {
-    prompt = `請幫${kidName}（${grade}）出5道${subjectName}練習題，難度：${diffMap[acadState.diff]}。每題附ABCD選項、正確答案，最後用引導式提示幫助孩子理解，不要直接給出步驟，先問孩子怎麼想。`;
+    const topicsNote = topicsRaw ? '\n\n參考範圍/題庫資料：\n' + topicsRaw : '';
+    prompt = `請幫${kidName}（${grade}）出5道${subjectName}練習題，難度：${diffMap[acadState.diff]}。${topicsNote}\n每題附ABCD選項、正確答案，最後用引導式提示幫助孩子理解，不要直接說答案，先問孩子怎麼想。`;
   }
   switchAiCat('chat');
   quickAsk(prompt);
