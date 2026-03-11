@@ -477,7 +477,195 @@ body {
 /* ── YOUTUBE EMBED ── */
 .yt-frame { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); border: none; margin-top: 8px; }
 
+/* ── Practice embed section visibility ── */
+.practice-section { display: none; }
+.practice-section.practice-active { display: block; }
+
+/* ── Practice embed dark theme overrides ── */
+.arts-practice-embed { --card: #1e1e2e; --card2: #252535; --border: #3a3a5c; --muted: #8888aa; --text: #e0e0f0; --bg: #13131f; }
+.arts-practice-embed .note-chip { background: var(--card2); border-color: var(--border); color: var(--text); }
+.arts-practice-embed .ex-card { background: var(--card); border-color: var(--border); color: var(--text); }
+.arts-practice-embed .ex-panel { background: var(--card); border-color: var(--border); }
+.arts-practice-embed .ex-title, .arts-practice-embed .ex-desc { color: var(--text); }
+.arts-practice-embed .ex-panel-title, .arts-practice-embed .ex-panel-sub { color: var(--text); }
+.arts-practice-embed .metro-bpm, .arts-practice-embed .metro-unit { color: var(--text); }
+.arts-practice-embed .note-grid-title { color: var(--muted); }
+
 /* ══════════ PRACTICE MODULE CSS ══════════ */
+/* ── TOP NAV ── */
+.top-nav {
+  display:flex; gap:0; border-bottom:1px solid var(--border);
+  background:var(--card); position:sticky; top:0; z-index:10;
+}
+.top-tab {
+  flex:1; padding:14px 8px; border:none; background:none;
+  font-family:'Noto Sans TC',sans-serif; font-size:12px; font-weight:700;
+  color:var(--muted); cursor:pointer; transition:all 0.2s;
+  border-bottom:2px solid transparent;
+}
+.top-tab.active-trumpet { color:var(--trumpet); border-bottom-color:var(--trumpet); }
+.top-tab.active-flute   { color:var(--flute);   border-bottom-color:var(--flute); }
+
+/* ── KID SELECTOR ── */
+.kid-bar {
+  display:flex; gap:10px; padding:14px 16px;
+  border-bottom:1px solid var(--border);
+}
+.kid-tab {
+  flex:1; padding:10px; border-radius:12px; border:2px solid var(--border);
+  background:var(--card); color:var(--muted);
+  font-family:'Noto Sans TC',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.2s;
+}
+.kid-tab.active-trumpet { border-color:var(--trumpet); color:var(--trumpet); background:rgba(255,107,53,0.08); }
+.kid-tab.active-flute   { border-color:var(--flute);   color:var(--flute);   background:rgba(79,172,222,0.08); }
+
+/* ── SECTIONS ── */
+.practice-section { display:none; padding:16px; }
+.practice-section.practice-active { display:block; }
+
+/* ── PITCH DETECTOR ── */
+.note-display {
+  width:180px; height:180px; border-radius:50%;
+  border:3px solid var(--border); display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  margin:0 auto 16px; transition:border-color 0.2s,box-shadow 0.2s; background:var(--card);
+}
+.note-display.perfect { border-color:var(--green); box-shadow:0 0 40px rgba(0,255,136,0.3); }
+.note-display.close   { border-color:var(--yellow); box-shadow:0 0 30px rgba(255,204,0,0.2); }
+.note-display.off     { border-color:var(--red);    box-shadow:0 0 20px rgba(255,68,102,0.15); }
+.note-name    { font-family:'Space Mono',monospace; font-size:52px; font-weight:700; line-height:1; transition:color 0.2s; }
+.note-solfege { font-family:'Noto Sans TC',sans-serif; font-size:16px; font-weight:700; color:var(--muted); margin-top:3px; }
+.note-freq    { font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); margin-top:4px; }
+.note-idle    { color:var(--muted); }
+.note-perfect { color:var(--green); }
+.note-close   { color:var(--yellow); }
+.note-off     { color:var(--red); }
+
+/* Fingering */
+.fingering-wrap { display:flex; gap:10px; justify-content:center; margin-bottom:14px; min-height:58px; align-items:center; }
+.valve { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.valve-num { font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); }
+.valve-circle {
+  width:38px; height:38px; border-radius:50%; border:2px solid var(--border);
+  background:var(--card); display:flex; align-items:center; justify-content:center;
+  font-family:'Space Mono',monospace; font-size:14px; font-weight:700; color:var(--muted); transition:all 0.15s;
+}
+.valve-circle.pressed { background:var(--trumpet); border-color:var(--trumpet); color:white; box-shadow:0 0 12px rgba(255,107,53,0.5); }
+.valve-circle.open    { background:rgba(0,255,136,0.1); border-color:var(--green); color:var(--green); }
+.fingering-label { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); text-align:center; margin-bottom:6px; letter-spacing:0.05em; }
+
+/* Bars */
+.bar-wrap { margin-bottom:12px; }
+.bar-label { font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; font-family:'Space Mono',monospace; margin-bottom:5px; }
+.bar-outer { height:8px; border-radius:4px; background:var(--border); position:relative; overflow:hidden; }
+.bar-center { position:absolute; left:50%; top:0; width:2px; height:100%; background:var(--muted); transform:translateX(-50%); }
+.bar-fill   { position:absolute; top:0; height:100%; border-radius:4px; transition:left 0.08s,width 0.08s,background 0.2s; }
+.bar-cents  { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); text-align:center; margin-top:4px; }
+.vol-fill   { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--green),var(--yellow),var(--red)); width:0%; transition:width 0.05s; }
+
+/* Feedback */
+.feedback-box {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px; min-height:52px;
+}
+.feedback-icon { font-size:20px; }
+.feedback-text { font-size:14px; font-weight:700; }
+.feedback-sub  { font-size:11px; color:var(--muted); margin-top:2px; }
+
+/* Note grid */
+.note-grid-title { font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; font-family:'Space Mono',monospace; margin-bottom:8px; }
+.note-grid { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:16px; }
+.note-chip {
+  padding:4px 9px; border-radius:7px; border:1px solid var(--border);
+  font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); background:var(--card); transition:all 0.15s;
+}
+.note-chip.active-trumpet { border-color:var(--trumpet); color:var(--trumpet); background:rgba(255,107,53,0.12); }
+.note-chip.active-flute   { border-color:var(--flute);   color:var(--flute);   background:rgba(79,172,222,0.12); }
+
+/* ── EXERCISE SECTION ── */
+.ex-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.ex-card {
+  background:var(--card); border:1.5px solid var(--border); border-radius:14px;
+  padding:14px 12px; cursor:pointer; transition:all 0.2s; text-align:center;
+}
+.ex-card:active { transform:scale(0.97); }
+.ex-card.selected-trumpet { border-color:var(--trumpet); background:rgba(255,107,53,0.08); }
+.ex-card.selected-flute   { border-color:var(--flute);   background:rgba(79,172,222,0.08); }
+.ex-card.selected-trumpet .ex-icon { color:var(--trumpet); }
+.ex-card.selected-flute   .ex-icon { color:var(--flute); }
+.ex-icon  { font-size:26px; margin-bottom:6px; color:var(--muted); }
+.ex-title { font-size:13px; font-weight:900; margin-bottom:3px; }
+.ex-desc  { font-size:11px; color:var(--muted); line-height:1.4; }
+
+/* Exercise panel */
+.ex-panel {
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  padding:16px; margin-bottom:16px; display:none;
+}
+.ex-panel.active { display:block; }
+.ex-panel-title { font-size:15px; font-weight:900; margin-bottom:4px; }
+.ex-panel-sub   { font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.5; }
+
+/* Metronome */
+.metro-wrap { margin-bottom:16px; }
+.metro-display {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--card2); border-radius:12px; padding:12px 14px; margin-bottom:10px;
+}
+.metro-bpm { font-family:'Space Mono',monospace; font-size:28px; font-weight:700; }
+.metro-unit { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); }
+.metro-btn-wrap { display:flex; gap:8px; }
+.metro-btn {
+  width:36px; height:36px; border-radius:10px; border:1.5px solid var(--border);
+  background:var(--card); color:var(--text); font-size:18px; cursor:pointer; transition:all 0.15s;
+}
+.metro-btn:active { transform:scale(0.92); }
+.metro-slider { width:100%; accent-color:var(--trumpet); margin-bottom:8px; }
+.metro-slider.flute { accent-color:var(--flute); }
+
+/* Beat dots */
+.beat-dots { display:flex; gap:8px; justify-content:center; margin-bottom:14px; flex-wrap:wrap; }
+.beat-dot {
+  width:16px; height:16px; border-radius:50%; border:2px solid var(--border);
+  background:var(--card); transition:all 0.08s;
+}
+.beat-dot.active-trumpet { background:var(--trumpet); border-color:var(--trumpet); box-shadow:0 0 8px rgba(255,107,53,0.6); transform:scale(1.2); }
+.beat-dot.active-flute   { background:var(--flute);   border-color:var(--flute);   box-shadow:0 0 8px rgba(79,172,222,0.6); transform:scale(1.2); }
+.beat-dot.accent { border-color:var(--yellow); }
+
+/* Exercise pattern display */
+.pattern-wrap { background:var(--card2); border-radius:12px; padding:14px; margin-bottom:14px; }
+.pattern-title { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; margin-bottom:10px; letter-spacing:0.08em; }
+.pattern-notes { display:flex; flex-wrap:wrap; gap:6px; }
+.p-note {
+  padding:6px 10px; border-radius:8px; border:1px solid var(--border);
+  font-family:'Space Mono',monospace; font-size:13px; font-weight:700; background:var(--card);
+  color:var(--muted); transition:all 0.1s; min-width:40px; text-align:center;
+}
+.p-note.current-trumpet { background:var(--trumpet); border-color:var(--trumpet); color:white; transform:scale(1.1); box-shadow:0 0 10px rgba(255,107,53,0.4); }
+.p-note.current-flute   { background:var(--flute);   border-color:var(--flute);   color:white; transform:scale(1.1); box-shadow:0 0 10px rgba(79,172,222,0.4); }
+.p-note.done { opacity:0.4; }
+
+/* Tonguing pattern */
+.tongue-pattern { display:flex; flex-wrap:wrap; gap:6px; }
+.t-syllable {
+  padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+  font-family:'Space Mono',monospace; font-size:15px; font-weight:700;
+  background:var(--card); color:var(--muted); transition:all 0.1s;
+}
+.t-syllable.current-trumpet { background:var(--trumpet); color:white; transform:scale(1.12); box-shadow:0 0 10px rgba(255,107,53,0.4); }
+.t-syllable.current-flute   { background:var(--flute);   color:white; transform:scale(1.12); box-shadow:0 0 10px rgba(79,172,222,0.4); }
+
+/* Breath control bar */
+.breath-bar-outer { height:20px; border-radius:10px; background:var(--border); overflow:hidden; margin-bottom:8px; position:relative; }
+.breath-bar-fill  { height:100%; border-radius:10px; width:0%; transition:width 0.1s linear; }
+.breath-bar-fill.inhale  { background:linear-gradient(90deg,#4FACDE,#a78bfa); }
+.breath-bar-fill.hold    { background:var(--yellow); }
+.breath-bar-fill.exhale  { background:linear-gradient(90deg,var(--green),#4FACDE); }
+.breath-instruction { font-size:18px; font-weight:900; text-align:center; margin-bottom:6px; }
+.breath-count { font-family:'Space Mono',monospace; font-size:32px; font-weight:700; text-align:center; color:var(--muted); }
+
+/* Buttons */
 .btn-primary {
   width:100%; padding:15px; border-radius:14px; border:none;
   font-family:'Noto Sans TC',sans-serif; font-size:15px; font-weight:900; cursor:pointer; transition:all 0.2s; margin-bottom:10px;
@@ -960,20 +1148,16 @@ body {
         <div id="music-q-area"></div>
       </div>
 
-      <!-- 🎼 陪練功能 (已升級 → 體藝板塊) -->
+      <!-- 🎼 陪練功能 (已升級) -->
       <div class="card" style="margin-bottom:12px;">
         <div class="card-title"><span class="icon">🎼</span> 樂器陪練</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">音準訓練、曲目練習、實時音高圖、AI評分 — 完整功能在體藝板塊</div>
         <div style="display:flex;gap:10px;">
-          <button onclick="goToPractice('trumpet')"
-            style="flex:1;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--kid1),#ff8c5a);color:white;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">
-            🎺 小號練習
-          </button>
-          <button onclick="goToPractice('flute')"
-            style="flex:1;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--kid2),#74c8f0);color:white;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">
-            🎵 長笛練習
-          </button>
+          <button onclick="goToPractice('trumpet')" style="flex:1;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--kid1),#ff8c5a);color:white;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">🎺 小號練習</button>
+          <button onclick="goToPractice('flute')" style="flex:1;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--kid2),#74c8f0);color:white;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">🎵 長笛練習</button>
         </div>
+        <!-- placeholder ids so old renderArts() references don't break -->
+        <div id="instr-tabs" style="display:none;"></div>
       </div>
 
     </div>
@@ -1672,7 +1856,6 @@ function setDate() {
 // ══════════════════════════════════════════════
 function switchKid(kid) {
   currentKid = kid;
-  // Sync practice module
   practiceKid = kid === 1 ? 'trumpet' : 'flute';
   selectedSubject = null;
   selectedArts = null;
@@ -2345,7 +2528,6 @@ function renderArtsGrid() {
   const prog = getProgress();
   const el = document.getElementById('arts-grid');
   const color = currentKid===1?'var(--kid1)':'var(--kid2)';
-  // Filter: kidOnly items only show for the matching kid
   const visibleArts = ARTS.filter(s => !s.kidOnly || s.kidOnly === currentKid);
   el.innerHTML = visibleArts.map(s => {
     const v = prog[s.id]||0;
@@ -2369,17 +2551,9 @@ function selectArts(id) {
 function renderArtsDetail() {
   const el = document.getElementById('arts-detail');
   if (!selectedArts) { el.innerHTML=''; return; }
-  // Trumpet/Flute → show embedded practice module
   if (PRACTICE_ARTS.includes(selectedArts)) {
-    const kidStr = selectedArts; // 'trumpet' or 'flute'
-    el.innerHTML = `<div id="arts-practice-embed" style="margin-top:4px;"></div>`;
-    // Mount the practice module sections into the embed div
-    const embed = document.getElementById('arts-practice-embed');
-    // Build a mini container with the three practice sections
-    embed.innerHTML = buildPracticeEmbed();
-    // Init practice module for this kid
-    selectKid(kidStr);
-    switchPracticeTab('pitch');
+    el.innerHTML = `<div class="arts-practice-embed" style="border-radius:16px;overflow:hidden;margin-bottom:8px;">` + buildPracticeEmbed() + `</div>`;
+    selectKid(selectedArts);
     return;
   }
   const arts = ARTS.find(s=>s.id===selectedArts);
@@ -3948,26 +4122,18 @@ function renderPracticeLog() {
   }).join('');
 }
 
+// ── Practice embed ──
+let practiceKid = 'trumpet';
 
-
-// ── Practice embed helpers ──
 function buildPracticeEmbed() {
-  return `
-<div style="background:#13131f;border-radius:16px;overflow:hidden;margin-bottom:8px;">
-<div class="top-nav">
+  return `<div class="top-nav">
   <button class="top-tab active-trumpet" id="tab-pitch" onclick="switchPracticeTab('pitch')">🎯 音準</button>
   <button class="top-tab" id="tab-exercise" onclick="switchPracticeTab('exercise')">💪 練習</button>
   <button class="top-tab" id="tab-repertoire" onclick="switchPracticeTab('repertoire')">🎵 曲目</button>
 </div>
 
-<!-- Kid selector -->
-<div class="kid-bar">
-  <button class="kid-tab active-trumpet" id="kid-trumpet" onclick="selectKid('trumpet')">🦁 添樂<br><small style="font-weight:400;font-size:11px">Bb小號</small></button>
-  <button class="kid-tab" id="kid-flute" onclick="selectKid('flute')">🐰 悅琳<br><small style="font-weight:400;font-size:11px">長笛</small></button>
-</div>
-
 <!-- ══ PITCH SECTION ══ -->
-<div class="section active" id="sec-pitch">
+<div class="practice-section practice-active" id="sec-pitch">
 
   <div class="note-display" id="note-display">
     <div class="note-name note-idle" id="note-name">–</div>
@@ -4014,7 +4180,7 @@ function buildPracticeEmbed() {
 </div>
 
 <!-- ══ EXERCISE SECTION ══ -->
-<div class="section" id="sec-exercise">
+<div class="practice-section" id="sec-exercise">
 
   <!-- Exercise cards -->
   <div class="ex-grid" id="ex-grid"></div>
@@ -4147,7 +4313,7 @@ function buildPracticeEmbed() {
 <!-- ══════════════════════════════════════
      REPERTOIRE SECTION
 ══════════════════════════════════════ -->
-<div class="section" id="sec-repertoire">
+<div class="practice-section" id="sec-repertoire">
 
   <!-- ① LIST VIEW -->
   <div id="rep-list-view">
@@ -4351,23 +4517,18 @@ function buildPracticeEmbed() {
     <button class="btn-secondary" onclick="showRepList()">← 返回曲目庫</button>
   </div>
 
-</div><!-- end repertoire section -->
-</div>`;
+</div><!-- end repertoire section -->`;
 }
 
 function goToPractice(kidStr) {
-  // Navigate to arts tab and select instrument
   switchTab('arts');
-  selectArts(kidStr);
-}
-
-function initPracticeModule() {
-  // Called after practice HTML is embedded
-  // Already handled by selectKid() call in renderArtsDetail
+  selectedArts = kidStr;
+  renderArtsGrid();
+  renderArtsDetail();
 }
 
 // ══════════════════════════════════════════
-// PRACTICE MODULE (from practice-demo.html)
+// PRACTICE MODULE
 // ══════════════════════════════════════════
 
 // ══════════════════════════════════════════
@@ -4546,7 +4707,7 @@ const EXERCISES = {
 // ══════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════
-let practiceKid = 'trumpet';
+// practiceKid declared above
 let currentTabName = 'pitch';
 let currentEx = null;
 let bpmState = { lip:60, tongue:60, breath:60 };
@@ -4568,43 +4729,49 @@ let breathStep=0, breathStepTimer=null;
 // ══════════════════════════════════════════
 function switchPracticeTab(tab) {
   currentTabName = tab;
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.getElementById('sec-'+tab).classList.add('active');
+  document.querySelectorAll('.practice-section').forEach(s=>s.classList.remove('practice-active'));
+  const _secEl=document.getElementById('sec-'+tab); if(_secEl) _secEl.classList.add('practice-active');
   document.querySelectorAll('.top-tab').forEach(b=>b.className='top-tab');
   document.getElementById('tab-'+tab).className=`top-tab active-${practiceKid}`;
 }
 
 function selectKid(kid) {
   practiceKid = kid;
-  document.getElementById('kid-trumpet').className='kid-tab'+(kid==='trumpet'?' active-trumpet':'');
-  document.getElementById('kid-flute').className  ='kid-tab'+(kid==='flute'  ?' active-flute':'');
-  // Update tab active color
-  document.getElementById('tab-'+currentTabName).className=`top-tab active-${kid}`;
-  // Update pitch btn
-  document.getElementById('pitch-btn').className=`btn-primary ${kid}`+(pitchOn?' stop':'');
-  // Fingering section
-  document.getElementById('fingering-section').style.display=kid==='trumpet'?'block':'none';
-  // Metronome slider color
+  const _kt=document.getElementById('kid-trumpet');
+  const _kf=document.getElementById('kid-flute');
+  if(_kt) _kt.className='kid-tab'+(kid==='trumpet'?' active-trumpet':'');
+  if(_kf) _kf.className='kid-tab'+(kid==='flute'  ?' active-flute':'');
+  const _tabEl=document.getElementById('tab-'+currentTabName);
+  if(_tabEl) _tabEl.className=`top-tab active-${kid}`;
+  const _pitchBtn=document.getElementById('pitch-btn');
+  if(_pitchBtn) _pitchBtn.className=`btn-primary ${kid}`+(pitchOn?' stop':'');
+  const _fingerEl=document.getElementById('fingering-section');
+  if(_fingerEl) _fingerEl.style.display=kid==='trumpet'?'block':'none';
   document.querySelectorAll('.metro-slider').forEach(s=>{
     s.className='metro-slider'+(kid==='flute'?' flute':'');
   });
-  renderNoteGrid();
-  renderExGrid();
-  resetPitchDisplay();
+  if(document.getElementById('note-grid')) renderNoteGrid();
+  if(document.getElementById('ex-grid')) renderExGrid();
+  if(document.getElementById('note-name')) resetPitchDisplay();
   closeAllPanels();
 }
 
 function renderNoteGrid() {
   const inst = INSTRUMENTS[practiceKid];
-  document.getElementById('note-grid-title').textContent=inst.gridTitle;
-  document.getElementById('note-grid').innerHTML=inst.notes.map(n=>
+  const _ngt=document.getElementById('note-grid-title');
+  const _ng=document.getElementById('note-grid');
+  if(!_ngt||!_ng) return;
+  _ngt.textContent=inst.gridTitle;
+  _ng.innerHTML=inst.notes.map(n=>
     `<div class="note-chip" id="chip-${n.name.replace('#','s').replace('b','b')}">${n.name}</div>`
   ).join('');
 }
 
 function renderExGrid() {
   const exs = EXERCISES[practiceKid];
-  document.getElementById('ex-grid').innerHTML = exs.map(ex=>
+  const _eg=document.getElementById('ex-grid');
+  if(!_eg) return;
+  _eg.innerHTML = exs.map(ex=>
     `<div class="ex-card" id="excard-${ex.id}" onclick="openExercise('${ex.id}')">
       <div class="ex-icon">${ex.icon}</div>
       <div class="ex-title">${ex.title}</div>
@@ -4687,7 +4854,8 @@ function closePanel(panelId) {
 function closeAllPanels() {
   ['lip','tongue','breath'].forEach(p=>{
     stopExercise(p);
-    document.getElementById('panel-'+p).classList.remove('active');
+    const _panEl=document.getElementById('panel-'+p);
+    if(_panEl) _panEl.classList.remove('active');
   });
 }
 
@@ -5273,7 +5441,7 @@ function stopPitchChart(panel) {
 // ══════════════════════════════════════════
 const ALIYUN_KEY = 'sk-a5a9b48f7bb34817a3811920aad62e12';
 const ALIYUN_URL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
-// CLOUDINARY defined in index.html (using REP_CLOUD below for practice module)
+// CLOUDINARY handled by REP_CLOUD
 
 let recState = {};  // { panel: { mediaRecorder, chunks, stream, analysisCtx, timerInterval, recording } }
 
@@ -6537,6 +6705,7 @@ function showRepCalDetail(dateStr){
 
 // ── Global init ──
 // ── Practice module loaded ──
+// ── Practice module end ──
 
 </script>
 </body>
