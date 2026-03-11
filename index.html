@@ -1555,7 +1555,7 @@ const ALL_SUBJECTS = [...SUBJECTS, ...ARTS];
 // ══════════════════════════════════════════════
 //  STORAGE + VERSIONED MIGRATION SYSTEM
 // ══════════════════════════════════════════════
-const DB_VERSION = 2; // bump this when data format changes
+const DB_VERSION = 3; // bump this when data format changes
 
 function loadData(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
@@ -1613,9 +1613,29 @@ const MIGRATIONS = [
         } catch(e) {}
       });
     }
+  },
+  // v3: convert remaining '今天'/'無截止日' due dates to ISO
+  {
+    version: 3,
+    description: 'Convert 今天 due dates to ISO format',
+    up(store) {
+      const today = new Date().toISOString().slice(0, 10);
+      [1, 2].forEach(kid => {
+        const tKey = `kid${kid}_tasks`;
+        try {
+          const tasks = JSON.parse(localStorage.getItem(tKey) || '[]');
+          let changed = false;
+          tasks.forEach(t => {
+            if (!t.due || t.due === '今天' || t.due === '無截止日' || !/^\d{4}-\d{2}-\d{2}$/.test(t.due)) {
+              t.due = today;
+              changed = true;
+            }
+          });
+          if (changed) localStorage.setItem(tKey, JSON.stringify(tasks));
+        } catch(e) {}
+      });
+    }
   }
-  // Add future migrations here:
-  // { version: 3, description: '...', up(store) { ... } }
 ];
 
 function runMigrations() {
@@ -1940,8 +1960,10 @@ function renderTaskList() {
   // Auto-clean completed tasks: remove if done on a previous day
   // Auto-clean overdue tasks: remove if due before today and not done
   const cleaned = tasks.filter(t => {
-    const due = t.due || todayStr; // no due = treat as today
-    const dueISO = /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : todayStr;
+    // Normalize: empty/今天/非ISO -> todayStr
+    let due = t.due || '';
+    if (!due || due === '今天' || due === '無截止日' || !/^\d{4}-\d{2}-\d{2}$/.test(due)) due = todayStr;
+    const dueISO = due;
     if (t.done) {
       // Keep only if completed today
       const doneDate = t.doneDate || todayStr;
@@ -1970,8 +1992,8 @@ function renderTaskList() {
         <div class="task-info">
           <div class="task-name${t.done?' task-done-text':''}">${t.name}</div>
           <div class="task-meta">${subj?.emoji||'📚'} ${subj?.name||t.subject} · ${(()=>{
-            const v=t.due||'';
-            if(!v) return '今天';
+            let v=t.due||'';
+            if(!v||v==='今天'||v==='無截止日') return '今天';
             if(/^\d{4}-\d{2}-\d{2}$/.test(v)){
               const d=new Date(v+'T00:00:00'); const today=new Date(); today.setHours(0,0,0,0);
               const diff=Math.round((d-today)/86400000);
@@ -3272,7 +3294,7 @@ function confirmScanTasks() {
         subject: t.subject || 'other',
         type: 'homework',
         priority: t.priority || 'medium',
-        due: '今天',
+        due: todayISO(),
         done: false,
       });
       added++;
@@ -3325,7 +3347,7 @@ function importFromPaste() {
       subject,
       type: 'homework',
       priority,
-      due: '今天',
+      due: todayISO(),
       done: false,
     });
     added++;
