@@ -871,6 +871,9 @@ body {
   window.syncQBankToCloud = async function(kid, qbank) {
     await fbSet(`data/kid${kid}/qbank/main`, { items: qbank, updatedAt: Date.now() });
   };
+  window.syncArtsRecordsToCloud = async function(kid, records) {
+    await fbSet(`data/kid${kid}/arts_records/main`, { items: records, updatedAt: Date.now() });
+  };
   window.syncExamsToCloud = async function(kid, exams) {
     await fbSet(`data/kid${kid}/exams/main`, { items: exams, updatedAt: Date.now() });
   };
@@ -878,7 +881,7 @@ body {
     await fbSet(`data/kid${kid}/syllabuses/main`, { items: syllabuses, updatedAt: Date.now() });
   };
   window.loadAllFromCloud = async function(kid) {
-    const [tasks, notices, progress, training, exams, syllabuses, qbank, hwPhotos] = await Promise.all([
+    const [tasks, notices, progress, training, exams, syllabuses, qbank, artsRecs, hwPhotos] = await Promise.all([
       fbGet(`data/kid${kid}/tasks/main`),
       fbGet(`data/kid${kid}/notices/main`),
       fbGet(`data/kid${kid}/progress/main`),
@@ -886,6 +889,7 @@ body {
       fbGet(`data/kid${kid}/exams/main`),
       fbGet(`data/kid${kid}/syllabuses/main`),
       fbGet(`data/kid${kid}/qbank/main`),
+      fbGet(`data/kid${kid}/arts_records/main`),
       fbGet(`data/shared/hwPhotos/main`),
     ]);
     return {
@@ -896,6 +900,7 @@ body {
       exams: exams?.items || null,
       syllabuses: syllabuses?.items || null,
       qbank: qbank?.items || null,
+      artsRecords: artsRecs?.items || null,
       hwPhotos: hwPhotos?.items || null,
     };
   };
@@ -903,6 +908,7 @@ body {
   console.log('Firebase ready ✅');
   window.dispatchEvent(new Event('firebaseReady'));
 </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -1612,14 +1618,75 @@ const SUBJECTS = [
 ];
 
 const ARTS = [
-  { id: 'swim',    name: '游泳', emoji: '🏊' },
-  { id: 'art',     name: '繪畫', emoji: '🎨' },
-  { id: 'dance',   name: '舞蹈', emoji: '💃' },
-  { id: 'music',   name: '音樂', emoji: '🎹' },
-  { id: 'trumpet', name: '小號', emoji: '🎺', kidOnly: 1 },
-  { id: 'flute',   name: '長笛', emoji: '🎵', kidOnly: 2 },
+  { id: 'swim',    name: '游泳',  emoji: '🏊' },
+  { id: 'art',     name: '繪畫',  emoji: '🎨' },
+  { id: 'martial', name: '武術',  emoji: '🥋', kidOnly: 1 },
+  { id: 'dance',   name: '舞蹈',  emoji: '💃', kidOnly: 2 },
+  { id: 'music',   name: '音樂',  emoji: '🎹' },
+  { id: 'trumpet', name: '小號',  emoji: '🎺', kidOnly: 1 },
+  { id: 'flute',   name: '長笛',  emoji: '🎵', kidOnly: 2 },
 ];
 const PRACTICE_ARTS = ['trumpet', 'flute'];
+const RECORD_ARTS = ['swim', 'art', 'martial', 'dance', 'music']; // arts with record system
+
+// Arts record config per subject
+const ARTS_CONFIG = {
+  swim: {
+    name: '游泳', emoji: '🏊',
+    fields: [
+      { id: 'stroke',   label: '泳式',   type: 'select', options: ['自由式','背泳','蛙式','蝶式','混合泳','接力'] },
+      { id: 'distance', label: '距離',   type: 'select', options: ['25m','50m','100m','200m','400m','800m','1500m','接力'] },
+      { id: 'time',     label: '成績時間', type: 'text',   placeholder: '例：0:32.50' },
+      { id: 'group',    label: '組別',    type: 'text',   placeholder: '例：甲組、10歲以下' },
+    ],
+    summaryFn: r => [r.stroke, r.distance, r.time].filter(Boolean).join(' · '),
+    exportCols: ['日期','地點','類型','標題','泳式','距離','成績時間','組別','名次','評語','備注'],
+    exportRow:  r => [r.date,r.venue,r.recType,r.title,r.stroke,r.distance,r.time,r.group,r.rank,r.comment,r.notes],
+  },
+  art: {
+    name: '繪畫', emoji: '🎨',
+    fields: [
+      { id: 'theme',   label: '主題', type: 'text',   placeholder: '例：靜物、風景、人像' },
+      { id: 'medium',  label: '媒材', type: 'select', options: ['水彩','油畫','素描','粉彩','版畫','混合媒材','其他'] },
+    ],
+    summaryFn: r => [r.theme, r.medium].filter(Boolean).join(' · '),
+    exportCols: ['日期','地點','類型','標題','主題','媒材','名次','評語','備注'],
+    exportRow:  r => [r.date,r.venue,r.recType,r.title,r.theme,r.medium,r.rank,r.comment,r.notes],
+  },
+  martial: {
+    name: '武術', emoji: '🥋',
+    fields: [
+      { id: 'routine',  label: '套路名稱', type: 'text',   placeholder: '例：長拳、太極拳' },
+      { id: 'group',    label: '組別',     type: 'text',   placeholder: '例：少年組A' },
+      { id: 'level',    label: '級別/段位', type: 'text',  placeholder: '例：一段' },
+    ],
+    summaryFn: r => [r.routine, r.group].filter(Boolean).join(' · '),
+    exportCols: ['日期','地點','類型','標題','套路','組別','級別/段位','名次','評語','備注'],
+    exportRow:  r => [r.date,r.venue,r.recType,r.title,r.routine,r.group,r.level,r.rank,r.comment,r.notes],
+  },
+  dance: {
+    name: '舞蹈', emoji: '💃',
+    fields: [
+      { id: 'style',  label: '舞種', type: 'select', options: ['芭蕾','民族舞','現代舞','爵士','拉丁','中國舞','其他'] },
+      { id: 'piece',  label: '曲目', type: 'text',   placeholder: '例：天鵝湖、梁祝' },
+      { id: 'group',  label: '組別', type: 'text',   placeholder: '例：初級組' },
+    ],
+    summaryFn: r => [r.style, r.piece].filter(Boolean).join(' · '),
+    exportCols: ['日期','地點','類型','標題','舞種','曲目','組別','名次','評語','備注'],
+    exportRow:  r => [r.date,r.venue,r.recType,r.title,r.style,r.piece,r.group,r.rank,r.comment,r.notes],
+  },
+  music: {
+    name: '音樂', emoji: '🎹',
+    fields: [
+      { id: 'instrument', label: '樂器', type: 'text',   placeholder: '例：鋼琴、小提琴' },
+      { id: 'piece',      label: '曲目', type: 'text',   placeholder: '例：月光奏鳴曲' },
+      { id: 'grade',      label: '級別', type: 'text',   placeholder: '例：五級' },
+    ],
+    summaryFn: r => [r.instrument, r.piece].filter(Boolean).join(' · '),
+    exportCols: ['日期','地點','類型','標題','樂器','曲目','級別','名次','評語','備注'],
+    exportRow:  r => [r.date,r.venue,r.recType,r.title,r.instrument,r.piece,r.grade,r.rank,r.comment,r.notes],
+  },
+};
 
 const ALL_SUBJECTS = [...SUBJECTS, ...ARTS];
 
@@ -1746,6 +1813,11 @@ function saveTraining(t) {
   saveData(kkey('training'), t);
   if (window.fbReady) window.syncTrainingToCloud(currentKid, t);
 }
+function getArtsRecords() { return loadData(kkey('arts_records'), []); }
+function saveArtsRecords(r) {
+  saveData(kkey('arts_records'), r);
+  if (window.fbReady) window.fbSet(`data/kid${currentKid}/arts_records/main`, { items: r, updatedAt: Date.now() });
+}
 function getStreak() { return loadData(kkey('streak'), 7); }
 
 // Load from cloud on startup
@@ -1762,6 +1834,7 @@ async function loadFromCloud(kid) {
     if (data.exams) { saveData(`kid${kid}_exams`, data.exams); changed = true; }
     if (data.syllabuses) { saveData(`kid${kid}_syllabuses`, data.syllabuses); changed = true; }
     if (data.qbank) { saveData(`kid${kid}_qbank`, data.qbank); changed = true; }
+    if (data.artsRecords) { saveData(`kid${kid}_arts_records`, data.artsRecords); changed = true; }
     if (data.hwPhotos) { saveData('hw_photos', data.hwPhotos); changed = true; }
     if (changed) {
       renderDashboard();
@@ -2957,20 +3030,28 @@ function renderArtsGrid() {
   const el = document.getElementById('arts-grid');
   const color = currentKid===1?'var(--kid1)':'var(--kid2)';
   const visibleArts = ARTS.filter(s => !s.kidOnly || s.kidOnly === currentKid);
+  const allRecords = getArtsRecords();
   el.innerHTML = visibleArts.map(s => {
     const v = prog[s.id]||0;
     const sel = selectedArts===s.id;
     const isPractice = PRACTICE_ARTS.includes(s.id);
+    const isRecord = RECORD_ARTS.includes(s.id);
+    const recCount = isRecord ? allRecords.filter(r => r.subject===s.id).length : 0;
+    let scoreLabel;
+    if (isPractice) scoreLabel = '▶ 練習';
+    else if (isRecord) scoreLabel = recCount ? recCount+'條記錄' : '暫無記錄';
+    else scoreLabel = v+'%';
     return `
     <div class="subject-card${sel?(currentKid===1?' selected':' selected-2'):''}" onclick="selectArts('${s.id}')">
       <div class="subject-emoji">${s.emoji}</div>
       <div class="subject-name">${s.name}</div>
-      <div class="subject-score" style="color:${sel?color:'var(--muted)'}">${isPractice?'▶ 練習':v+'%'}</div>
+      <div class="subject-score" style="color:${sel?color:'var(--muted)'};">${scoreLabel}</div>
     </div>`;
   }).join('');
 }
 
 function selectArts(id) {
+  if (selectedArts !== id) artsRecordFilter = 'all';
   selectedArts = selectedArts===id?null:id;
   renderArtsGrid();
   renderArtsDetail();
@@ -2984,63 +3065,287 @@ function renderArtsDetail() {
     selectKid(selectedArts);
     return;
   }
-  const arts = ARTS.find(s=>s.id===selectedArts);
-  const prog = getProgress();
-  const training = getTraining().filter(t=>t.arts===selectedArts);
-  const v = prog[selectedArts]||0;
-  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  renderArtsRecords();
+}
 
-  const tips = {
-    swim: ['每次訓練前做好熱身', '注意換氣節奏和動作標準', '計時記錄每次進步', '動作標準優先於速度'],
-    art: ['每天素描練習15分鐘', '觀察光影和色彩變化', '嘗試不同畫材媒介', '臨摹名作學習技法'],
-    dance: ['注意基本功訓練', '保持節奏感和表情', '錄影自我觀察改進', '多聽音樂培養感覺'],
-    music: ['每天定時練習30分鐘', '注意手型和指法', '先慢速練熟再加速', '背譜前先看譜練熟'],
-  };
+let artsRecordFilter = 'all';
+let editingArtsRecordId = null;
+
+function renderArtsRecords() {
+  const el = document.getElementById('arts-detail');
+  if (!el) return;
+  const cfg = ARTS_CONFIG[selectedArts];
+  if (!cfg) { el.innerHTML = ''; return; }
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  const records = getArtsRecords().filter(r => r.subject === selectedArts);
+  const filtered = artsRecordFilter === 'all' ? records : records.filter(r => r.recType === artsRecordFilter);
+
+  const REC_TYPES = ['all','比賽','表演','課堂','考級'];
+  const REC_COLORS = { '比賽':'#FF6B35','表演':'#9C6BDE','課堂':'#4FACDE','考級':'#F5A623' };
 
   el.innerHTML = `
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:32px">${arts.emoji}</span>
+  <div>
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:28px;">${cfg.emoji}</span>
         <div>
-          <div style="font-size:18px;font-weight:900">${arts.name}</div>
-          <div style="font-size:12px;color:var(--muted);font-weight:600">${KIDS[currentKid].name}</div>
+          <div style="font-size:17px;font-weight:900;">${cfg.name}</div>
+          <div style="font-size:11px;color:var(--muted);">${records.length} 條記錄</div>
         </div>
       </div>
-      <div style="text-align:right">
-        <div style="font-family:'Nunito',sans-serif;font-size:32px;font-weight:900;color:${kidColor}">${v}%</div>
-        <div style="font-size:11px;color:var(--muted)">${v>=80?'優秀':v>=60?'良好':'繼續進步'}</div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="exportArtsExcel('${selectedArts}')" style="padding:8px 12px;border-radius:20px;border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">📊 導出</button>
+        <button onclick="openArtsRecordModal(null)" style="padding:8px 14px;border-radius:20px;border:none;background:${kidColor};color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">+ 新增</button>
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button onclick="openAddTraining('${selectedArts}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:none;background:${kidColor};color:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">🏅 記錄訓練</button>
-      <button onclick="switchTab('ai');aiCoach('${selectedArts}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">🤖 AI陪練</button>
-      <button onclick="openProgressEdit('${selectedArts}')" style="padding:10px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">📊 更新</button>
+    <!-- Type filter -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      ${REC_TYPES.map(t => {
+        const active = artsRecordFilter === t;
+        const col = t === 'all' ? kidColor : REC_COLORS[t];
+        return `<button onclick="artsFilterType('${t}')" style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;border:1.5px solid ${active?col:'var(--border)'};background:${active?col:'white'};color:${active?'white':'var(--text)'};">${t==='all'?'全部':t}</button>`;
+      }).join('')}
     </div>
 
-    <div class="section-label">💡 訓練建議</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
-      ${(tips[selectedArts]||[]).map(t=>`
-        <div style="background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;font-weight:600;border:1px solid var(--border)">
-          <span style="color:${kidColor}">•</span> ${t}
-        </div>`).join('')}
+    <!-- Records list -->
+    <div id="arts-records-list">
+      ${filtered.length ? filtered.map(r => {
+        const col = REC_COLORS[r.recType] || kidColor;
+        const thumbs = (r.photos||[]).slice(0,3);
+        return `
+        <div class="card" style="margin-bottom:10px;padding:14px;position:relative;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                <span style="font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:${col}20;color:${col};">${r.recType}</span>
+                <span style="font-size:11px;color:var(--muted);">${r.date}</span>
+              </div>
+              <div style="font-size:14px;font-weight:800;margin-bottom:2px;">${r.title}</div>
+              ${r.venue ? `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">📍 ${r.venue}</div>` : ''}
+              <div style="font-size:12px;color:var(--muted);">${cfg.summaryFn(r)}</div>
+              ${r.rank ? `<div style="font-size:12px;font-weight:700;color:${col};margin-top:3px;">🏆 ${r.rank}</div>` : ''}
+            </div>
+            <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
+              <button onclick="openArtsRecordModal(${r.id})" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;">✏️</button>
+              <button onclick="deleteArtsRecord(${r.id})" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;">🗑️</button>
+            </div>
+          </div>
+          ${thumbs.length ? `
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+            ${thumbs.map(url => `<img src="${url}" onclick="viewFullImage('${url}')" style="width:72px;height:72px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid var(--border);">`).join('')}
+            ${r.photos.length > 3 ? `<div onclick="openArtsPhotoViewer(${r.id})" style="width:72px;height:72px;border-radius:8px;background:#00000015;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;cursor:pointer;color:var(--text);">+${r.photos.length-3}</div>` : ''}
+          </div>` : ''}
+          ${r.comment ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">💬 ${r.comment}</div>` : ''}
+        </div>`;
+      }).join('') : `<div class="empty-state"><div class="emoji">${cfg.emoji}</div><p>暫無${artsRecordFilter==='all'?'':'「'+artsRecordFilter+'」'}記錄</p><p style="font-size:12px;color:var(--muted)">點擊右上角「+ 新增」</p></div>`}
     </div>
-
-    <div class="section-label">📅 訓練記錄 (${training.length})</div>
-    ${training.length ? training.map(t=>`
-      <div class="training-item">
-        <div class="training-date-box${currentKid===2?' kid2':''}">
-          <div class="training-month">${t.date.replace(/\d+日/,'')}</div>
-          <div class="training-day">${t.date.match(/(\d+)日/)?.[1]||'?'}</div>
-        </div>
-        <div class="training-info">
-          <div class="training-title">${t.title}</div>
-          <div class="training-meta">⏱ ${t.duration} · 💬 ${t.comment}</div>
-          <div class="training-rating">${'⭐'.repeat(t.rating)}</div>
-        </div>
-      </div>`).join('') : '<div class="empty-state" style="padding:16px"><div class="emoji" style="font-size:24px">🏅</div><p>暫無記錄，點擊上方新增</p></div>'}
   </div>`;
+}
+
+function artsFilterType(t) {
+  artsRecordFilter = t;
+  renderArtsRecords();
+}
+
+function deleteArtsRecord(id) {
+  if (!confirm('確定刪除這條記錄？')) return;
+  const records = getArtsRecords().filter(r => r.id !== id);
+  saveArtsRecords(records);
+  renderArtsRecords();
+}
+
+function openArtsPhotoViewer(id) {
+  const r = getArtsRecords().find(r => r.id === id);
+  if (!r || !r.photos.length) return;
+  viewFullImage(r.photos[0]); // simple: show first, could be enhanced
+}
+
+
+
+// ══════════════════════════════════════════════
+//  🏅 ARTS RECORDS SYSTEM
+// ══════════════════════════════════════════════
+let artsRecordPhotos = []; // temp photo URLs during editing
+
+function openArtsRecordModal(id) {
+  editingArtsRecordId = id;
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  const btn = document.getElementById('ar-confirm-btn');
+  btn.style.background = kidColor;
+  document.getElementById('ar-photo-bar').style.background = kidColor;
+  artsRecordPhotos = [];
+
+  const cfg = ARTS_CONFIG[selectedArts];
+  if (!cfg) return;
+
+  // Build subject-specific fields
+  const fieldsEl = document.getElementById('ar-subject-fields');
+  fieldsEl.innerHTML = cfg.fields.map(f => `
+    <div class="form-group" style="margin-bottom:10px;">
+      <label class="form-label">${f.label}</label>
+      ${f.type === 'select'
+        ? `<select id="ar-f-${f.id}" class="form-input">${f.options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`
+        : `<input type="text" id="ar-f-${f.id}" class="form-input" placeholder="${f.placeholder||''}">`
+      }
+    </div>`).join('');
+
+  const title = document.getElementById('arts-record-modal-title');
+
+  if (id) {
+    // Edit mode
+    const r = getArtsRecords().find(r => r.id === id);
+    if (!r) return;
+    title.textContent = '✏️ 編輯記錄';
+    document.getElementById('ar-date').value = r.date || '';
+    document.getElementById('ar-venue').value = r.venue || '';
+    document.getElementById('ar-type').value = r.recType || '比賽';
+    document.getElementById('ar-title').value = r.title || '';
+    document.getElementById('ar-rank').value = r.rank || '';
+    document.getElementById('ar-comment').value = r.comment || '';
+    cfg.fields.forEach(f => {
+      const el = document.getElementById('ar-f-'+f.id);
+      if (el) el.value = r[f.id] || '';
+    });
+    artsRecordPhotos = [...(r.photos || [])];
+  } else {
+    // New mode
+    title.textContent = '🏅 新增記錄';
+    document.getElementById('ar-date').value = todayISO();
+    document.getElementById('ar-venue').value = '';
+    document.getElementById('ar-type').value = '比賽';
+    document.getElementById('ar-title').value = '';
+    document.getElementById('ar-rank').value = '';
+    document.getElementById('ar-comment').value = '';
+  }
+
+  renderArPhotoThumbs();
+  openModal('arts-record-modal');
+}
+
+function renderArPhotoThumbs() {
+  const el = document.getElementById('ar-photo-thumbs');
+  const cnt = document.getElementById('ar-photo-count');
+  if (!el) return;
+  cnt.textContent = artsRecordPhotos.length ? `(${artsRecordPhotos.length}張)` : '';
+  el.innerHTML = artsRecordPhotos.map((url, i) => `
+    <div style="position:relative;">
+      <img src="${url}" onclick="viewFullImage('${url}')" style="width:70px;height:70px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid var(--border);">
+      <button onclick="removeArPhoto(${i})" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;border:none;background:#FF4444;color:white;font-size:10px;cursor:pointer;line-height:18px;padding:0;">✕</button>
+    </div>`).join('');
+}
+
+function removeArPhoto(idx) {
+  artsRecordPhotos.splice(idx, 1);
+  renderArPhotoThumbs();
+}
+
+async function handleArtsPhotoUpload(event) {
+  const files = Array.from(event.target.files);
+  event.target.value = '';
+  if (!files.length) return;
+  const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
+  const prog = document.getElementById('ar-photo-progress');
+  const bar = document.getElementById('ar-photo-bar');
+  const pct = document.getElementById('ar-photo-pct');
+  prog.style.display = 'block';
+  for (let i = 0; i < files.length; i++) {
+    pct.textContent = `上傳中 ${i+1}/${files.length}…`;
+    try {
+      const url = await uploadToCloudinary(files[i], 'chengzhang/arts/kid'+currentKid+'/'+selectedArts, p => {
+        bar.style.width = p + '%';
+      });
+      artsRecordPhotos.push(url);
+      renderArPhotoThumbs();
+    } catch(e) { console.error('photo upload failed:', e); }
+  }
+  prog.style.display = 'none';
+  bar.style.width = '0%';
+}
+
+function confirmArtsRecord() {
+  const date = document.getElementById('ar-date').value;
+  const title = document.getElementById('ar-title').value.trim();
+  if (!date || !title) { alert('請填寫日期和標題'); return; }
+
+  const cfg = ARTS_CONFIG[selectedArts];
+  const extraFields = {};
+  cfg.fields.forEach(f => {
+    const el = document.getElementById('ar-f-'+f.id);
+    if (el) extraFields[f.id] = el.value.trim();
+  });
+
+  const records = getArtsRecords();
+  if (editingArtsRecordId) {
+    const r = records.find(r => r.id === editingArtsRecordId);
+    if (r) {
+      r.date = date;
+      r.venue = document.getElementById('ar-venue').value.trim();
+      r.recType = document.getElementById('ar-type').value;
+      r.title = title;
+      r.rank = document.getElementById('ar-rank').value.trim();
+      r.comment = document.getElementById('ar-comment').value.trim();
+      r.photos = [...artsRecordPhotos];
+      Object.assign(r, extraFields);
+    }
+  } else {
+    records.unshift({
+      id: Date.now(),
+      subject: selectedArts,
+      kid: currentKid,
+      date,
+      venue: document.getElementById('ar-venue').value.trim(),
+      recType: document.getElementById('ar-type').value,
+      title,
+      rank: document.getElementById('ar-rank').value.trim(),
+      comment: document.getElementById('ar-comment').value.trim(),
+      photos: [...artsRecordPhotos],
+      ...extraFields,
+    });
+  }
+
+  saveArtsRecords(records);
+  closeModal('arts-record-modal');
+  editingArtsRecordId = null;
+  artsRecordPhotos = [];
+  renderArtsRecords();
+}
+
+// ── Excel Export ──
+function exportArtsExcel(subject) {
+  const cfg = ARTS_CONFIG[subject];
+  if (!cfg) return;
+  const records = getArtsRecords().filter(r => r.subject === subject && r.kid === currentKid);
+  if (!records.length) { alert('暫無記錄可導出'); return; }
+
+  // Build data array
+  const rows = [cfg.exportCols];
+  records.forEach(r => rows.push(cfg.exportRow(r).map(v => v || '')));
+
+  // Use SheetJS (XLSX)
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Column widths
+  ws['!cols'] = cfg.exportCols.map(col => ({ wch: Math.max(col.length * 2, 12) }));
+
+  // Header style
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
+    if (cell) {
+      cell.s = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: currentKid===1 ? 'FF6B35' : '4FACDE' } },
+        alignment: { horizontal: 'center' }
+      };
+    }
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, cfg.name);
+  const kidName = KIDS[currentKid].name;
+  XLSX.writeFile(wb, `${kidName}_${cfg.name}_記錄.xlsx`);
 }
 
 // ══════════════════════════════════════════════
@@ -7138,5 +7443,75 @@ function showRepCalDetail(dateStr){
 // ── Practice module end ──
 
 </script>
+
+<!-- ══ ARTS RECORD MODAL ══ -->
+<div class="modal-overlay" id="arts-record-modal">
+  <div class="modal-box" style="max-height:90vh;overflow-y:auto;">
+    <div class="modal-title" id="arts-record-modal-title">🏅 新增記錄</div>
+
+    <div class="form-group">
+      <label class="form-label">日期</label>
+      <input type="date" id="ar-date" class="form-input">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div class="form-group" style="flex:1;margin-bottom:10px;">
+        <label class="form-label">地點</label>
+        <input type="text" id="ar-venue" class="form-input" placeholder="例：香港體育館">
+      </div>
+      <div class="form-group" style="flex:1;margin-bottom:10px;">
+        <label class="form-label">類型</label>
+        <select id="ar-type" class="form-input">
+          <option value="比賽">🏆 比賽</option>
+          <option value="表演">🎭 表演</option>
+          <option value="課堂">📚 課堂</option>
+          <option value="考級">🎖️ 考級</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">標題</label>
+      <input type="text" id="ar-title" class="form-input" placeholder="例：全港游泳錦標賽、期末演出">
+    </div>
+
+    <!-- Dynamic subject-specific fields -->
+    <div id="ar-subject-fields"></div>
+
+    <div style="display:flex;gap:8px;">
+      <div class="form-group" style="flex:1;margin-bottom:10px;">
+        <label class="form-label">名次/成果</label>
+        <input type="text" id="ar-rank" class="form-input" placeholder="例：第1名、金獎">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">評語/備注</label>
+      <textarea id="ar-comment" class="form-input" rows="2" style="resize:none;" placeholder="老師評語、個人感受…"></textarea>
+    </div>
+
+    <!-- Photo upload -->
+    <div class="form-group">
+      <label class="form-label">照片/獎狀 <span id="ar-photo-count" style="color:var(--muted);font-weight:600;"></span></label>
+      <input type="file" id="ar-photo-file" accept="image/*" multiple style="display:none;" onchange="handleArtsPhotoUpload(event)">
+      <div onclick="document.getElementById('ar-photo-file').click()"
+        style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;background:var(--bg);">
+        <div style="font-size:24px;margin-bottom:4px;">📸</div>
+        <div style="font-size:13px;font-weight:700;">點擊上傳照片</div>
+        <div style="font-size:11px;color:var(--muted);">可多選，支援JPG/PNG</div>
+      </div>
+      <div id="ar-photo-progress" style="display:none;margin-top:6px;">
+        <div style="height:4px;border-radius:2px;background:var(--border);overflow:hidden;">
+          <div id="ar-photo-bar" style="height:100%;border-radius:2px;width:0%;transition:width 0.2s;"></div>
+        </div>
+        <div id="ar-photo-pct" style="font-size:11px;color:var(--muted);text-align:center;margin-top:2px;"></div>
+      </div>
+      <div id="ar-photo-thumbs" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button onclick="closeModal('arts-record-modal')" style="flex:1;padding:14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">取消</button>
+      <button onclick="confirmArtsRecord()" id="ar-confirm-btn" style="flex:2;padding:14px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">✅ 保存記錄</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
