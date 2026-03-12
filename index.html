@@ -796,7 +796,6 @@ body {
 }
 .listening-pulse { animation:pulse 1.2s ease-in-out infinite; }
 
-
 /* ── ARTS RECORD MODAL compact styles ── */
 .ar-label { font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px; }
 .ar-input {
@@ -829,14 +828,14 @@ body {
 
   // ── Firebase helpers ──
   async function fbSet(path, data) {
-    try { 
+    try {
       console.log('fbSet writing to:', path);
-      await setDoc(doc(db, path), data); 
+      await setDoc(doc(db, path), data);
       console.log('fbSet success:', path);
-      return true; 
-    } catch(e) { 
-      console.error('fbSet error at path:', path, e); 
-      return false; 
+      return true;
+    } catch(e) {
+      console.error('fbSet error at path:', path, e);
+      return false;
     }
   }
   async function fbGet(path) {
@@ -925,8 +924,6 @@ body {
 </head>
 <body>
 
-
-<!-- HEADER -->
 <div class="app-header" id="app-header-el" oncontextmenu="return false;">
   <div class="header-content">
     <div class="header-logo">
@@ -951,18 +948,15 @@ body {
   </div>
 </div>
 
-<!-- MAIN -->
 <div class="main-content">
 
-  <!-- ── 總覽 ── -->
+
   <div class="section visible" id="sec-dashboard">
     <div id="greeting-banner" class="card" style="background: linear-gradient(135deg, var(--kid1-light), var(--accent-light)); border-color: var(--kid1-mid);">
       <div style="font-size:22px; margin-bottom:6px;" id="greeting-emoji">☀️</div>
       <div style="font-size:17px; font-weight:900;" id="greeting-text">早晨！今天繼續加油！</div>
       <div style="font-size:13px; color:var(--muted); margin-top:4px;" id="greeting-sub">添樂有 <strong id="pending-count">0</strong> 項任務待完成</div>
     </div>
-
-
 
     <div class="stats-row">
       <div class="stat-card">
@@ -1010,28 +1004,28 @@ body {
       <div id="notices-preview"></div>
     </div>
 
-    <!-- 📅 歷史記錄 -->
+
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div class="card-title" style="margin:0;"><span class="icon">📅</span> 功課歷史記錄</div>
         <button onclick="archiveTodayTasks()" style="padding:6px 12px;border-radius:20px;border:none;background:var(--green);color:white;font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">📦 歸檔今日</button>
       </div>
-      <!-- Calendar nav -->
+
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <button onclick="histCalNav(-1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:16px;cursor:pointer;">‹</button>
         <div id="hist-cal-month" style="font-size:15px;font-weight:900;color:var(--text);"></div>
         <button onclick="histCalNav(1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:16px;cursor:pointer;">›</button>
       </div>
-      <!-- Calendar grid -->
+
       <div id="hist-calendar" style="margin-bottom:14px;"></div>
-      <!-- Day detail -->
+
       <div id="history-list"></div>
     </div>
   </div>
 
-  <!-- ── 學業 ── -->
+
   <div class="section" id="sec-academic">
-    <!-- Sub-tabs -->
+
     <div style="display:flex;gap:6px;padding:0 2px 14px;overflow-x:auto;">
       <button id="atab-exam" onclick="switchAcademicTab('exam')"
         style="flex:1;min-width:80px;padding:10px 8px;border-radius:20px;border:none;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;background:var(--kid1);color:white;white-space:nowrap;">🎯 考試計劃</button>
@@ -1041,7 +1035,7 @@ body {
         style="flex:1;min-width:80px;padding:10px 8px;border-radius:20px;border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;background:white;color:var(--text);white-space:nowrap;">📁 題庫</button>
     </div>
 
-    <!-- Exam tab -->
+
     <div id="sec-exam">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div style="font-size:13px;color:var(--muted);font-weight:700">即將到來的考試</div>
@@ -1051,9 +1045,9 @@ body {
       <div id="exam-list"></div>
     </div>
 
-    <!-- Syllabus tab -->
+
     <div id="sec-syllabus" style="display:none;">
-      <!-- Upload card -->
+
       <div class="card" style="margin-bottom:12px;">
         <div class="card-title"><span class="icon">📚</span> 上傳學習大綱</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">上傳照片 → AI自動識別課次內容</div>
@@ -1087,9 +1081,9 @@ body {
       <div id="syllabus-list"></div>
     </div>
 
-    <!-- Question Bank tab -->
+
     <div id="sec-qbank" style="display:none;">
-      <!-- Upload card -->
+
       <div class="card" style="margin-bottom:12px;">
         <div class="card-title"><span class="icon">📁</span> 新增題庫資料</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">上傳工作紙、測驗卷等，AI自動分析內容</div>
@@ -1132,31 +1126,31 @@ body {
         </div>
         <div id="qbank-upload-status"></div>
       </div>
-      <!-- Filter row -->
+
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="qbank-subject-filter"></div>
-      <!-- List -->
+
       <div id="qbank-list"></div>
     </div>
   </div>
 
-  <!-- ── 體藝 ── -->
+
   <div class="section" id="sec-arts">
     <div class="section-label">選擇體藝項目</div>
     <div class="subject-grid" id="arts-grid"></div>
     <div id="arts-detail"></div>
   </div>
 
-  <!-- ── AI助手 ── -->
+
   <div class="section" id="sec-ai">
 
-    <!-- AI 分類 Tab -->
+
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <button class="ai-cat-tab active" id="ai-cat-chat" onclick="switchAiCat('chat')">🤖 AI對話</button>
       <button class="ai-cat-tab" id="ai-cat-academic" onclick="switchAiCat('academic')">📚 學術</button>
       <button class="ai-cat-tab" id="ai-cat-arts" onclick="switchAiCat('arts')">🎵 藝術</button>
     </div>
 
-    <!-- ① AI 對話 (原有) -->
+
     <div id="ai-panel-chat">
       <div class="card" style="margin-bottom:10px;">
         <div class="card-title"><span class="icon">🤖</span> AI學習助手</div>
@@ -1172,9 +1166,9 @@ body {
       </div>
     </div>
 
-    <!-- ② 學術 -->
+
     <div id="ai-panel-academic" style="display:none;">
-      <!-- 難度 + 學科 -->
+
       <div class="card" style="margin-bottom:12px;">
         <div class="card-title"><span class="icon">📚</span> AI學術助手</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="academic-kid-label"></div>
@@ -1191,7 +1185,7 @@ body {
         <input class="form-input" id="exam-paper-url" placeholder="GitHub raw 圖片連結，AI會根據試卷出題" style="margin-bottom:8px;">
         <button onclick="startAcadAI(true)" style="width:100%;padding:13px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,var(--purple),var(--kid2));color:white;font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">📄 根據試卷出題</button>
       </div>
-      <!-- 錯題庫 -->
+
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <div class="card-title" style="margin-bottom:0;"><span class="icon">❌</span> 錯題庫</div>
@@ -1202,31 +1196,31 @@ body {
       </div>
     </div>
 
-    <!-- ③ 藝術 -->
+
     <div id="ai-panel-arts" style="display:none;">
 
-      <!-- 🎵 五線譜識譜訓練 -->
+
       <div class="card" style="margin-bottom:12px;">
         <div class="card-title"><span class="icon">🎵</span> 五線譜識譜訓練</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">音符 · 時值 · 升降記號 · 節拍拍子</div>
-        <!-- Mode tabs -->
+
         <div style="display:flex;gap:6px;margin-bottom:12px;">
           <button class="music-mode-btn active" id="mmode-note" onclick="setMusicMode('note')">🎵 音符</button>
           <button class="music-mode-btn" id="mmode-duration" onclick="setMusicMode('duration')">⏱ 時值</button>
           <button class="music-mode-btn" id="mmode-accidental" onclick="setMusicMode('accidental')">♯ 升降</button>
           <button class="music-mode-btn" id="mmode-beat" onclick="setMusicMode('beat')">🥁 節拍</button>
         </div>
-        <!-- Score bar -->
+
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <div style="flex:1;height:6px;border-radius:3px;background:var(--border);overflow:hidden;"><div id="music-score-bar" style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),var(--accent));width:0%;transition:width 0.4s;"></div></div>
           <div id="music-score-text" style="font-size:12px;font-weight:800;color:var(--muted);">0/0</div>
           <div id="music-streak" style="font-size:12px;font-weight:800;color:var(--kid1);">🔥0</div>
         </div>
-        <!-- Question area -->
+
         <div id="music-q-area"></div>
       </div>
 
-      <!-- 🎼 陪練功能 (已升級) -->
+
       <div class="card" style="margin-bottom:12px;">
         <div class="card-title"><span class="icon">🎼</span> 樂器陪練</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">音準訓練、曲目練習、實時音高圖、AI評分 — 完整功能在體藝板塊</div>
@@ -1234,22 +1228,20 @@ body {
           <button onclick="goToPractice('trumpet')" style="flex:1;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--kid1),#ff8c5a);color:white;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">🎺 小號練習</button>
           <button onclick="goToPractice('flute')" style="flex:1;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--kid2),#74c8f0);color:white;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans TC',sans-serif;">🎵 長笛練習</button>
         </div>
-        <!-- placeholder ids so old renderArts() references don't break -->
+
         <div id="instr-tabs" style="display:none;"></div>
       </div>
 
     </div>
   </div>
 
-  <!-- ── 練習 ── -->
+
   <div class="section" id="sec-quiz">
     <div id="quiz-content"></div>
   </div>
 
-
 </div>
 
-<!-- EXAM MODAL -->
 <div class="modal-overlay" id="exam-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -1310,7 +1302,6 @@ body {
   </div>
 </div>
 
-<!-- SYLLABUS TOPICS MODAL -->
 <div class="modal-overlay" id="syllabus-pick-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -1336,7 +1327,6 @@ body {
   </div>
 </div>
 
-<!-- PDF VIEWER MODAL -->
 <div class="modal-overlay" id="pdf-viewer-modal" style="align-items:stretch;padding:0;">
   <div style="background:white;width:100%;height:100%;display:flex;flex-direction:column;border-radius:0;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);flex-shrink:0;">
@@ -1347,17 +1337,16 @@ body {
   </div>
 </div>
 
-<!-- HOMEWORK PHOTO MODAL -->
 <div class="modal-overlay" id="hw-photo-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">📷 今日黑板截圖</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">直接上傳截圖，自動保存到雲端</div>
 
-    <!-- Current photo preview -->
+
     <div id="hw-photo-current" style="margin-bottom:12px;"></div>
 
-    <!-- Upload area -->
+
     <input type="file" id="hw-photo-file" accept="image/*" style="display:none;" onchange="handleHwPhotoUpload(event)">
     <div id="hw-upload-area" onclick="document.getElementById('hw-photo-file').click()"
       style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:12px;">
@@ -1365,7 +1354,7 @@ body {
       <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:2px;">點擊上傳黑板截圖</div>
       <div style="font-size:12px;color:var(--muted);">支援 JPG / PNG</div>
     </div>
-    <!-- Upload progress -->
+
     <div id="hw-upload-progress" style="display:none;margin-bottom:12px;">
       <div style="height:6px;border-radius:3px;background:var(--border);overflow:hidden;">
         <div id="hw-upload-bar" style="height:100%;border-radius:3px;background:var(--kid1);width:0%;transition:width 0.2s;"></div>
@@ -1377,18 +1366,25 @@ body {
   </div>
 </div>
 
-<!-- FULL IMAGE VIEWER -->
-<div class="modal-overlay" id="img-viewer-modal" onclick="closeModal('img-viewer-modal')" style="background:rgba(0,0,0,0.92);align-items:center;justify-content:center;">
-  <img id="img-viewer-src" style="max-width:100%;max-height:90vh;border-radius:8px;object-fit:contain;" src="">
-  <button onclick="closeModal('img-viewer-modal')" style="position:fixed;top:20px;right:20px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:white;font-size:20px;cursor:pointer;">✕</button>
+<div class="modal-overlay" id="img-viewer-modal" style="background:rgba(0,0,0,0.95);align-items:center;justify-content:center;">
+
+  <div id="img-viewer-counter" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);color:white;font-size:13px;font-weight:700;background:rgba(0,0,0,0.4);padding:4px 14px;border-radius:20px;z-index:10;"></div>
+
+  <button onclick="closeModal('img-viewer-modal')" style="position:fixed;top:16px;right:16px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-size:18px;cursor:pointer;z-index:10;">✕</button>
+
+  <div id="img-viewer-track" style="display:flex;width:100vw;height:100vh;align-items:center;overflow:hidden;touch-action:pan-y;">
+
+  </div>
+
+  <button id="img-viewer-prev" onclick="galleryNav(-1)" style="position:fixed;left:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-size:20px;cursor:pointer;z-index:10;">‹</button>
+  <button id="img-viewer-next" onclick="galleryNav(1)"  style="position:fixed;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-size:20px;cursor:pointer;z-index:10;">›</button>
 </div>
 
-<!-- BOTTOM NAV -->
 <div class="section" id="sec-admin">
   <div style="padding:16px 16px 100px">
     <div style="font-size:18px;font-weight:900;margin-bottom:16px;">⚙️ 數據管理</div>
 
-    <!-- Fix date -->
+
     <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
       <div style="font-weight:800;margin-bottom:10px;">📅 修改歷史記錄日期</div>
       <div style="font-size:13px;color:#9B8B7A;margin-bottom:10px;">把某天的記錄改到另一天（例如把10號改成9號）</div>
@@ -1405,7 +1401,7 @@ body {
       <div id="adm-date-result" style="margin-top:8px;font-size:13px;font-weight:700;color:#52C98A;display:none;"></div>
     </div>
 
-    <!-- View raw data -->
+
     <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
       <div style="font-weight:800;margin-bottom:10px;">🔍 查看歷史記錄</div>
       <select id="adm-view-kid" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin-bottom:10px;font-size:14px;">
@@ -1416,7 +1412,7 @@ body {
       <div id="adm-view-result" style="margin-top:10px;font-size:12px;color:#2D2016;background:#F5F5F5;border-radius:10px;padding:10px;display:none;max-height:200px;overflow-y:auto;word-break:break-all;white-space:pre-wrap;"></div>
     </div>
 
-    <!-- Delete a day -->
+
     <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
       <div style="font-weight:800;margin-bottom:10px;">🗑️ 刪除某天記錄</div>
       <select id="adm-del-kid" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin:6px 0 10px;font-size:14px;">
@@ -1451,7 +1447,6 @@ body {
 
 </div>
 
-<!-- ADD TASK MODAL -->
 <div class="modal-overlay" id="task-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -1499,7 +1494,6 @@ body {
   </div>
 </div>
 
-<!-- ADD NOTICE MODAL -->
 <div class="modal-overlay" id="notice-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -1536,11 +1530,6 @@ body {
   </div>
 </div>
 
-
-
-
-
-<!-- API KEY MODAL -->
 <div class="modal-overlay" id="apikey-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -1557,7 +1546,6 @@ body {
   </div>
 </div>
 
-<!-- SCAN RESULT MODAL -->
 <div class="modal-overlay" id="scan-modal">
   <div class="modal-sheet" style="max-height:85vh;overflow-y:auto;">
     <div class="modal-handle"></div>
@@ -1571,7 +1559,6 @@ body {
   </div>
 </div>
 
-<!-- ADD TRAINING MODAL -->
 <div class="modal-overlay" id="training-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -1930,7 +1917,6 @@ function todayISO() {
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-
 // ══════════════════════════════════════════════
 //  ADMIN / DATA MANAGEMENT
 // ══════════════════════════════════════════════
@@ -2047,7 +2033,7 @@ function switchKid(kid) {
   renderDashboard();
   renderExamList();
   renderArtsGrid();
-  
+
   renderArtsDetail();
   renderQuiz();
   populateSubjectSelects();
@@ -2520,7 +2506,6 @@ function deleteExam(examId) {
 // ── Syllabus import ──
 const GITHUB_PDF_BASE = 'https://github.com/woodylks/ChengzhangXingqiu/blob/main/pdfs/';
 
-
 // ══════════════════════════════════════════════
 //  📚 SYLLABUS PHOTO UPLOAD
 // ══════════════════════════════════════════════
@@ -2797,8 +2782,6 @@ function savePdfLink() {
   setTimeout(() => { status.innerHTML = ''; renderSyllabusList(); }, 1500);
 }
 
-
-
 let selectedSyllabus = null;
 
 function renderSyllabusList() {
@@ -2936,7 +2919,6 @@ function openSyllabusPickModal() {
   `).join('');
   openModal('syllabus-pick-modal');
 }
-
 
 // ── Question Bank Picker for AI Assistant ──
 function openQBankPickModal() {
@@ -3101,7 +3083,7 @@ function renderArtsRecords() {
 
   el.innerHTML = `
   <div>
-    <!-- Header -->
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:28px;">${cfg.emoji}</span>
@@ -3116,7 +3098,7 @@ function renderArtsRecords() {
       </div>
     </div>
 
-    <!-- Type filter -->
+
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
       ${REC_TYPES.map(t => {
         const active = artsRecordFilter === t;
@@ -3125,7 +3107,7 @@ function renderArtsRecords() {
       }).join('')}
     </div>
 
-    <!-- Records list -->
+
     <div id="arts-records-list">
       ${filtered.length ? filtered.map(r => {
         const col = REC_COLORS[r.recType] || kidColor;
@@ -3148,10 +3130,9 @@ function renderArtsRecords() {
               <button onclick="deleteArtsRecord(${r.id})" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;">🗑️</button>
             </div>
           </div>
-          ${thumbs.length ? `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-            ${thumbs.map(url => `<img src="${url}" onclick="viewFullImage('${url}')" style="width:72px;height:72px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid var(--border);">`).join('')}
-            ${r.photos.length > 3 ? `<div onclick="openArtsPhotoViewer(${r.id})" style="width:72px;height:72px;border-radius:8px;background:#00000015;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;cursor:pointer;color:var(--text);">+${r.photos.length-3}</div>` : ''}
+          ${r.photos && r.photos.length ? `
+          <div style="display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+            ${r.photos.map((url,pi) => `<img src="${url}" onclick="viewFullImage('${url}',[${r.photos.map(u=>`'${u}'`).join(',')}])" style="width:72px;height:72px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid var(--border);flex-shrink:0;">`).join('')}
           </div>` : ''}
           ${r.comment ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">💬 ${r.comment}</div>` : ''}
         </div>`;
@@ -3177,8 +3158,6 @@ function openArtsPhotoViewer(id) {
   if (!r || !r.photos.length) return;
   viewFullImage(r.photos[0]); // simple: show first, could be enhanced
 }
-
-
 
 // ══════════════════════════════════════════════
 //  🏅 ARTS RECORDS SYSTEM
@@ -3440,7 +3419,6 @@ async function sendMsg() {
 科目：數學、語文、英語、常識、IT。體藝：游泳、繪畫、舞蹈、音樂（鋼琴）。
 你可以：出練習題（附解題步驟）、分析進度、制定計劃、提供體藝訓練建議。
 請用溫暖鼓勵的語氣，回覆簡潔有用，適當使用emoji，用繁體中文回覆。`;
-
 
   try {
     const res = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
@@ -3736,7 +3714,7 @@ function confirmAddNotice() {
   document.getElementById('new-notice-title').value = '';
   document.getElementById('new-notice-body').value = '';
   renderNoticesPreview();
-  
+
   renderGreeting();
 }
 
@@ -3774,7 +3752,7 @@ function openProgressEdit(subjectId) {
   renderProgressOverview();
   renderExamList();
   renderArtsGrid();
-  
+
   renderArtsDetail();
   renderGreeting();
 }
@@ -4027,7 +4005,6 @@ function confirmScanTasks() {
   setTimeout(() => { status.style.display = 'none'; }, 3000);
 }
 
-
 // ══════════════════════════════════════════════
 //  PASTE IMPORT FEATURE
 // ══════════════════════════════════════════════
@@ -4079,7 +4056,6 @@ function importFromPaste() {
   status.innerHTML = `✅ 成功導入 ${added} 項功課！`;
   setTimeout(() => { status.style.display = 'none'; }, 3000);
 }
-
 
 // ══════════════════════════════════════════════
 //  HISTORY FEATURE
@@ -4321,9 +4297,7 @@ function renderHistory() {
     }).join('')}`;
 }
 
-
 // Override switchTab to render history when needed
-
 
 // Update nav to include history
 const _origUpdateNav = updateNavActive;
@@ -4332,7 +4306,6 @@ function updateNavActive() {
   const activeClass = currentKid === 1 ? 'active' : 'active-2';
   document.getElementById(`nav-${currentTab}`)?.classList.add(activeClass);
 }
-
 
 function navTap(e, tab) {
   e.preventDefault();
@@ -4500,9 +4473,56 @@ function renderHwPhotoPreview() {
   if (btn) { btn.style.borderColor = kidColor; btn.style.background = kidColor + '15'; }
 }
 
-function viewFullImage(url) {
-  document.getElementById('img-viewer-src').src = url;
+// Gallery state
+let _galleryUrls = [];
+let _galleryIdx  = 0;
+let _galleryTouchStartX = 0;
+
+function viewFullImage(url, allUrls) {
+  // allUrls: optional array for swipeable gallery; falls back to single image
+  _galleryUrls = allUrls && allUrls.length ? allUrls : [url];
+  _galleryIdx  = Math.max(0, _galleryUrls.indexOf(url));
+  _renderGallery();
   openModal('img-viewer-modal');
+}
+
+function _renderGallery() {
+  const track = document.getElementById('img-viewer-track');
+  const counter = document.getElementById('img-viewer-counter');
+  const prev = document.getElementById('img-viewer-prev');
+  const next = document.getElementById('img-viewer-next');
+  if (!track) return;
+
+  track.innerHTML = _galleryUrls.map(url =>
+    `<div style="min-width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;padding:0 8px;box-sizing:border-box;">
+      <img src="${url}" style="max-width:100%;max-height:90vh;border-radius:8px;object-fit:contain;user-select:none;-webkit-user-drag:none;">
+    </div>`
+  ).join('');
+
+  // Scroll to current index instantly
+  track.scrollLeft = _galleryIdx * window.innerWidth;
+  counter.textContent = `${_galleryIdx+1} / ${_galleryUrls.length}`;
+  if (prev) prev.style.display = _galleryUrls.length > 1 ? '' : 'none';
+  if (next) next.style.display = _galleryUrls.length > 1 ? '' : 'none';
+
+  // Touch swipe
+  track.ontouchstart = e => { _galleryTouchStartX = e.touches[0].clientX; };
+  track.ontouchend   = e => {
+    const dx = e.changedTouches[0].clientX - _galleryTouchStartX;
+    if (Math.abs(dx) > 40) galleryNav(dx < 0 ? 1 : -1);
+  };
+  // Click backdrop to close
+  track.onclick = e => {
+    if (e.target.tagName !== 'IMG') closeModal('img-viewer-modal');
+  };
+}
+
+function galleryNav(dir) {
+  _galleryIdx = Math.max(0, Math.min(_galleryUrls.length-1, _galleryIdx + dir));
+  const track = document.getElementById('img-viewer-track');
+  if (track) track.scrollLeft = _galleryIdx * window.innerWidth;
+  const counter = document.getElementById('img-viewer-counter');
+  if (counter) counter.textContent = `${_galleryIdx+1} / ${_galleryUrls.length}`;
 }
 
 // ══════════════════════════════════════════════
@@ -4821,7 +4841,6 @@ function ytEmbedUrl(url) {
   return m ? `https://www.youtube.com/embed/${m[1]}` : "";
 }
 
-
 function addPracticeLog() {
   const text = document.getElementById('practice-log-input')?.value?.trim();
   const rating = parseInt(document.getElementById('practice-rating')?.value || '4');
@@ -4894,7 +4913,6 @@ function buildPracticeEmbed() {
   <button class="top-tab" id="tab-repertoire" onclick="switchPracticeTab('repertoire')">🎵 曲目</button>
 </div>
 
-<!-- ══ PITCH SECTION ══ -->
 <div class="practice-section practice-active" id="sec-pitch">
 
   <div class="note-display" id="note-display">
@@ -4903,7 +4921,7 @@ function buildPracticeEmbed() {
     <div class="note-freq" id="note-freq">等待聲音...</div>
   </div>
 
-  <!-- Fingering (trumpet only) -->
+
   <div id="fingering-section">
     <div class="fingering-label" id="fingering-label">按鍵</div>
     <div class="fingering-wrap">
@@ -4941,18 +4959,17 @@ function buildPracticeEmbed() {
   <button class="btn-primary trumpet" id="pitch-btn" onclick="togglePitch()">🎙️ 開始聆聽</button>
 </div>
 
-<!-- ══ EXERCISE SECTION ══ -->
 <div class="practice-section" id="sec-exercise">
 
-  <!-- Exercise cards -->
+
   <div class="ex-grid" id="ex-grid"></div>
 
-  <!-- ① Lip Flexibility / Long Tone Panel -->
+
   <div class="ex-panel" id="panel-lip">
     <div class="ex-panel-title" id="lip-title">💋 Lip Flexibility</div>
     <div class="ex-panel-sub" id="lip-desc"></div>
 
-    <!-- Series selector (only shown for trumpet lip exercise) -->
+
     <div id="lip-series-selector" style="display:none; margin-bottom:12px;">
       <div class="pattern-title" style="margin-bottom:8px;">選擇按鍵組合</div>
       <div id="lip-series-btns" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
@@ -4960,7 +4977,7 @@ function buildPracticeEmbed() {
       <div id="lip-pattern-btns" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
 
-    <!-- Metronome -->
+
     <div class="metro-wrap">
       <div class="metro-display">
         <div>
@@ -4997,7 +5014,7 @@ function buildPracticeEmbed() {
     <button class="btn-secondary" onclick="closePanel('lip')">← 返回</button>
   </div>
 
-  <!-- ② Tonguing Panel -->
+
   <div class="ex-panel" id="panel-tongue">
     <div class="ex-panel-title" id="tongue-title">👅 吐音練習</div>
     <div class="ex-panel-sub" id="tongue-desc"></div>
@@ -5038,7 +5055,7 @@ function buildPracticeEmbed() {
     <button class="btn-secondary" onclick="closePanel('tongue')">← 返回</button>
   </div>
 
-  <!-- ③ Breath Control Panel -->
+
   <div class="ex-panel" id="panel-breath">
     <div class="ex-panel-title">🌬️ 氣息練習</div>
     <div class="ex-panel-sub" id="breath-desc"></div>
@@ -5070,14 +5087,11 @@ function buildPracticeEmbed() {
     <button class="btn-secondary" onclick="closePanel('breath')">← 返回</button>
   </div>
 
-</div><!-- end exercise section -->
+</div>
 
-<!-- ══════════════════════════════════════
-     REPERTOIRE SECTION
-══════════════════════════════════════ -->
 <div class="practice-section" id="sec-repertoire">
 
-  <!-- ① LIST VIEW -->
+
   <div id="rep-list-view">
     <div style="padding:16px 16px 8px; display:flex; align-items:center; justify-content:space-between;">
       <div style="display:flex;gap:6px;">
@@ -5087,7 +5101,7 @@ function buildPracticeEmbed() {
       <button class="btn-primary trumpet" style="padding:8px 14px;font-size:12px;" onclick="showRepAdd()">＋ 新增</button>
     </div>
 
-    <!-- Library sub-view -->
+
     <div id="rep-library-view">
       <div id="rep-empty" style="text-align:center;padding:48px 24px;color:var(--muted);">
         <div style="font-size:40px;margin-bottom:12px;">🎼</div>
@@ -5097,7 +5111,7 @@ function buildPracticeEmbed() {
       <div id="rep-cards" style="padding:0 16px 16px; display:flex; flex-direction:column; gap:12px;"></div>
     </div>
 
-    <!-- Calendar sub-view -->
+
     <div id="rep-calendar-view" style="display:none; padding:0 16px 16px;">
       <div id="rep-cal-header" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 12px;">
         <button onclick="repCalShift(-1)" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">‹</button>
@@ -5112,20 +5126,20 @@ function buildPracticeEmbed() {
     </div>
   </div>
 
-  <!-- ② ADD VIEW -->
+
   <div id="rep-add-view" style="display:none; padding:16px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
       <button onclick="showRepList()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">←</button>
       <div style="font-size:15px;font-weight:700;">新增曲目</div>
     </div>
 
-    <!-- Name -->
+
     <div class="rep-field">
       <div class="rep-label">曲目名稱</div>
       <input class="form-input" id="rep-name-input" placeholder="例：小星星、Hering No.1..." />
     </div>
 
-    <!-- Score image (display only) -->
+
     <div class="rep-field">
       <div class="rep-label">曲譜圖片 <span style="color:var(--muted);font-size:11px;">（選填，僅供練習時參考）</span></div>
       <div class="rep-upload-box" id="rep-upload-box" onclick="document.getElementById('rep-img-input').click()">
@@ -5137,13 +5151,13 @@ function buildPracticeEmbed() {
       <input type="file" id="rep-img-input" accept="image/*" style="display:none" onchange="onScoreImageSelected(event)" />
     </div>
 
-    <!-- YouTube -->
+
     <div class="rep-field">
       <div class="rep-label">YouTube 參考連結 <span style="color:var(--muted);font-size:11px;">（選填）</span></div>
       <input class="form-input" id="rep-yt-input" placeholder="https://www.youtube.com/watch?v=..." />
     </div>
 
-    <!-- Input method selector -->
+
     <div class="rep-field">
       <div class="rep-label">錄入音符（示範錄音）</div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -5151,7 +5165,7 @@ function buildPracticeEmbed() {
         <button class="rep-view-btn" id="input-tab-upload" onclick="switchInputTab('upload')" style="flex:1;">📤 上傳音頻</button>
       </div>
 
-      <!-- Hum tab -->
+
       <div id="input-panel-hum">
         <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;">
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">吹奏一遍，App 自動識別音符和時值，同時作為示範錄音保存。</div>
@@ -5164,7 +5178,7 @@ function buildPracticeEmbed() {
         </div>
       </div>
 
-      <!-- Upload tab -->
+
       <div id="input-panel-upload" style="display:none;">
         <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;">
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">上傳一段示範音頻（MP3/WAV/M4A），自動提取音符序列。</div>
@@ -5186,7 +5200,7 @@ function buildPracticeEmbed() {
       </div>
     </div>
 
-    <!-- Result editor (shared by both methods) -->
+
     <div id="rep-editor" style="display:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div class="rep-label" style="margin-bottom:0;">識別結果 <span style="color:var(--muted);font-size:11px;">— 點擊音符可修改時值</span></div>
@@ -5211,20 +5225,20 @@ function buildPracticeEmbed() {
     </div>
   </div>
 
-  <!-- ③ PRACTICE VIEW -->
+
   <div id="rep-practice-view" style="display:none; padding:16px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
       <button onclick="showRepList()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">←</button>
       <div style="font-size:15px;font-weight:700;flex:1;" id="rep-practice-title">練習</div>
     </div>
 
-    <!-- Score image -->
+
     <div id="rep-score-wrap" style="display:none;margin-bottom:12px;">
       <div class="rep-label" style="margin-bottom:6px;">曲譜</div>
       <img id="rep-score-img" style="width:100%;border-radius:10px;max-height:220px;object-fit:contain;background:#0d0d14;" />
     </div>
 
-    <!-- Demo recording -->
+
     <div class="pitch-chart-wrap" style="margin-bottom:12px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div class="pitch-chart-label" style="margin-bottom:0;">示範錄音</div>
@@ -5234,7 +5248,7 @@ function buildPracticeEmbed() {
       <audio id="rep-demo-audio" controls style="width:100%;margin-top:8px;display:none;"></audio>
     </div>
 
-    <!-- YouTube embed -->
+
     <div id="rep-yt-wrap" style="display:none;margin-bottom:12px;">
       <div class="rep-label" style="margin-bottom:6px;">參考影片</div>
       <div style="position:relative;padding-bottom:56.25%;border-radius:10px;overflow:hidden;background:#000;">
@@ -5243,13 +5257,13 @@ function buildPracticeEmbed() {
       </div>
     </div>
 
-    <!-- Realtime pitch chart -->
+
     <div class="pitch-chart-wrap" id="rep-pitch-chart-wrap" style="display:none;margin-bottom:12px;">
       <div class="pitch-chart-label">實時音高圖</div>
       <canvas id="rep-canvas" class="pitch-canvas"></canvas>
     </div>
 
-    <!-- Practice controls -->
+
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <button class="btn-primary trumpet" id="rep-practice-btn" onclick="toggleRepPractice()" style="flex:1;">▶ 開始練習</button>
       <button id="rep-rec-btn" onclick="toggleRepRecording()"
@@ -5258,28 +5272,28 @@ function buildPracticeEmbed() {
       </button>
     </div>
 
-    <!-- Analysis result -->
+
     <div id="rep-analysis-box" class="analysis-box" style="display:none;margin-bottom:10px;">
-      <!-- scores row -->
+
       <div id="rep-scores-row" class="analysis-score"></div>
-      <!-- pitch stability histogram -->
+
       <div id="rep-hist-wrap" style="display:none;margin:10px 0;">
         <div class="rep-label" style="margin-bottom:6px;">音準分佈</div>
         <canvas id="rep-hist-canvas" style="width:100%;height:70px;border-radius:8px;background:#0d0d14;display:block;"></canvas>
       </div>
-      <!-- demo comparison chart -->
+
       <div id="rep-compare-wrap" style="display:none;margin:10px 0;">
         <div class="rep-label" style="margin-bottom:6px;">與示範對比</div>
         <canvas id="rep-compare-canvas" style="width:100%;height:100px;border-radius:8px;background:#0d0d14;display:block;"></canvas>
       </div>
-      <!-- AI comment -->
+
       <div id="rep-ai-comment" class="analysis-comment" style="margin-top:10px;"></div>
     </div>
 
     <button class="btn-secondary" onclick="showRepList()">← 返回曲目庫</button>
   </div>
 
-</div><!-- end repertoire section -->`;
+</div>`;
 }
 
 function goToPractice(kidStr) {
@@ -6195,8 +6209,6 @@ function stopPitchChart(panel) {
   const wrapEl = document.getElementById(panel+'-chart-wrap');
   if (wrapEl) wrapEl.style.display = 'none';
 }
-
-
 
 // ══════════════════════════════════════════
 //  RECORDING + ANALYSIS
@@ -7471,14 +7483,13 @@ function showRepCalDetail(dateStr){
 
 </script>
 
-<!-- ══ ARTS RECORD MODAL ══ -->
 <div class="modal-overlay" id="arts-record-modal">
   <div class="modal-box" style="max-height:92vh;overflow-y:auto;padding:16px;background:white;">
-    <!-- Drag handle -->
+
     <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 12px;"></div>
     <div style="font-size:16px;font-weight:900;margin-bottom:12px;" id="arts-record-modal-title">🏅 新增記錄</div>
 
-    <!-- Row 1: 日期 + 類型 -->
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div>
         <div class="ar-label">日期</div>
@@ -7495,7 +7506,7 @@ function showRepCalDetail(dateStr){
       </div>
     </div>
 
-    <!-- Row 2: 標題 + 地點 -->
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div>
         <div class="ar-label">標題</div>
@@ -7507,10 +7518,10 @@ function showRepCalDetail(dateStr){
       </div>
     </div>
 
-    <!-- Dynamic subject-specific fields (2-col grid) -->
+
     <div id="ar-subject-fields"></div>
 
-    <!-- 名次 + 評語 -->
+
     <div style="margin-bottom:8px;">
       <div class="ar-label">名次/成果</div>
       <input type="text" id="ar-rank" class="ar-input" placeholder="例：第1名、金獎、優異">
@@ -7520,7 +7531,7 @@ function showRepCalDetail(dateStr){
       <textarea id="ar-comment" class="ar-input" rows="2" style="resize:none;line-height:1.4;" placeholder="老師評語、個人感受…"></textarea>
     </div>
 
-    <!-- Photo upload - compact inline style -->
+
     <div style="margin-bottom:12px;">
       <div class="ar-label">照片/獎狀 <span id="ar-photo-count" style="color:var(--muted);font-weight:600;font-size:11px;"></span></div>
       <input type="file" id="ar-photo-file" accept="image/*" multiple style="display:none;" onchange="handleArtsPhotoUpload(event)">
@@ -7540,7 +7551,7 @@ function showRepCalDetail(dateStr){
       </div>
     </div>
 
-    <!-- Buttons -->
+
     <div style="display:flex;gap:8px;">
       <button onclick="closeModal('arts-record-modal')" style="flex:1;padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">取消</button>
       <button onclick="confirmArtsRecord()" id="ar-confirm-btn" style="flex:2;padding:12px;border-radius:var(--radius-sm);border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">✅ 保存記錄</button>
