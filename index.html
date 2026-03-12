@@ -2009,7 +2009,10 @@ function admDeleteDay() {
 window.onload = function() {
   setDate();
   runMigrations();          // migrate data FIRST before any logic runs
-  checkAutoArchive();
+  // Archive for BOTH kids, not just currentKid
+  const _savedKid = currentKid;
+  [1, 2].forEach(k => { currentKid = k; checkAutoArchive(); });
+  currentKid = _savedKid;
   histSelectedDate = todayISO(); // default select today
   renderDashboard();
   renderExamList();
