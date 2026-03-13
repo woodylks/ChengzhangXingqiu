@@ -2728,19 +2728,22 @@ async function qbankStartUpload() {
 }
 
 async function scanQBankFromUrl(imageUrl, entryId) {
+  return scanQBankMultiPage([imageUrl], entryId);
+}
+
+async function scanQBankMultiPage(urls, entryId) {
   const status = document.getElementById('qbank-upload-status');
-  const CAT_NAMES = { worksheet:'工作紙', quiz:'小測', exam:'考試卷', notes:'筆記', other:'其他' };
-  const prompt = '這是一張學校題目/測驗卷的照片。請識別題目內容，用JSON格式回應：{"title":"卷子標題（如果有）","topics":["考核範圍1","考核範圍2"],"summary":"一句話描述這份題目的主要內容"}\n只回JSON，不要其他文字，不要markdown。';
+  const prompt = `這是一份學校試卷，共 ${urls.length} 頁。請分析所有頁面的內容，用JSON格式回應：{"title":"卷子標題（例如學校名稱+科目+類別）","topics":["考核範圍1","考核範圍2","考核範圍3"],"summary":"一句話概括這份試卷的主要內容"}
+只回JSON，不要其他文字，不要markdown。`;
   try {
+    const content = urls.map(url => ({ type: 'image_url', image_url: { url } }));
+    content.push({ type: 'text', text: prompt });
     const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-a5a9b48f7bb34817a3811920aad62e12' },
       body: JSON.stringify({
         model: 'qwen-vl-max',
-        messages: [{ role: 'user', content: [
-          { type: 'image_url', image_url: { url: imageUrl } },
-          { type: 'text', text: prompt }
-        ]}]
+        messages: [{ role: 'user', content }]
       })
     });
     const data = await response.json();
