@@ -1290,7 +1290,12 @@ body {
     </div>
     <div class="form-group">
       <label class="form-label">考試日期</label>
-      <input class="form-input" id="exam-date" type="date">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input class="form-input" id="exam-date" type="date" style="flex:1;">
+        <span style="font-size:12px;color:var(--muted);white-space:nowrap;">至（可選）</span>
+        <input class="form-input" id="exam-date-end" type="date" style="flex:1;" placeholder="結束日期">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">若考試日期隨機，可填寫範圍（開始～結束）</div>
     </div>
     <div class="form-group">
       <label class="form-label">複習範圍 <button onclick="openSyllabusPickModal()" style="margin-left:8px;padding:2px 10px;border-radius:12px;border:1.5px solid var(--kid1);background:white;color:var(--kid1);font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">從大綱選取</button> <button onclick="openQBankPickModal()" style="margin-left:4px;padding:2px 10px;border-radius:12px;border:1.5px solid var(--kid1);background:white;color:var(--kid1);font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">從題庫選取</button></label>
@@ -2348,8 +2353,16 @@ function renderExamList() {
   // Sort: upcoming first, then by date
   const today = new Date(); today.setHours(0,0,0,0);
   exams.sort((a,b) => new Date(a.date) - new Date(b.date));
-  const upcoming = exams.filter(e => new Date(e.date) >= today);
-  const past = exams.filter(e => new Date(e.date) < today);
+  const upcoming = exams.filter(e => {
+    const endDate = e.dateEnd ? new Date(e.dateEnd) : new Date(e.date);
+    endDate.setHours(23,59,59,0);
+    return endDate >= today;
+  });
+  const past = exams.filter(e => {
+    const endDate = e.dateEnd ? new Date(e.dateEnd) : new Date(e.date);
+    endDate.setHours(23,59,59,0);
+    return endDate < today;
+  });
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
 
   if (!exams.length) {
@@ -2387,7 +2400,7 @@ function renderExamList() {
         </div>
       </div>
 
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">📅 ${e.date.replace(/-/g,'/')}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">📅 ${e.date.replace(/-/g,'/')}${e.dateEnd?' ~ '+e.dateEnd.replace(/-/g,'/'):''}${e.dateEnd?' （隨機考試）':''}</div>
 
       ${hasScore ? `
       <div style="display:flex;align-items:center;gap:10px;background:${scoreColor}15;border-radius:10px;padding:10px;margin-bottom:10px;">
@@ -2463,6 +2476,7 @@ function openExamModal(examId) {
       document.getElementById('exam-subject').value = exam.subject;
       document.getElementById('exam-type').value = exam.type;
       document.getElementById('exam-date').value = exam.date;
+      document.getElementById('exam-date-end').value = exam.dateEnd || '';
       document.getElementById('exam-topics').value = (exam.topics||[]).map(t=>t.text).join('\n');
       // Show score section for past exams
       const isPast = new Date(exam.date) < new Date();
@@ -2473,6 +2487,7 @@ function openExamModal(examId) {
     }
   } else {
     document.getElementById('exam-name').value = '';
+    document.getElementById('exam-date-end').value = '';
     document.getElementById('exam-topics').value = '';
     document.getElementById('exam-score').value = '';
     document.getElementById('exam-total').value = 100;
@@ -2486,6 +2501,7 @@ function saveExam() {
   const subject = document.getElementById('exam-subject').value;
   const type = document.getElementById('exam-type').value;
   const date = document.getElementById('exam-date').value;
+  const dateEnd = document.getElementById('exam-date-end').value || '';
   const topicsRaw = document.getElementById('exam-topics').value.trim();
   const editingId = document.getElementById('exam-editing-id').value;
   const score = document.getElementById('exam-score').value;
@@ -2507,14 +2523,14 @@ function saveExam() {
         const old = (existing.topics||[]).find(t=>t.text===text);
         return { text, done: old ? old.done : false };
       });
-      exams[idx] = { ...existing, name, subject, type, date, topics: newTopics,
+      exams[idx] = { ...existing, name, subject, type, date, dateEnd, topics: newTopics,
         score: score !== '' ? Number(score) : undefined,
         total: Number(total), comment };
     }
   } else {
     exams.unshift({
       id: 'exam_' + Date.now(),
-      name, subject, type, date,
+      name, subject, type, date, dateEnd,
       topics: topicLines.map(text => ({ text, done: false })),
       score: undefined, total: Number(total), comment: '', createdAt: Date.now()
     });
@@ -3075,7 +3091,11 @@ function renderExamOverview() {
   if (!el) return;
   const exams = getExams();
   const today = new Date(); today.setHours(0,0,0,0);
-  const upcoming = exams.filter(e => new Date(e.date) >= today).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const upcoming = exams.filter(e => {
+    const endDate = e.dateEnd ? new Date(e.dateEnd) : new Date(e.date);
+    endDate.setHours(23,59,59,0);
+    return endDate >= today;
+  }).sort((a,b)=>new Date(a.date)-new Date(b.date));
   const kidColor = currentKid===1?'var(--kid1)':'var(--kid2)';
 
   if (!upcoming.length) {
@@ -3083,12 +3103,19 @@ function renderExamOverview() {
     return;
   }
 
-  el.innerHTML = upcoming.slice(0,3).map(e => {
+  const SHOW_INIT = 3;
+  const renderExamRow = (e) => {
     const topics = e.topics || [];
     const done = topics.filter(t=>t.done).length;
     const total = topics.length;
     const pct = total ? Math.round(done/total*100) : 0;
+    // Date display: range or single
+    const dateDisplay = e.dateEnd
+      ? `${e.date.slice(5).replace('-','/')} ~ ${e.dateEnd.slice(5).replace('-','/')}`
+      : e.date.slice(5).replace('-','/');
     const diffDays = Math.ceil((new Date(e.date) - today) / 86400000);
+    const diffLabel = diffDays < 0 ? '進行中' : diffDays===0 ? '今天' : diffDays+'天後';
+    const diffColor = diffDays<=3 ? 'var(--red)' : 'var(--orange)';
     return `
     <div onclick="switchTab('academic')" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;">
       <div style="width:42px;height:42px;border-radius:12px;background:${kidColor}20;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${SUBJ_MAP[e.subject]?.split(' ')[0]||'📚'}</div>
@@ -3102,11 +3129,23 @@ function renderExamOverview() {
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:11px;font-weight:800;color:${diffDays<=3?'var(--red)':'var(--orange)'};">${diffDays===0?'今天':diffDays+'天後'}</div>
-        <div style="font-size:10px;color:var(--muted);">${e.date.slice(5).replace('-','/')}</div>
+        <div style="font-size:11px;font-weight:800;color:${diffColor};">${diffLabel}</div>
+        <div style="font-size:10px;color:var(--muted);">${dateDisplay}</div>
       </div>
     </div>`;
-  }).join('');
+  };
+
+  const shown = upcoming.slice(0, SHOW_INIT);
+  const rest  = upcoming.slice(SHOW_INIT);
+  let html = shown.map(renderExamRow).join('');
+  if (rest.length) {
+    html += `<div id="exam-overview-more" style="display:none;">${rest.map(renderExamRow).join('')}</div>
+    <div onclick="document.getElementById('exam-overview-more').style.display='';this.style.display='none';"
+      style="text-align:center;padding:8px;font-size:12px;font-weight:800;color:${kidColor};cursor:pointer;">
+      ▼ 還有 ${rest.length} 個考試
+    </div>`;
+  }
+  el.innerHTML = html;
 }
 
 // ══════════════════════════════════════════════
