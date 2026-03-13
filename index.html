@@ -2807,19 +2807,27 @@ function renderQBank() {
       </div>
       ${qs.map(q => `
         <div class="card" style="margin-bottom:8px;padding:12px;">
-          <div style="display:flex;gap:12px;align-items:flex-start;">
-            <img src="${q.imageUrl}" onclick="viewFullImage('${q.imageUrl}')"
-              style="width:64px;height:64px;border-radius:8px;object-fit:cover;cursor:pointer;flex-shrink:0;border:1.5px solid var(--border);">
+          <!-- Header row: meta + delete -->
+          <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
             <div style="flex:1;min-width:0;">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
                 <span style="font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;background:${kidColor}18;color:${kidColor};">${CAT_EMOJI[q.category]||'📎'} ${CAT_NAMES[q.category]||q.category}</span>
                 <span style="font-size:11px;color:var(--muted);">${q.uploadedAt}</span>
+                ${(q.imageUrls||[q.imageUrl]).length > 1 ? `<span style="font-size:11px;color:var(--muted);font-weight:700;">${(q.imageUrls||[q.imageUrl]).length}頁</span>` : ''}
               </div>
               <div style="font-size:13px;font-weight:700;margin-bottom:3px;">${q.title || '(AI識別中…)'}</div>
               ${q.aiSummary ? `<div style="font-size:12px;color:var(--muted);line-height:1.4;">${q.aiSummary}</div>` : ''}
-              ${q.topics.length ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${q.topics.slice(0,3).map(t=>'#'+t).join(' ')}</div>` : ''}
+              ${q.topics && q.topics.length ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${q.topics.slice(0,3).map(t=>'#'+t).join(' ')}</div>` : ''}
             </div>
             <button onclick="deleteQBankEntry(${q.id})" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;flex-shrink:0;">🗑️</button>
+          </div>
+          <!-- All pages thumbnails: horizontal scroll -->
+          <div style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;">
+            ${(q.imageUrls || [q.imageUrl]).map((url, pi, arr) => `
+              <div style="position:relative;flex-shrink:0;" onclick="viewFullImage('${url}',[${arr.map(u=>`'${u}'`).join(',')}])">
+                <img src="${url}" style="width:80px;height:80px;border-radius:8px;object-fit:cover;cursor:pointer;border:1.5px solid var(--border);">
+                <div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,0.55);color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;">第${pi+1}頁</div>
+              </div>`).join('')}
           </div>
         </div>`).join('')}
     </div>`).join('');
