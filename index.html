@@ -922,13 +922,7 @@ body {
   window.dispatchEvent(new Event('firebaseReady'));
 </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/midi-parser-js@4.0.6/src/midi-parser.js"></script>
-  <script>
-    // Ensure MidiParser is available globally (some CDN builds use module exports)
-    if (typeof MidiParser === 'undefined' && typeof module !== 'undefined' && module.exports) {
-      window.MidiParser = module.exports;
-    }
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/midi-parser-js@4.1.2/src/midi-parser.js"></script>
 </head>
 <body>
 
@@ -950,10 +944,10 @@ body {
   </div>
   <div class="kid-switcher">
     <button class="kid-tab active-1" id="kidBtn1" onclick="switchKid(1)">
-      <span class="kid-avatar">🦁</span> 添樂（小3）
+      <span class="kid-avatar">🐒</span> 添樂（P3）
     </button>
     <button class="kid-tab" id="kidBtn2" onclick="switchKid(2)">
-      <span class="kid-avatar">🐰</span> 悅琳（小1）
+      <span class="kid-avatar">🐷</span> 悅琳（P1）
     </button>
   </div>
 </div>
@@ -1421,8 +1415,8 @@ body {
       <div style="font-size:13px;color:#9B8B7A;margin-bottom:10px;">把某天的記錄改到另一天（例如把10號改成9號）</div>
       <label style="font-size:13px;font-weight:700;">孩子</label>
       <select id="adm-kid" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin:6px 0 10px;font-size:14px;">
-        <option value="1">添樂 🦁</option>
-        <option value="2">悅琳 🐰</option>
+        <option value="1">添樂 🐒</option>
+        <option value="2">悅琳 🐷</option>
       </select>
       <label style="font-size:13px;font-weight:700;">原本日期</label>
       <input type="date" id="adm-from" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin:6px 0 10px;font-size:14px;">
@@ -1436,8 +1430,8 @@ body {
     <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
       <div style="font-weight:800;margin-bottom:10px;">🔍 查看歷史記錄</div>
       <select id="adm-view-kid" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin-bottom:10px;font-size:14px;">
-        <option value="1">添樂 🦁</option>
-        <option value="2">悅琳 🐰</option>
+        <option value="1">添樂 🐒</option>
+        <option value="2">悅琳 🐷</option>
       </select>
       <button onclick="admViewHistory()" style="width:100%;padding:12px;border-radius:12px;border:none;background:#8B5CF6;color:white;font-size:15px;font-weight:800;cursor:pointer;">🔍 顯示所有記錄</button>
       <div id="adm-view-result" style="margin-top:10px;font-size:12px;color:#2D2016;background:#F5F5F5;border-radius:10px;padding:10px;display:none;max-height:200px;overflow-y:auto;word-break:break-all;white-space:pre-wrap;"></div>
@@ -1447,8 +1441,8 @@ body {
     <div style="background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
       <div style="font-weight:800;margin-bottom:10px;">🗑️ 刪除某天記錄</div>
       <select id="adm-del-kid" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin:6px 0 10px;font-size:14px;">
-        <option value="1">添樂 🦁</option>
-        <option value="2">悅琳 🐰</option>
+        <option value="1">添樂 🐒</option>
+        <option value="2">悅琳 🐷</option>
       </select>
       <input type="date" id="adm-del-date" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid #EDE3D9;margin-bottom:10px;font-size:14px;">
       <button onclick="admDeleteDay()" style="width:100%;padding:12px;border-radius:12px;border:none;background:#F87171;color:white;font-size:15px;font-weight:800;cursor:pointer;">🗑️ 刪除這天</button>
@@ -1644,8 +1638,8 @@ let isAiTyping = false;
 let currentTrainingArts = null;
 
 const KIDS = {
-  1: { name: '添樂', grade: '小學3年級', avatar: '🦁', color: 'var(--kid1)', light: 'var(--kid1-light)' },
-  2: { name: '悅琳', grade: '小學1年級', avatar: '🐰', color: 'var(--kid2)', light: 'var(--kid2-light)' }
+  1: { name: '添樂', grade: 'P3', avatar: '🐒', color: 'var(--kid1)', light: 'var(--kid1-light)' },
+  2: { name: '悅琳', grade: 'P1', avatar: '🐷', color: 'var(--kid2)', light: 'var(--kid2-light)' }
 };
 
 const SUBJECTS = [
@@ -3500,7 +3494,7 @@ let spAnalyser = null;
 let spRafId    = null;
 let spRunning  = false;
 let spStartTime = 0;
-let spTracePoints = []; // {t, color, y} for canvas
+let spTracePoints = []; // {t, midiVal, color} — store midi not y, recalc each frame
 let spStats = { good:0, high:0, low:0 };
 
 // MIDI note number → note name
@@ -3509,58 +3503,7 @@ function midiToNoteName(m) {
   return names[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
 }
 
-// Minimal native MIDI parser fallback (no external dependency)
-function parseMidiNative(buffer) {
-  const data = new DataView(buffer);
-  const bytes = new Uint8Array(buffer);
-  let pos = 0;
-  function readUint32() { const v = data.getUint32(pos, false); pos += 4; return v; }
-  function readUint16() { const v = data.getUint16(pos, false); pos += 2; return v; }
-  function readVarLen() {
-    let v = 0, b;
-    do { b = bytes[pos++]; v = (v << 7) | (b & 0x7F); } while (b & 0x80);
-    return v;
-  }
-  if (readUint32() !== 0x4D546864) throw new Error('不是有效的 MIDI 文件');
-  readUint32(); // header length
-  const format = readUint16();
-  const numTracks = readUint16();
-  const timeDivision = readUint16();
-  const tracks = [];
-  for (let t = 0; t < numTracks; t++) {
-    if (readUint32() !== 0x4D54726B) throw new Error('無效的 Track chunk');
-    const trackLen = readUint32();
-    const end = pos + trackLen;
-    const events = [];
-    let lastStatus = 0;
-    while (pos < end) {
-      const deltaTime = readVarLen();
-      let statusByte = bytes[pos];
-      if (statusByte & 0x80) { lastStatus = statusByte; pos++; }
-      else statusByte = lastStatus;
-      const type = (statusByte >> 4) & 0xF;
-      const ch = statusByte & 0xF;
-      if (statusByte === 0xFF) { // meta
-        const metaType = bytes[pos++];
-        const metaLen = readVarLen();
-        const metaData = bytes.slice(pos, pos + metaLen);
-        pos += metaLen;
-        events.push({ deltaTime, type: 255, metaType, data: Array.from(metaData) });
-      } else if (statusByte === 0xF0 || statusByte === 0xF7) { // sysex
-        const sLen = readVarLen(); pos += sLen;
-      } else {
-        const d1 = bytes[pos++];
-        const d2 = (type !== 0xC && type !== 0xD) ? bytes[pos++] : 0;
-        events.push({ deltaTime, type, channel: ch, data: [d1, d2] });
-      }
-    }
-    pos = end;
-    tracks.push({ event: events });
-  }
-  return { format, timeDivision, track: tracks };
-}
-
-// Parse MIDI file using midi-parser-js (with native fallback)
+// Parse MIDI file using midi-parser-js
 function spLoadMIDI(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -3570,15 +3513,9 @@ function spLoadMIDI(event) {
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      // Try midi-parser-js first, fallback to native parser
-      let midi;
+      // midi-parser-js expects Uint8Array
       const data = new Uint8Array(e.target.result);
-      if (typeof MidiParser !== 'undefined') {
-        midi = MidiParser.parse(data);
-      } else {
-        midi = parseMidiNative(e.target.result);
-        midi.timeDivision = midi.timeDivision; // normalize key name
-      }
+      const midi = MidiParser.parse(data);
       if (!midi || !midi.track) throw new Error('無法解析 MIDI');
 
       const tpb = midi.timeDivision || 480;
@@ -3741,66 +3678,136 @@ function spLoop() {
     document.getElementById('sp-target-note').textContent = ref.noteName;
   }
 
-  // Canvas trace
+  // ── Dynamic Y-axis canvas trace ──
   const canvas = document.getElementById('sp-canvas');
-  if (canvas) {
+  if (canvas && spReferenceScore.length) {
     const W = canvas.width, H = canvas.height;
-    // Log-scale Y: map freq 50–2000 to height
-    const yPos = freq > 0
-      ? H - ((Math.log2(freq / 50)) / Math.log2(2000 / 50)) * H
-      : H / 2;
-    spTracePoints.push({ t: elapsed, y: yPos, color });
-    // Keep last 8s of points
-    const maxT = 8;
+    const maxT = 8; // visible time window (seconds)
+
+    // ── Compute dynamic MIDI range ──
+    // 1) Full-song range (absolute ceiling/floor)
+    const allMidi = spReferenceScore.map(n => n.midi);
+    const songMin = Math.min(...allMidi);
+    const songMax = Math.max(...allMidi);
+
+    // 2) Estimate bar duration from note spacing
+    const barDur = spReferenceScore.length >= 2
+      ? Math.max(1, (spReferenceScore[spReferenceScore.length-1].time - spReferenceScore[0].time) / Math.max(1, spReferenceScore.length - 1) * 8)
+      : 4;
+
+    // 3) Find which 2-bar window we're in (switch every 2 bars)
+    const windowDur = barDur * 2;
+    const windowIdx = Math.floor(elapsed / windowDur);
+    const windowStart = windowIdx * windowDur;
+    const windowEnd   = windowStart + windowDur * 2; // look 2 bars ahead
+
+    // 4) Collect midi notes in that upcoming window
+    const windowNotes = spReferenceScore.filter(n => n.time >= windowStart && n.time < windowEnd);
+    let winMin = windowNotes.length ? Math.min(...windowNotes.map(n=>n.midi)) : songMin;
+    let winMax = windowNotes.length ? Math.max(...windowNotes.map(n=>n.midi)) : songMax;
+
+    // 5) Clamp to full-song range, add ±2 semitone padding
+    const PAD = 2;
+    let midiLo = Math.max(songMin - PAD, winMin - PAD);
+    let midiHi = Math.min(songMax + PAD, winMax + PAD);
+    // Ensure minimum span of 8 semitones so it doesn't look too zoomed
+    if (midiHi - midiLo < 8) {
+      const mid = (midiHi + midiLo) / 2;
+      midiLo = mid - 4; midiHi = mid + 4;
+    }
+    const midiRange = midiHi - midiLo;
+
+    // Helper: midi → canvas Y
+    const midiToY = m => H - ((m - midiLo) / midiRange) * H;
+    // Helper: freq → canvas Y (via midi)
+    const freqToY = f => f > 0 ? midiToY(12 * Math.log2(f / 440) + 69) : H / 2;
+
+    // Push trace point storing midi value (Y recalculated each frame)
+    const midiVal = freq > 0 ? (12 * Math.log2(freq / 440) + 69) : null;
+    spTracePoints.push({ t: elapsed, midiVal, color });
     while (spTracePoints.length > 0 && elapsed - spTracePoints[0].t > maxT) spTracePoints.shift();
 
     const ctx2d = canvas.getContext('2d');
-    ctx2d.fillStyle = 'white';
+
+    // Background
+    ctx2d.fillStyle = '#0d0d14';
     ctx2d.fillRect(0, 0, W, H);
 
-    // Draw reference note lines (faint)
-    if (spReferenceScore.length) {
-      const visStart = elapsed - maxT;
-      spReferenceScore.forEach(n => {
-        if (n.time < visStart - 0.5 || n.time > elapsed + 1) return;
-        const x = ((n.time - visStart) / maxT) * W;
-        const refFreq = 440 * Math.pow(2, (n.midi - 69) / 12);
-        const ry = H - ((Math.log2(refFreq / 50)) / Math.log2(2000 / 50)) * H;
-        ctx2d.strokeStyle = '#e5e7eb';
-        ctx2d.lineWidth = 12;
-        ctx2d.beginPath();
-        ctx2d.moveTo(x, ry - 6);
-        ctx2d.lineTo(x + 30, ry - 6);
-        ctx2d.stroke();
-        ctx2d.fillStyle = '#9ca3af';
+    // Grid lines + note name labels for each semitone in range
+    const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    for (let m = Math.floor(midiLo); m <= Math.ceil(midiHi); m++) {
+      const gy = midiToY(m);
+      if (gy < 0 || gy > H) continue;
+      const isNatural = !['C#','D#','F#','G#','A#'].includes(noteNames[m % 12]);
+      ctx2d.strokeStyle = isNatural ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)';
+      ctx2d.lineWidth = 1;
+      ctx2d.beginPath(); ctx2d.moveTo(0, gy); ctx2d.lineTo(W, gy); ctx2d.stroke();
+      if (isNatural) {
+        const oct = Math.floor(m / 12) - 1;
+        ctx2d.fillStyle = 'rgba(255,255,255,0.35)';
         ctx2d.font = '9px monospace';
-        ctx2d.fillText(n.noteName, x + 2, ry - 8);
-      });
+        ctx2d.fillText(`${noteNames[m%12]}${oct}`, 2, gy - 2);
+      }
     }
 
-    // Draw center line
-    ctx2d.strokeStyle = '#e5e7eb';
-    ctx2d.lineWidth = 1;
-    ctx2d.beginPath();
-    ctx2d.moveTo(0, H/2); ctx2d.lineTo(W, H/2);
-    ctx2d.stroke();
+    // Reference note bands (upcoming notes in visible window)
+    const visStart = elapsed - maxT;
+    spReferenceScore.forEach(n => {
+      if (n.time < visStart - 0.5 || n.time > elapsed + maxT) return;
+      const x = ((n.time - visStart) / maxT) * W;
+      const nextNote = spReferenceScore.find(nn => nn.time > n.time);
+      const noteEndTime = nextNote ? nextNote.time : n.time + barDur / 4;
+      const x2 = Math.min(W, ((noteEndTime - visStart) / maxT) * W);
+      const ry = midiToY(n.midi);
 
-    // Draw trace dots
-    spTracePoints.forEach(p => {
-      const x = ((p.t - (elapsed - maxT)) / maxT) * W;
-      ctx2d.fillStyle = p.color;
-      ctx2d.beginPath();
-      ctx2d.arc(x, p.y, 3, 0, Math.PI * 2);
-      ctx2d.fill();
+      // Soft band
+      ctx2d.fillStyle = 'rgba(247,201,72,0.07)';
+      ctx2d.fillRect(x, ry - 8, x2 - x, 16);
+      // Dashed target line
+      ctx2d.strokeStyle = 'rgba(247,201,72,0.35)';
+      ctx2d.lineWidth = 1;
+      ctx2d.setLineDash([4, 4]);
+      ctx2d.beginPath(); ctx2d.moveTo(x, ry); ctx2d.lineTo(x2, ry); ctx2d.stroke();
+      ctx2d.setLineDash([]);
+      // Note label
+      ctx2d.fillStyle = 'rgba(247,201,72,0.7)';
+      ctx2d.font = '9px monospace';
+      ctx2d.fillText(n.noteName, x + 2, ry - 10);
     });
 
-    // Current time line
-    ctx2d.strokeStyle = '#374151';
+    // Draw trace as connected line segments (Y recalculated from midiVal each frame)
+    for (let i = 1; i < spTracePoints.length; i++) {
+      const a = spTracePoints[i-1], b = spTracePoints[i];
+      if (a.midiVal === null || b.midiVal === null) continue;
+      const ax = ((a.t - visStart) / maxT) * W;
+      const bx = ((b.t - visStart) / maxT) * W;
+      const ay = midiToY(a.midiVal);
+      const by2 = midiToY(b.midiVal);
+      ctx2d.strokeStyle = b.color;
+      ctx2d.lineWidth = 2.5;
+      ctx2d.lineCap = 'round';
+      ctx2d.shadowBlur = 5;
+      ctx2d.shadowColor = b.color;
+      ctx2d.beginPath();
+      ctx2d.moveTo(ax, ay); ctx2d.lineTo(bx, by2);
+      ctx2d.stroke();
+    }
+    ctx2d.shadowBlur = 0;
+
+    // Playhead (rightmost = now)
+    const phX = W; // current time is always at right edge
+    ctx2d.strokeStyle = 'rgba(79,172,222,0.6)';
     ctx2d.lineWidth = 1.5;
-    ctx2d.beginPath();
-    ctx2d.moveTo(W * (maxT - 0) / maxT, 0);
-    ctx2d.lineTo(W * (maxT - 0) / maxT, H);
-    ctx2d.stroke();
+    ctx2d.setLineDash([3,3]);
+    ctx2d.beginPath(); ctx2d.moveTo(phX, 0); ctx2d.lineTo(phX, H); ctx2d.stroke();
+    ctx2d.setLineDash([]);
+
+    // Window label (top-right corner)
+    ctx2d.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx2d.font = '9px monospace';
+    ctx2d.textAlign = 'right';
+    ctx2d.fillText(`視窗 ${windowIdx+1}`, W - 4, 12);
+    ctx2d.textAlign = 'left';
   }
 
   spRafId = requestAnimationFrame(spLoop);
