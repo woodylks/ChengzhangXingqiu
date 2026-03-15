@@ -3620,6 +3620,15 @@ function spLoadMIDI(event) {
       const btn = document.getElementById('sp-start-btn');
       btn.disabled    = false;
       btn.style.opacity = '1';
+
+      // Show sheet music canvas with static preview
+      const sheetWrap = document.getElementById('sp-sheet-wrap');
+      if (sheetWrap) {
+        sheetWrap.style.display = 'block';
+        const totalDur = (notes[notes.length-1].time + 1).toFixed(1);
+        document.getElementById('sp-sheet-total').textContent = totalDur + 's';
+        spDrawSheet(0);
+      }
     } catch(err) {
       statusEl.textContent = '❌ 解析失敗：' + err.message;
       statusEl.style.color = 'var(--red)';
@@ -3678,6 +3687,160 @@ function spStop() {
     document.getElementById('sp-stat-pct').style.color =
       pct>=80?'var(--green)':pct>=60?'var(--yellow)':'var(--red)';
     document.getElementById('sp-summary').style.display = '';
+  }
+}
+
+// ── Sheet music renderer ──
+function spDrawSheet(elapsed) {
+  const canvas = document.getElementById('sp-sheet-canvas');
+  if (!canvas || !spReferenceScore.length) return;
+
+  // Size canvas to actual pixel width
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const CW = (rect.width || 340);
+  canvas.width  = CW * dpr;
+  canvas.height = 90 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = CW, H = 90;
+
+  ctx.fillStyle = '#faf7f2';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Layout ──
+  const staffTop = 18;   // top of first staff line
+  const lineGap  = 9;    // pixels between staff lines
+  const staffH   = lineGap * 4;
+  const leftPad  = 36;   // space for clef
+
+  // Total song duration
+  const songDur = spReferenceScore[spReferenceScore.length - 1].time + 1;
+
+  // Scroll: keep current position in the middle-left quarter
+  const viewDur = Math.min(songDur, 12); // seconds visible
+  let viewStart = Math.max(0, elapsed - viewDur * 0.25);
+  if (viewStart + viewDur > songDur) viewStart = Math.max(0, songDur - viewDur);
+  const viewEnd = viewStart + viewDur;
+
+  const timeToX = t => leftPad + ((t - viewStart) / viewDur) * (W - leftPad - 8);
+
+  // ── Draw 5 staff lines ──
+  ctx.strokeStyle = '#c8b89a';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const y = staffTop + i * lineGap;
+    ctx.beginPath(); ctx.moveTo(8, y); ctx.lineTo(W - 4, y); ctx.stroke();
+  }
+
+  // ── Treble clef ──
+  ctx.fillStyle = '#8b7355';
+  ctx.font = `${staffH * 1.6}px serif`;
+  ctx.fillText('𝄞', 6, staffTop + staffH + 6);
+
+  // ── Midi note → staff Y ──
+  // Reference: middle C (C4, midi 60) sits on ledger line below staff (y = staffTop + staffH + lineGap)
+  // Each semitone step up = lineGap/2 pixels up
+  // But we use diatonic lines: each staff step = lineGap/2
+  // Map midi to staff position relative to B4 (midi 71) = top line (staffTop)
+  function midiToStaffY(m) {
+    // Diatonic step mapping (white keys)
+    const diaMap = [0,0,1,1,2,3,3,4,4,5,5,6]; // C=0,D=1,E=2,F=3,G=4,A=5,B=6
+    const oct = Math.floor(m / 12) - 1;
+    const dia = diaMap[m % 12];
+    // Steps above C4 (midi 60 = oct4, dia0)
+    const stepsAboveC4 = (oct - 4) * 7 + dia;
+    // B4 = 7 steps above C4, sits on top staff line (staffTop)
+    const stepsAboveB4 = stepsAboveC4 - 7;
+    return staffTop - stepsAboveB4 * (lineGap / 2);
+  }
+
+  function needsLedger(m) {
+    const y = midiToStaffY(m);
+    return y > staffTop + staffH + 2 || y < staffTop - 2;
+  }
+
+  // ── Bar lines (estimate bar dur) ──
+  const allMidi = spReferenceScore.map(n=>n.midi);
+  const totalSpan = spReferenceScore[spReferenceScore.length-1].time - spReferenceScore[0].time;
+  const avgNoteDur = totalSpan / Math.max(1, spReferenceScore.length - 1);
+  const barDur = Math.max(1.5, avgNoteDur * 8);
+
+  ctx.strokeStyle = '#8b7355';
+  ctx.lineWidth = 1;
+  let barT = Math.ceil(viewStart / barDur) * barDur;
+  while (barT < viewEnd) {
+    const bx = timeToX(barT);
+    if (bx > leftPad && bx < W - 4) {
+      ctx.beginPath(); ctx.moveTo(bx, staffTop); ctx.lineTo(bx, staffTop + staffH); ctx.stroke();
+    }
+    barT += barDur;
+  }
+  // Final double bar
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(W-5, staffTop); ctx.lineTo(W-5, staffTop+staffH); ctx.stroke();
+  ctx.lineWidth = 1;
+
+  // ── Notes ──
+  const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const isSharp   = new Set(['C#','D#','F#','G#','A#']);
+
+  spReferenceScore.forEach((n, i) => {
+    if (n.time < viewStart - 0.5 || n.time > viewEnd + 0.5) return;
+    const x  = timeToX(n.time);
+    const y  = midiToStaffY(n.midi);
+    const nn = noteNames[n.midi % 12];
+
+    const isPast    = elapsed > n.time + avgNoteDur;
+    const isCurrent = elapsed >= n.time && elapsed < n.time + avgNoteDur * 1.5;
+
+    const noteColor = isCurrent ? '#FF6B35' : isPast ? '#c8b89a' : '#5c4a2a';
+
+    // Ledger lines
+    if (needsLedger(n.midi)) {
+      for (let ly = staffTop + staffH + lineGap; ly <= y + 2; ly += lineGap) {
+        ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x-8, ly); ctx.lineTo(x+8, ly); ctx.stroke();
+      }
+      for (let ly = staffTop - lineGap; ly >= y - 2; ly -= lineGap) {
+        ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x-8, ly); ctx.lineTo(x+8, ly); ctx.stroke();
+      }
+    }
+
+    // Accidental
+    if (isSharp.has(nn)) {
+      ctx.fillStyle = noteColor;
+      ctx.font = '10px serif';
+      ctx.fillText('♯', x - 12, y + 4);
+    }
+
+    // Note head (filled oval)
+    ctx.fillStyle = noteColor;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 5.5, 4, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Stem (up if note is below middle, down otherwise)
+    const stemUp = y > staffTop + staffH / 2;
+    ctx.strokeStyle = noteColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (stemUp) { ctx.moveTo(x+5, y); ctx.lineTo(x+5, y - 26); }
+    else        { ctx.moveTo(x-5, y); ctx.lineTo(x-5, y + 26); }
+    ctx.stroke();
+  });
+
+  // ── Blue playhead ──
+  const phX = timeToX(elapsed);
+  if (phX >= leftPad && phX <= W - 4) {
+    ctx.strokeStyle = '#4FACDE';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 6; ctx.shadowColor = '#4FACDE';
+    ctx.beginPath(); ctx.moveTo(phX, staffTop - 8); ctx.lineTo(phX, staffTop + staffH + 8); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#4FACDE';
+    ctx.beginPath(); ctx.arc(phX, staffTop - 8, 3.5, 0, Math.PI*2); ctx.fill();
   }
 }
 
@@ -3856,6 +4019,16 @@ function spLoop() {
     ctx2d.fillText(`視窗 ${windowIdx + 1}`, W - 4, 12);
     ctx2d.textAlign = 'left';
   }
+
+  // ── Update sheet music + progress bar (same elapsed) ──
+  spDrawSheet(elapsed);
+  const songDurTotal = spReferenceScore.length
+    ? spReferenceScore[spReferenceScore.length-1].time + 1 : 1;
+  const pct = Math.min(100, (elapsed / songDurTotal) * 100);
+  const bar = document.getElementById('sp-sheet-bar');
+  if (bar) bar.style.width = pct + '%';
+  const timeEl = document.getElementById('sp-sheet-time');
+  if (timeEl) timeEl.textContent = elapsed.toFixed(1) + 's';
 
   spRafId = requestAnimationFrame(spLoop);
 }
@@ -5832,6 +6005,19 @@ function buildPracticeEmbed() {
         <div style="font-size:11px;color:var(--muted);margin-top:4px;">系統自動解析音符時序</div>
       </div>
       <div id="sp-midi-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px;"></div>
+    </div>
+
+    <!-- Sheet music display -->
+    <div id="sp-sheet-wrap" style="display:none;background:#faf7f2;border-radius:12px;border:1px solid var(--border);padding:10px 8px 8px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:800;color:#5c4a2a;margin-bottom:6px;padding-left:2px;">🎼 樂譜進度</div>
+      <canvas id="sp-sheet-canvas" height="90" style="width:100%;display:block;border-radius:6px;"></canvas>
+      <!-- Progress bar -->
+      <div style="margin-top:6px;height:4px;background:#EDE3D9;border-radius:2px;overflow:hidden;">
+        <div id="sp-sheet-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#4FACDE,#FF6B35);border-radius:2px;transition:width 0.1s linear;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--muted);">
+        <span id="sp-sheet-time">0.0s</span><span id="sp-sheet-total">–</span>
+      </div>
     </div>
 
     <!-- Controls -->
