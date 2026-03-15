@@ -922,7 +922,7 @@ body {
   window.dispatchEvent(new Event('firebaseReady'));
 </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/midi-parser-js@4.1.2/src/midi-parser.js"></script>
+  <!-- midi-parser-js CDN removed: using built-in parser below -->
 </head>
 <body>
 
@@ -3494,7 +3494,7 @@ let spAnalyser = null;
 let spRafId    = null;
 let spRunning  = false;
 let spStartTime = 0;
-let spTracePoints = []; // {t, midiVal, color} — store midi not y, recalc each frame
+let spTracePoints = []; // {t, color, y} for canvas
 let spStats = { good:0, high:0, low:0 };
 
 // MIDI note number → note name
@@ -3503,63 +3503,122 @@ function midiToNoteName(m) {
   return names[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
 }
 
-// Parse MIDI file using midi-parser-js
+// ── 內建原生 MIDI 解析器（無需任何外部依賴） ──
+function parseMidiBuffer(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const view  = new DataView(buffer);
+  let pos = 0;
+
+  function readU32() { const v = view.getUint32(pos, false); pos += 4; return v; }
+  function readU16() { const v = view.getUint16(pos, false); pos += 2; return v; }
+  function readVarLen() {
+    let v = 0, b;
+    do { b = bytes[pos++]; v = (v << 7) | (b & 0x7F); } while (b & 0x80);
+    return v;
+  }
+
+  // Header chunk
+  if (readU32() !== 0x4D546864) throw new Error('不是有效的 MIDI 文件（缺少 MThd）');
+  readU32(); // header length (always 6)
+  readU16(); // format
+  const numTracks   = readU16();
+  const timeDivision = readU16();
+
+  const tracks = [];
+  for (let t = 0; t < numTracks; t++) {
+    if (readU32() !== 0x4D54726B) throw new Error('無效 Track chunk（缺少 MTrk）');
+    const trackLen = readU32();
+    const trackEnd = pos + trackLen;
+    const events   = [];
+    let lastStatus  = 0;
+
+    while (pos < trackEnd) {
+      const delta = readVarLen();
+      let statusByte = bytes[pos];
+
+      // Running status
+      if (statusByte & 0x80) { lastStatus = statusByte; pos++; }
+      else                   { statusByte = lastStatus; }
+
+      const type = (statusByte >> 4) & 0xF;
+
+      if (statusByte === 0xFF) {
+        // Meta event
+        const metaType = bytes[pos++];
+        const metaLen  = readVarLen();
+        const metaData = Array.from(bytes.slice(pos, pos + metaLen));
+        pos += metaLen;
+        events.push({ deltaTime: delta, type: 255, metaType, data: metaData });
+      } else if (statusByte === 0xF0 || statusByte === 0xF7) {
+        // SysEx — skip
+        const sLen = readVarLen(); pos += sLen;
+      } else {
+        // Channel event
+        const d1 = bytes[pos++];
+        const d2 = (type !== 0xC && type !== 0xD) ? bytes[pos++] : 0;
+        events.push({ deltaTime: delta, type, data: [d1, d2] });
+      }
+    }
+    pos = trackEnd;
+    tracks.push({ event: events });
+  }
+  return { timeDivision, track: tracks };
+}
+
+// Parse MIDI file — fully self-contained, no external library needed
 function spLoadMIDI(event) {
   const file = event.target.files[0];
   if (!file) return;
   const statusEl = document.getElementById('sp-midi-status');
   statusEl.textContent = '解析中…';
+  statusEl.style.color = 'var(--muted)';
 
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      // midi-parser-js expects Uint8Array
-      const data = new Uint8Array(e.target.result);
-      const midi = MidiParser.parse(data);
-      if (!midi || !midi.track) throw new Error('無法解析 MIDI');
+      const midi = parseMidiBuffer(e.target.result);
+      const tpb  = midi.timeDivision || 480;
 
-      const tpb = midi.timeDivision || 480;
-      // Find tempo from meta events (default 120bpm = 500000µs)
+      // Find tempo (default 120 BPM = 500000 µs/beat)
       let tempo = 500000;
+      outer:
       for (const track of midi.track) {
         for (const ev of (track.event || [])) {
-          if (ev.type === 255 && ev.metaType === 81) {
-            // data is array of bytes
-            const d = ev.data;
-            if (Array.isArray(d)) tempo = (d[0]<<16)|(d[1]<<8)|d[2];
-            else tempo = d;
-            break;
+          if (ev.type === 255 && ev.metaType === 81 && ev.data.length >= 3) {
+            tempo = (ev.data[0] << 16) | (ev.data[1] << 8) | ev.data[2];
+            break outer;
           }
         }
       }
       const secPerTick = (tempo / 1e6) / tpb;
 
-      // Collect noteOn from all tracks
+      // Collect all noteOn events (velocity > 0) across all tracks
       const notes = [];
       for (const track of midi.track) {
         let ticks = 0;
         for (const ev of (track.event || [])) {
           ticks += ev.deltaTime || 0;
-          // noteOn with velocity > 0
-          if ((ev.type === 9) && ev.data && ev.data[1] > 0) {
+          if (ev.type === 9 && ev.data && ev.data[1] > 0) {
             notes.push({
-              time: +(ticks * secPerTick).toFixed(3),
-              midi: ev.data[0],
+              time:     +(ticks * secPerTick).toFixed(3),
+              midi:     ev.data[0],
               noteName: midiToNoteName(ev.data[0])
             });
           }
         }
       }
-      // Sort by time
-      notes.sort((a,b) => a.time - b.time);
-      spReferenceScore = notes;
+      notes.sort((a, b) => a.time - b.time);
 
-      statusEl.innerHTML = `✅ 載入成功：<strong>${notes.length}</strong> 個音符，時長約 ${notes.length ? (notes[notes.length-1].time+1).toFixed(1) : 0}s`;
+      if (notes.length === 0) throw new Error('MIDI 文件中未找到音符');
+
+      spReferenceScore = notes;
+      const dur = (notes[notes.length - 1].time + 1).toFixed(1);
+      statusEl.innerHTML = `✅ 載入成功：<strong>${notes.length}</strong> 個音符，時長約 ${dur}s`;
       statusEl.style.color = 'var(--green)';
 
       // Enable start button
       const btn = document.getElementById('sp-start-btn');
-      btn.disabled = false;
+      btn.disabled    = false;
       btn.style.opacity = '1';
     } catch(err) {
       statusEl.textContent = '❌ 解析失敗：' + err.message;
@@ -3678,136 +3737,66 @@ function spLoop() {
     document.getElementById('sp-target-note').textContent = ref.noteName;
   }
 
-  // ── Dynamic Y-axis canvas trace ──
+  // Canvas trace
   const canvas = document.getElementById('sp-canvas');
-  if (canvas && spReferenceScore.length) {
+  if (canvas) {
     const W = canvas.width, H = canvas.height;
-    const maxT = 8; // visible time window (seconds)
-
-    // ── Compute dynamic MIDI range ──
-    // 1) Full-song range (absolute ceiling/floor)
-    const allMidi = spReferenceScore.map(n => n.midi);
-    const songMin = Math.min(...allMidi);
-    const songMax = Math.max(...allMidi);
-
-    // 2) Estimate bar duration from note spacing
-    const barDur = spReferenceScore.length >= 2
-      ? Math.max(1, (spReferenceScore[spReferenceScore.length-1].time - spReferenceScore[0].time) / Math.max(1, spReferenceScore.length - 1) * 8)
-      : 4;
-
-    // 3) Find which 2-bar window we're in (switch every 2 bars)
-    const windowDur = barDur * 2;
-    const windowIdx = Math.floor(elapsed / windowDur);
-    const windowStart = windowIdx * windowDur;
-    const windowEnd   = windowStart + windowDur * 2; // look 2 bars ahead
-
-    // 4) Collect midi notes in that upcoming window
-    const windowNotes = spReferenceScore.filter(n => n.time >= windowStart && n.time < windowEnd);
-    let winMin = windowNotes.length ? Math.min(...windowNotes.map(n=>n.midi)) : songMin;
-    let winMax = windowNotes.length ? Math.max(...windowNotes.map(n=>n.midi)) : songMax;
-
-    // 5) Clamp to full-song range, add ±2 semitone padding
-    const PAD = 2;
-    let midiLo = Math.max(songMin - PAD, winMin - PAD);
-    let midiHi = Math.min(songMax + PAD, winMax + PAD);
-    // Ensure minimum span of 8 semitones so it doesn't look too zoomed
-    if (midiHi - midiLo < 8) {
-      const mid = (midiHi + midiLo) / 2;
-      midiLo = mid - 4; midiHi = mid + 4;
-    }
-    const midiRange = midiHi - midiLo;
-
-    // Helper: midi → canvas Y
-    const midiToY = m => H - ((m - midiLo) / midiRange) * H;
-    // Helper: freq → canvas Y (via midi)
-    const freqToY = f => f > 0 ? midiToY(12 * Math.log2(f / 440) + 69) : H / 2;
-
-    // Push trace point storing midi value (Y recalculated each frame)
-    const midiVal = freq > 0 ? (12 * Math.log2(freq / 440) + 69) : null;
-    spTracePoints.push({ t: elapsed, midiVal, color });
+    // Log-scale Y: map freq 50–2000 to height
+    const yPos = freq > 0
+      ? H - ((Math.log2(freq / 50)) / Math.log2(2000 / 50)) * H
+      : H / 2;
+    spTracePoints.push({ t: elapsed, y: yPos, color });
+    // Keep last 8s of points
+    const maxT = 8;
     while (spTracePoints.length > 0 && elapsed - spTracePoints[0].t > maxT) spTracePoints.shift();
 
     const ctx2d = canvas.getContext('2d');
-
-    // Background
-    ctx2d.fillStyle = '#0d0d14';
+    ctx2d.fillStyle = 'white';
     ctx2d.fillRect(0, 0, W, H);
 
-    // Grid lines + note name labels for each semitone in range
-    const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-    for (let m = Math.floor(midiLo); m <= Math.ceil(midiHi); m++) {
-      const gy = midiToY(m);
-      if (gy < 0 || gy > H) continue;
-      const isNatural = !['C#','D#','F#','G#','A#'].includes(noteNames[m % 12]);
-      ctx2d.strokeStyle = isNatural ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)';
-      ctx2d.lineWidth = 1;
-      ctx2d.beginPath(); ctx2d.moveTo(0, gy); ctx2d.lineTo(W, gy); ctx2d.stroke();
-      if (isNatural) {
-        const oct = Math.floor(m / 12) - 1;
-        ctx2d.fillStyle = 'rgba(255,255,255,0.35)';
+    // Draw reference note lines (faint)
+    if (spReferenceScore.length) {
+      const visStart = elapsed - maxT;
+      spReferenceScore.forEach(n => {
+        if (n.time < visStart - 0.5 || n.time > elapsed + 1) return;
+        const x = ((n.time - visStart) / maxT) * W;
+        const refFreq = 440 * Math.pow(2, (n.midi - 69) / 12);
+        const ry = H - ((Math.log2(refFreq / 50)) / Math.log2(2000 / 50)) * H;
+        ctx2d.strokeStyle = '#e5e7eb';
+        ctx2d.lineWidth = 12;
+        ctx2d.beginPath();
+        ctx2d.moveTo(x, ry - 6);
+        ctx2d.lineTo(x + 30, ry - 6);
+        ctx2d.stroke();
+        ctx2d.fillStyle = '#9ca3af';
         ctx2d.font = '9px monospace';
-        ctx2d.fillText(`${noteNames[m%12]}${oct}`, 2, gy - 2);
-      }
+        ctx2d.fillText(n.noteName, x + 2, ry - 8);
+      });
     }
 
-    // Reference note bands (upcoming notes in visible window)
-    const visStart = elapsed - maxT;
-    spReferenceScore.forEach(n => {
-      if (n.time < visStart - 0.5 || n.time > elapsed + maxT) return;
-      const x = ((n.time - visStart) / maxT) * W;
-      const nextNote = spReferenceScore.find(nn => nn.time > n.time);
-      const noteEndTime = nextNote ? nextNote.time : n.time + barDur / 4;
-      const x2 = Math.min(W, ((noteEndTime - visStart) / maxT) * W);
-      const ry = midiToY(n.midi);
+    // Draw center line
+    ctx2d.strokeStyle = '#e5e7eb';
+    ctx2d.lineWidth = 1;
+    ctx2d.beginPath();
+    ctx2d.moveTo(0, H/2); ctx2d.lineTo(W, H/2);
+    ctx2d.stroke();
 
-      // Soft band
-      ctx2d.fillStyle = 'rgba(247,201,72,0.07)';
-      ctx2d.fillRect(x, ry - 8, x2 - x, 16);
-      // Dashed target line
-      ctx2d.strokeStyle = 'rgba(247,201,72,0.35)';
-      ctx2d.lineWidth = 1;
-      ctx2d.setLineDash([4, 4]);
-      ctx2d.beginPath(); ctx2d.moveTo(x, ry); ctx2d.lineTo(x2, ry); ctx2d.stroke();
-      ctx2d.setLineDash([]);
-      // Note label
-      ctx2d.fillStyle = 'rgba(247,201,72,0.7)';
-      ctx2d.font = '9px monospace';
-      ctx2d.fillText(n.noteName, x + 2, ry - 10);
+    // Draw trace dots
+    spTracePoints.forEach(p => {
+      const x = ((p.t - (elapsed - maxT)) / maxT) * W;
+      ctx2d.fillStyle = p.color;
+      ctx2d.beginPath();
+      ctx2d.arc(x, p.y, 3, 0, Math.PI * 2);
+      ctx2d.fill();
     });
 
-    // Draw trace as connected line segments (Y recalculated from midiVal each frame)
-    for (let i = 1; i < spTracePoints.length; i++) {
-      const a = spTracePoints[i-1], b = spTracePoints[i];
-      if (a.midiVal === null || b.midiVal === null) continue;
-      const ax = ((a.t - visStart) / maxT) * W;
-      const bx = ((b.t - visStart) / maxT) * W;
-      const ay = midiToY(a.midiVal);
-      const by2 = midiToY(b.midiVal);
-      ctx2d.strokeStyle = b.color;
-      ctx2d.lineWidth = 2.5;
-      ctx2d.lineCap = 'round';
-      ctx2d.shadowBlur = 5;
-      ctx2d.shadowColor = b.color;
-      ctx2d.beginPath();
-      ctx2d.moveTo(ax, ay); ctx2d.lineTo(bx, by2);
-      ctx2d.stroke();
-    }
-    ctx2d.shadowBlur = 0;
-
-    // Playhead (rightmost = now)
-    const phX = W; // current time is always at right edge
-    ctx2d.strokeStyle = 'rgba(79,172,222,0.6)';
+    // Current time line
+    ctx2d.strokeStyle = '#374151';
     ctx2d.lineWidth = 1.5;
-    ctx2d.setLineDash([3,3]);
-    ctx2d.beginPath(); ctx2d.moveTo(phX, 0); ctx2d.lineTo(phX, H); ctx2d.stroke();
-    ctx2d.setLineDash([]);
-
-    // Window label (top-right corner)
-    ctx2d.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx2d.font = '9px monospace';
-    ctx2d.textAlign = 'right';
-    ctx2d.fillText(`視窗 ${windowIdx+1}`, W - 4, 12);
-    ctx2d.textAlign = 'left';
+    ctx2d.beginPath();
+    ctx2d.moveTo(W * (maxT - 0) / maxT, 0);
+    ctx2d.lineTo(W * (maxT - 0) / maxT, H);
+    ctx2d.stroke();
   }
 
   spRafId = requestAnimationFrame(spLoop);
