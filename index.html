@@ -3695,152 +3695,159 @@ function spDrawSheet(elapsed) {
   const canvas = document.getElementById('sp-sheet-canvas');
   if (!canvas || !spReferenceScore.length) return;
 
-  // Size canvas to actual pixel width
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
-  const CW = (rect.width || 340);
+  const CW = rect.width || 340;
   canvas.width  = CW * dpr;
-  canvas.height = 90 * dpr;
+  canvas.height = 110 * dpr;
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
-  const W = CW, H = 90;
+  const W = CW, H = 110;
 
   ctx.fillStyle = '#faf7f2';
   ctx.fillRect(0, 0, W, H);
 
-  // ── Layout ──
-  const staffTop = 18;   // top of first staff line
-  const lineGap  = 9;    // pixels between staff lines
-  const staffH   = lineGap * 4;
-  const leftPad  = 36;   // space for clef
+  // ── Staff geometry ──
+  // lineGap = space between staff lines
+  // In treble clef: lines from bottom to top = E4, G4, B4, D5, F5
+  // We anchor: B4 (midi 71) = middle line (line index 2 from top = staffTop + 2*lineGap)
+  const lineGap  = 10;
+  const staffTop = 20;           // y of top staff line (F5)
+  const staffBot = staffTop + lineGap * 4; // y of bottom staff line (E4)
+  const leftPad  = 42;
 
-  // Total song duration
-  const songDur = spReferenceScore[spReferenceScore.length - 1].time + 1;
+  // ── Accurate midi → staff Y ──
+  // Treble staff lines (bottom→top): E4(64), G4(67), B4(71), D5(74), F5(77)
+  // Each diatonic step = lineGap/2 pixels
+  // Reference: E4 (midi 64) = staffBot
+  // Diatonic steps: map each midi note to its diatonic step count above E4
+  // White-key diatonic index from C: C=0,D=1,E=2,F=3,G=4,A=5,B=6
+  const diaFromC = [0,0,1,1,2,3,3,4,4,5,5,6]; // for midi%12
+  function midiToDiaStep(m) {
+    // diatonic steps above C0
+    const octave = Math.floor(m / 12);
+    return octave * 7 + diaFromC[m % 12];
+  }
+  // E4 = midi 64, diaStep reference
+  const E4dia = midiToDiaStep(64);
+  function midiToY(m) {
+    const steps = midiToDiaStep(m) - E4dia; // steps above E4
+    return staffBot - steps * (lineGap / 2);
+  }
 
-  // Scroll: keep current position in the middle-left quarter
-  const viewDur = Math.min(songDur, 12); // seconds visible
-  let viewStart = Math.max(0, elapsed - viewDur * 0.25);
+  // ── Time → X ──
+  const songDur = spReferenceScore[spReferenceScore.length-1].time + 1;
+  const viewDur = Math.min(songDur, 10);
+  let viewStart = Math.max(0, elapsed - viewDur * 0.2);
   if (viewStart + viewDur > songDur) viewStart = Math.max(0, songDur - viewDur);
   const viewEnd = viewStart + viewDur;
+  const timeToX = t => leftPad + ((t - viewStart) / viewDur) * (W - leftPad - 6);
 
-  const timeToX = t => leftPad + ((t - viewStart) / viewDur) * (W - leftPad - 8);
+  // ── Avg note duration (for "current note" highlight window) ──
+  const totalSpan = spReferenceScore[spReferenceScore.length-1].time - spReferenceScore[0].time;
+  const avgDur = totalSpan / Math.max(1, spReferenceScore.length - 1);
 
-  // ── Draw 5 staff lines ──
-  ctx.strokeStyle = '#c8b89a';
+  // ── Draw staff lines ──
+  ctx.strokeStyle = '#b8a898';
   ctx.lineWidth = 1;
   for (let i = 0; i < 5; i++) {
     const y = staffTop + i * lineGap;
-    ctx.beginPath(); ctx.moveTo(8, y); ctx.lineTo(W - 4, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6, y); ctx.lineTo(W - 4, y); ctx.stroke();
   }
 
-  // ── Treble clef ──
-  ctx.fillStyle = '#8b7355';
-  ctx.font = `${staffH * 1.6}px serif`;
-  ctx.fillText('𝄞', 6, staffTop + staffH + 6);
+  // ── Treble clef (drawn as text glyph, sized to staff) ──
+  ctx.fillStyle = '#7a6040';
+  ctx.font = `${lineGap * 6.5}px serif`;
+  // Position: glyph baseline roughly aligns with G4 line (staffTop + 3*lineGap from bottom = staffTop+lineGap)
+  ctx.fillText('𝄞', 4, staffTop + lineGap * 4.8);
 
-  // ── Midi note → staff Y ──
-  // Reference: middle C (C4, midi 60) sits on ledger line below staff (y = staffTop + staffH + lineGap)
-  // Each semitone step up = lineGap/2 pixels up
-  // But we use diatonic lines: each staff step = lineGap/2
-  // Map midi to staff position relative to B4 (midi 71) = top line (staffTop)
-  function midiToStaffY(m) {
-    // Diatonic step mapping (white keys)
-    const diaMap = [0,0,1,1,2,3,3,4,4,5,5,6]; // C=0,D=1,E=2,F=3,G=4,A=5,B=6
-    const oct = Math.floor(m / 12) - 1;
-    const dia = diaMap[m % 12];
-    // Steps above C4 (midi 60 = oct4, dia0)
-    const stepsAboveC4 = (oct - 4) * 7 + dia;
-    // B4 = 7 steps above C4, sits on top staff line (staffTop)
-    const stepsAboveB4 = stepsAboveC4 - 7;
-    return staffTop - stepsAboveB4 * (lineGap / 2);
-  }
-
-  function needsLedger(m) {
-    const y = midiToStaffY(m);
-    return y > staffTop + staffH + 2 || y < staffTop - 2;
-  }
-
-  // ── Bar lines (estimate bar dur) ──
-  const allMidi = spReferenceScore.map(n=>n.midi);
-  const totalSpan = spReferenceScore[spReferenceScore.length-1].time - spReferenceScore[0].time;
-  const avgNoteDur = totalSpan / Math.max(1, spReferenceScore.length - 1);
-  const barDur = Math.max(1.5, avgNoteDur * 8);
-
+  // ── Bar lines ──
+  const barDur = Math.max(1, avgDur * 4); // estimate: ~4 notes per bar
   ctx.strokeStyle = '#8b7355';
   ctx.lineWidth = 1;
-  let barT = Math.ceil(viewStart / barDur) * barDur;
-  while (barT < viewEnd) {
-    const bx = timeToX(barT);
+  let bt = Math.ceil(viewStart / barDur) * barDur;
+  while (bt < viewEnd) {
+    const bx = timeToX(bt);
     if (bx > leftPad && bx < W - 4) {
-      ctx.beginPath(); ctx.moveTo(bx, staffTop); ctx.lineTo(bx, staffTop + staffH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx, staffTop); ctx.lineTo(bx, staffBot); ctx.stroke();
     }
-    barT += barDur;
+    bt += barDur;
   }
-  // Final double bar
-  ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(W-5, staffTop); ctx.lineTo(W-5, staffTop+staffH); ctx.stroke();
-  ctx.lineWidth = 1;
+  // End bar
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(W-4, staffTop); ctx.lineTo(W-4, staffBot); ctx.stroke();
 
   // ── Notes ──
   const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  const isSharp   = new Set(['C#','D#','F#','G#','A#']);
+  const sharps    = new Set(['C#','D#','F#','G#','A#']);
 
-  spReferenceScore.forEach((n, i) => {
-    if (n.time < viewStart - 0.5 || n.time > viewEnd + 0.5) return;
+  spReferenceScore.forEach((n) => {
+    if (n.time > viewEnd + 0.2 || n.time < viewStart - avgDur) return;
+
     const x  = timeToX(n.time);
-    const y  = midiToStaffY(n.midi);
-    const nn = noteNames[n.midi % 12];
+    const y  = midiToY(n.midi);
+    const nn = noteNames[((n.midi % 12) + 12) % 12];
 
-    const isPast    = elapsed > n.time + avgNoteDur;
-    const isCurrent = elapsed >= n.time && elapsed < n.time + avgNoteDur * 1.5;
+    const isCurrent = elapsed >= n.time && elapsed < n.time + Math.max(avgDur, 0.3) * 1.5;
+    const isPast    = elapsed > n.time + Math.max(avgDur, 0.3) * 1.5;
+    const col = isCurrent ? '#FF6B35' : isPast ? '#c8b89a' : '#3a2a10';
 
-    const noteColor = isCurrent ? '#FF6B35' : isPast ? '#c8b89a' : '#5c4a2a';
-
-    // Ledger lines
-    if (needsLedger(n.midi)) {
-      for (let ly = staffTop + staffH + lineGap; ly <= y + 2; ly += lineGap) {
+    // ── Ledger lines above staff (above F5 = staffTop) ──
+    if (y < staffTop - 1) {
+      for (let ly = staffTop - lineGap; ly >= y - 1; ly -= lineGap) {
         ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(x-8, ly); ctx.lineTo(x+8, ly); ctx.stroke();
-      }
-      for (let ly = staffTop - lineGap; ly >= y - 2; ly -= lineGap) {
-        ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(x-8, ly); ctx.lineTo(x+8, ly); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x-7, ly); ctx.lineTo(x+7, ly); ctx.stroke();
       }
     }
-
-    // Accidental
-    if (isSharp.has(nn)) {
-      ctx.fillStyle = noteColor;
-      ctx.font = '10px serif';
-      ctx.fillText('♯', x - 12, y + 4);
+    // ── Ledger lines below staff (below E4 = staffBot) ──
+    if (y > staffBot + 1) {
+      for (let ly = staffBot + lineGap; ly <= y + 1; ly += lineGap) {
+        ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x-7, ly); ctx.lineTo(x+7, ly); ctx.stroke();
+      }
+    }
+    // Middle C ledger line (C4, midi 60)
+    if (n.midi === 60) {
+      ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x-7, staffBot+lineGap); ctx.lineTo(x+7, staffBot+lineGap); ctx.stroke();
     }
 
-    // Note head (filled oval)
-    ctx.fillStyle = noteColor;
+    // ── Accidental ──
+    if (sharps.has(nn)) {
+      ctx.fillStyle = col;
+      ctx.font = 'bold 11px serif';
+      ctx.fillText('♯', x - 13, y + 4);
+    }
+
+    // ── Note head: proper filled ellipse, slightly tilted ──
+    ctx.fillStyle = col;
     ctx.beginPath();
-    ctx.ellipse(x, y, 5.5, 4, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(x, y, 5, 3.5, -0.25, 0, Math.PI * 2);
     ctx.fill();
 
-    // Stem (up if note is below middle, down otherwise)
-    const stemUp = y > staffTop + staffH / 2;
-    ctx.strokeStyle = noteColor;
+    // ── Stem ──
+    const stemUp = y >= staffTop + lineGap * 2; // below or on B4 → stem up
+    ctx.strokeStyle = col;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    if (stemUp) { ctx.moveTo(x+5, y); ctx.lineTo(x+5, y - 26); }
-    else        { ctx.moveTo(x-5, y); ctx.lineTo(x-5, y + 26); }
+    if (stemUp) { ctx.moveTo(x + 4.5, y - 1); ctx.lineTo(x + 4.5, y - 30); }
+    else        { ctx.moveTo(x - 4.5, y + 1); ctx.lineTo(x - 4.5, y + 30); }
     ctx.stroke();
   });
 
   // ── Blue playhead ──
   const phX = timeToX(elapsed);
   if (phX >= leftPad && phX <= W - 4) {
+    ctx.shadowBlur = 8; ctx.shadowColor = '#4FACDE';
     ctx.strokeStyle = '#4FACDE';
     ctx.lineWidth = 2;
-    ctx.shadowBlur = 6; ctx.shadowColor = '#4FACDE';
-    ctx.beginPath(); ctx.moveTo(phX, staffTop - 8); ctx.lineTo(phX, staffTop + staffH + 8); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(phX, staffTop - 10);
+    ctx.lineTo(phX, staffBot + 10);
+    ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#4FACDE';
-    ctx.beginPath(); ctx.arc(phX, staffTop - 8, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(phX, staffTop - 10, 4, 0, Math.PI*2); ctx.fill();
   }
 }
 
@@ -6010,7 +6017,7 @@ function buildPracticeEmbed() {
     <!-- Sheet music display -->
     <div id="sp-sheet-wrap" style="display:none;background:#faf7f2;border-radius:12px;border:1px solid var(--border);padding:10px 8px 8px;margin-bottom:12px;">
       <div style="font-size:11px;font-weight:800;color:#5c4a2a;margin-bottom:6px;padding-left:2px;">🎼 樂譜進度</div>
-      <canvas id="sp-sheet-canvas" height="90" style="width:100%;display:block;border-radius:6px;"></canvas>
+      <canvas id="sp-sheet-canvas" height="110" style="width:100%;display:block;border-radius:6px;"></canvas>
       <!-- Progress bar -->
       <div style="margin-top:6px;height:4px;background:#EDE3D9;border-radius:2px;overflow:hidden;">
         <div id="sp-sheet-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#4FACDE,#FF6B35);border-radius:2px;transition:width 0.1s linear;"></div>
