@@ -3494,7 +3494,7 @@ let spAnalyser = null;
 let spRafId    = null;
 let spRunning  = false;
 let spStartTime = 0;
-let spTracePoints = []; // {t, color, y} for canvas
+let spTracePoints = []; // {t, midiVal, color} — store midi value, Y recalculated each frame
 let spStats = { good:0, high:0, low:0 };
 
 // MIDI note number → note name
@@ -3737,66 +3737,124 @@ function spLoop() {
     document.getElementById('sp-target-note').textContent = ref.noteName;
   }
 
-  // Canvas trace
+  // ── Canvas pitch trace (dark background, dynamic Y-axis) ──
   const canvas = document.getElementById('sp-canvas');
-  if (canvas) {
+  if (canvas && spReferenceScore.length) {
     const W = canvas.width, H = canvas.height;
-    // Log-scale Y: map freq 50–2000 to height
-    const yPos = freq > 0
-      ? H - ((Math.log2(freq / 50)) / Math.log2(2000 / 50)) * H
-      : H / 2;
-    spTracePoints.push({ t: elapsed, y: yPos, color });
-    // Keep last 8s of points
-    const maxT = 8;
+    const maxT = 8; // seconds visible
+
+    // ── Dynamic Y-axis: 2-bar window ──
+    const allMidi  = spReferenceScore.map(n => n.midi);
+    const songMin  = Math.min(...allMidi);
+    const songMax  = Math.max(...allMidi);
+
+    // Estimate bar duration from total note spread
+    const totalDur = spReferenceScore[spReferenceScore.length-1].time - spReferenceScore[0].time;
+    const barDur   = Math.max(1, totalDur / Math.max(1, spReferenceScore.length - 1) * 8);
+    const windowDur = barDur * 2;
+
+    // Which 2-bar window are we in? Look ahead 2 bars
+    const windowIdx   = Math.floor(elapsed / windowDur);
+    const windowStart = windowIdx * windowDur;
+    const windowEnd   = windowStart + windowDur * 2;
+
+    const winNotes = spReferenceScore.filter(n => n.time >= windowStart && n.time < windowEnd);
+    let midiLo = (winNotes.length ? Math.min(...winNotes.map(n=>n.midi)) : songMin) - 2;
+    let midiHi = (winNotes.length ? Math.max(...winNotes.map(n=>n.midi)) : songMax) + 2;
+    // Clamp to song range ±2, min span 8 semitones
+    midiLo = Math.max(songMin - 2, midiLo);
+    midiHi = Math.min(songMax + 2, midiHi);
+    if (midiHi - midiLo < 8) { const mid=(midiHi+midiLo)/2; midiLo=mid-4; midiHi=mid+4; }
+    const midiRange = midiHi - midiLo;
+
+    // Helpers
+    const midiToY = m => H - ((m - midiLo) / midiRange) * H;
+
+    // Store midiVal (not Y) so we can recalc on window switch
+    const midiVal = freq > 0 ? (12 * Math.log2(freq / 440) + 69) : null;
+    spTracePoints.push({ t: elapsed, midiVal, color });
     while (spTracePoints.length > 0 && elapsed - spTracePoints[0].t > maxT) spTracePoints.shift();
 
     const ctx2d = canvas.getContext('2d');
-    ctx2d.fillStyle = 'white';
+
+    // Dark background
+    ctx2d.fillStyle = '#0d0d14';
     ctx2d.fillRect(0, 0, W, H);
 
-    // Draw reference note lines (faint)
-    if (spReferenceScore.length) {
-      const visStart = elapsed - maxT;
-      spReferenceScore.forEach(n => {
-        if (n.time < visStart - 0.5 || n.time > elapsed + 1) return;
-        const x = ((n.time - visStart) / maxT) * W;
-        const refFreq = 440 * Math.pow(2, (n.midi - 69) / 12);
-        const ry = H - ((Math.log2(refFreq / 50)) / Math.log2(2000 / 50)) * H;
-        ctx2d.strokeStyle = '#e5e7eb';
-        ctx2d.lineWidth = 12;
-        ctx2d.beginPath();
-        ctx2d.moveTo(x, ry - 6);
-        ctx2d.lineTo(x + 30, ry - 6);
-        ctx2d.stroke();
-        ctx2d.fillStyle = '#9ca3af';
+    // Grid lines + note name labels
+    const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const sharps = new Set(['C#','D#','F#','G#','A#']);
+    for (let m = Math.floor(midiLo); m <= Math.ceil(midiHi); m++) {
+      const gy = midiToY(m);
+      if (gy < 0 || gy > H) continue;
+      const name = noteNames[((m % 12) + 12) % 12];
+      const isNatural = !sharps.has(name);
+      ctx2d.strokeStyle = isNatural ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)';
+      ctx2d.lineWidth = 1;
+      ctx2d.beginPath(); ctx2d.moveTo(0, gy); ctx2d.lineTo(W, gy); ctx2d.stroke();
+      if (isNatural) {
+        const oct = Math.floor(m / 12) - 1;
+        ctx2d.fillStyle = 'rgba(255,255,255,0.35)';
         ctx2d.font = '9px monospace';
-        ctx2d.fillText(n.noteName, x + 2, ry - 8);
-      });
+        ctx2d.fillText(`${name}${oct}`, 3, gy - 2);
+      }
     }
 
-    // Draw center line
-    ctx2d.strokeStyle = '#e5e7eb';
-    ctx2d.lineWidth = 1;
-    ctx2d.beginPath();
-    ctx2d.moveTo(0, H/2); ctx2d.lineTo(W, H/2);
-    ctx2d.stroke();
-
-    // Draw trace dots
-    spTracePoints.forEach(p => {
-      const x = ((p.t - (elapsed - maxT)) / maxT) * W;
-      ctx2d.fillStyle = p.color;
-      ctx2d.beginPath();
-      ctx2d.arc(x, p.y, 3, 0, Math.PI * 2);
-      ctx2d.fill();
+    // Reference note bands (yellow dashed target lines)
+    const visStart = elapsed - maxT;
+    spReferenceScore.forEach((n, i) => {
+      if (n.time < visStart - 0.5 || n.time > elapsed + maxT) return;
+      const x1 = ((n.time - visStart) / maxT) * W;
+      const nextN = spReferenceScore[i + 1];
+      const x2 = nextN ? Math.min(W, ((nextN.time - visStart) / maxT) * W) : x1 + 30;
+      const ry = midiToY(n.midi);
+      // Soft highlight band
+      ctx2d.fillStyle = 'rgba(247,201,72,0.07)';
+      ctx2d.fillRect(x1, ry - 8, x2 - x1, 16);
+      // Dashed target line
+      ctx2d.strokeStyle = 'rgba(247,201,72,0.4)';
+      ctx2d.lineWidth = 1;
+      ctx2d.setLineDash([4, 4]);
+      ctx2d.beginPath(); ctx2d.moveTo(x1, ry); ctx2d.lineTo(x2, ry); ctx2d.stroke();
+      ctx2d.setLineDash([]);
+      // Note label
+      ctx2d.fillStyle = 'rgba(247,201,72,0.75)';
+      ctx2d.font = '9px monospace';
+      ctx2d.fillText(n.noteName, x1 + 2, ry - 10);
     });
 
-    // Current time line
-    ctx2d.strokeStyle = '#374151';
+    // Draw trace as coloured connected line (Y recalculated from midiVal each frame)
+    for (let i = 1; i < spTracePoints.length; i++) {
+      const a = spTracePoints[i-1], b = spTracePoints[i];
+      if (a.midiVal === null || b.midiVal === null) continue;
+      const ax = ((a.t - visStart) / maxT) * W;
+      const bx = ((b.t - visStart) / maxT) * W;
+      const ay = midiToY(a.midiVal);
+      const by2 = midiToY(b.midiVal);
+      ctx2d.strokeStyle = b.color;
+      ctx2d.lineWidth = 2.5;
+      ctx2d.lineCap = 'round';
+      ctx2d.shadowBlur = 5;
+      ctx2d.shadowColor = b.color;
+      ctx2d.beginPath();
+      ctx2d.moveTo(ax, ay); ctx2d.lineTo(bx, by2);
+      ctx2d.stroke();
+    }
+    ctx2d.shadowBlur = 0;
+
+    // Playhead at right edge
+    ctx2d.strokeStyle = 'rgba(79,172,222,0.5)';
     ctx2d.lineWidth = 1.5;
-    ctx2d.beginPath();
-    ctx2d.moveTo(W * (maxT - 0) / maxT, 0);
-    ctx2d.lineTo(W * (maxT - 0) / maxT, H);
-    ctx2d.stroke();
+    ctx2d.setLineDash([3, 3]);
+    ctx2d.beginPath(); ctx2d.moveTo(W, 0); ctx2d.lineTo(W, H); ctx2d.stroke();
+    ctx2d.setLineDash([]);
+
+    // Window label
+    ctx2d.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx2d.font = '9px monospace';
+    ctx2d.textAlign = 'right';
+    ctx2d.fillText(`視窗 ${windowIdx + 1}`, W - 4, 12);
+    ctx2d.textAlign = 'left';
   }
 
   spRafId = requestAnimationFrame(spLoop);
@@ -5814,16 +5872,17 @@ function buildPracticeEmbed() {
     </div>
 
     <!-- Canvas: pitch trace -->
-    <div style="background:white;border-radius:12px;border:1.5px solid var(--border);overflow:hidden;">
-      <div style="padding:10px 14px 4px;font-size:11px;font-weight:700;color:var(--muted);">音高軌跡</div>
-      <canvas id="sp-canvas" width="640" height="140" style="width:100%;display:block;"></canvas>
-      <!-- Legend -->
-      <div style="display:flex;gap:12px;padding:6px 14px 10px;font-size:11px;font-weight:700;">
-        <span style="color:#22c55e;">● 準確</span>
-        <span style="color:#ef4444;">● 偏高</span>
-        <span style="color:#3b82f6;">● 偏低</span>
-        <span style="color:#d1d5db;">● 靜音</span>
+    <div style="background:#0d0d14;border-radius:12px;border:1px solid #222;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px;">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);">🎙 音高軌跡</div>
+        <div style="display:flex;gap:10px;font-size:10px;font-weight:700;">
+          <span style="color:#52C98A;">● 準確</span>
+          <span style="color:#F87171;">● 偏高</span>
+          <span style="color:#4FACDE;">● 偏低</span>
+          <span style="color:rgba(255,255,255,0.2);">● 靜音</span>
+        </div>
       </div>
+      <canvas id="sp-canvas" width="640" height="160" style="width:100%;display:block;"></canvas>
     </div>
 
     <!-- Session summary -->
