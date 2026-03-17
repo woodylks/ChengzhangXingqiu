@@ -1899,16 +1899,17 @@ function hideCloudStatus() {
 }
 
 function getDefaultTasks() {
+  const t = todayISO();
   if (currentKid === 1) return [
-    { id: 1, name: '數學功課 – 分數練習', subject: 'math', type: 'homework', due: '今天', priority: 'high', done: false },
-    { id: 2, name: '語文默書準備', subject: 'chinese', type: 'exam', due: '今天', priority: 'high', done: false },
-    { id: 3, name: '英語閱讀 P.12-15', subject: 'english', type: 'homework', due: '今天', priority: 'medium', done: true },
-    { id: 4, name: '游泳訓練', subject: 'swim', type: 'training', due: '今天', priority: 'medium', done: false },
+    { id: 1, name: '數學功課 – 分數練習', subject: 'math', type: 'homework', due: t, priority: 'high', done: false },
+    { id: 2, name: '語文默書準備', subject: 'chinese', type: 'exam', due: t, priority: 'high', done: false },
+    { id: 3, name: '英語閱讀 P.12-15', subject: 'english', type: 'homework', due: t, priority: 'medium', done: true },
+    { id: 4, name: '游泳訓練', subject: 'swim', type: 'training', due: t, priority: 'medium', done: false },
   ];
   return [
-    { id: 1, name: '數學功課 – 加減法', subject: 'math', type: 'homework', due: '今天', priority: 'high', done: false },
-    { id: 2, name: '普通話生字抄寫', subject: 'chinese', type: 'homework', due: '今天', priority: 'medium', done: true },
-    { id: 3, name: '鋼琴練習 第2課', subject: 'music', type: 'training', due: '今天', priority: 'medium', done: false },
+    { id: 1, name: '數學功課 – 加減法', subject: 'math', type: 'homework', due: t, priority: 'high', done: false },
+    { id: 2, name: '普通話生字抄寫', subject: 'chinese', type: 'homework', due: t, priority: 'medium', done: true },
+    { id: 3, name: '鋼琴練習 第2課', subject: 'music', type: 'training', due: t, priority: 'medium', done: false },
   ];
 }
 function getDefaultNotices() {
@@ -4539,8 +4540,11 @@ function checkAutoArchive() {
           // ISO format YYYY-MM-DD (new format)
           if (/^\d{4}-\d{2}-\d{2}$/.test(t.due)) {
             dueDate = new Date(t.due + 'T00:00:00');
-          } else if (t.due !== '今天' && t.due !== '無截止日') {
-            // Legacy formats
+          } else if (t.due === '今天' || t.due === '無截止日') {
+            // '今天' = treat as today = should be archived
+            dueDate = new Date(); dueDate.setHours(0,0,0,0);
+          } else {
+            // Legacy formats like 3/18 or 3月18日
             const m1 = t.due.match(/(\d+)[\/\-](\d+)/);
             const m2 = t.due.match(/(\d+)月(\d+)日/);
             const match = m1 || m2;
