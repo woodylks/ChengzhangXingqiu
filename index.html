@@ -841,7 +841,7 @@ body {
     try { const d = await getDoc(doc(db, path)); return d.exists() ? d.data() : null; } catch(e) { return null; }
   }
   async function fbAdd(colPath, data) {
-    try { const r = await addDoc(collection(db, colPath), data); return r.id; } catch(e) { return null; }
+    try { const r = await addDoc(collection(db, colPath), data); return r.id; } catch(e) { console.error('fbAdd error:', e); return null; }
   }
   async function fbGetAll(colPath) {
     try {
@@ -8295,10 +8295,14 @@ async function spSelectRep(id) {
   if (!rep) return;
   spCurrentRepId = id;
 
-  // Load MIDI notes from saved data
+  // Load MIDI notes from saved data (兼容 compact {t,m} 和舊版 {time,midi,noteName} 兩種格式)
   if (rep.midiNotes) {
-    spReferenceScore = rep.midiNotes;
-    const dur = (rep.midiNotes[rep.midiNotes.length-1].time + 1).toFixed(1);
+    const raw = rep.midiNotes;
+    spReferenceScore = raw.map(n => n.t !== undefined
+      ? { time: n.t, midi: n.m, noteName: midiToNoteName(n.m) }
+      : n
+    );
+    const dur = (spReferenceScore[spReferenceScore.length-1].time + 1).toFixed(1);
     document.getElementById('sp-midi-status').innerHTML =
       `✅ 已從庫載入：<strong>${rep.midiNotes.length}</strong> 個音符，時長約 ${dur}s`;
     document.getElementById('sp-midi-status').style.color = 'var(--green)';
@@ -8392,6 +8396,34 @@ function spPreviewImg(event) {
   reader.readAsDataURL(file);
 }
 
+// 壓縮圖片到指定 KB 以內，返回 base64 dataURL
+async function spCompressImage(dataUrl, maxKB = 200) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      // 縮放到最大 800px 寬
+      const scale = Math.min(1, 800 / img.width);
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // 逐步降低品質直到達標
+      let quality = 0.8;
+      const tryCompress = () => {
+        const out = canvas.toDataURL('image/jpeg', quality);
+        const kb = Math.round(out.length * 3 / 4 / 1024);
+        if (kb <= maxKB || quality <= 0.1) { resolve(out); return; }
+        quality -= 0.1;
+        tryCompress();
+      };
+      tryCompress();
+    };
+    img.onerror = () => resolve(dataUrl); // fallback
+    img.src = dataUrl;
+  });
+}
+
 async function spSaveNewRep() {
   const name = document.getElementById('sp-new-name').value.trim();
   if (!name) { alert('請填寫曲目名稱'); return; }
@@ -8402,22 +8434,45 @@ async function spSaveNewRep() {
   const notes = spNewMidiData;
   const dur = notes.length ? (notes[notes.length-1].time + 1).toFixed(1) : 0;
 
-  // Store image as base64 directly in Firestore (max ~800KB compressed)
+  // 精簡 midiNotes：只保留 time + midi（去掉 noteName 省空間）
+  const compactNotes = notes.map(n => ({ t: +n.time.toFixed(3), m: n.midi }));
+
+  // 壓縮圖片到 200KB 以內（Firestore 1MB 上限）
+  let imgData = null;
+  if (spNewImgData) {
+    statusEl.textContent = '壓縮圖片中…'; 
+    imgData = await spCompressImage(spNewImgData, 200);
+    const kb = Math.round(imgData.length * 3/4 / 1024);
+    console.log('圖片壓縮後:', kb, 'KB');
+  }
+
+  // 估算總大小
+  const jsonSize = JSON.stringify(compactNotes).length;
+  const imgSize  = imgData ? imgData.length : 0;
+  const totalKB  = Math.round((jsonSize + imgSize) / 1024);
+  console.log('總數據大小:', totalKB, 'KB');
+
+  if (totalKB > 900) {
+    statusEl.textContent = `❌ 數據太大 (${totalKB}KB)，請換小一點的圖片`;
+    statusEl.style.color = 'var(--red)'; return;
+  }
+
   const data = {
     name,
     noteCount: notes.length,
     duration: dur,
-    midiNotes: notes,
-    scoreImgBase64: spNewImgData || null,
+    midiNotes: compactNotes,
+    scoreImgBase64: imgData,
     createdAt: Date.now()
   };
 
+  statusEl.textContent = '上傳中…';
   const id = await window.fbAdd('scoreReps', data);
   if (id) {
     statusEl.textContent = '✅ 已保存到曲目庫！'; statusEl.style.color = 'var(--green)';
     document.getElementById('sp-new-name').value = '';
-    document.getElementById('sp-new-midi-label').textContent = '選擇 .mid';
-    document.getElementById('sp-new-img-label').textContent = '選擇圖片';
+    document.getElementById('sp-new-midi-label').textContent = '🎹 MIDI 文件';
+    document.getElementById('sp-new-img-label').textContent = '🖼 樂譜圖片';
     spNewMidiData = null; spNewImgData = null;
     spLoadRepList();
   } else {
