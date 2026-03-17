@@ -3584,7 +3584,8 @@ async function spStart() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     const source = spAudioCtx.createMediaStreamSource(stream);
     spAnalyser = spAudioCtx.createAnalyser();
-    spAnalyser.fftSize = 4096; // 提升低音域解析度（44100Hz下 ≈10.7Hz精度）
+    spAnalyser.fftSize = 2048;              // 2048@44100Hz ≈ 46ms 緩衝，延遲最小
+    spAnalyser.smoothingTimeConstant = 0;   // 不做時域平滑，讓響應更即時
     source.connect(spAnalyser);
   } catch(e) {
     alert('無法開啟麥克風：' + e.message); return;
@@ -3630,6 +3631,7 @@ function spStop() {
 function spLoop() {
   if (!spRunning) return;
   const buf = new Float32Array(spAnalyser.fftSize);
+  spAnalyser.getFloatTimeDomainData(buf); // ← 必須先讀取麥克風數據
   const freq = autoCorrelate(buf, spAudioCtx.sampleRate);
   const elapsed = spAudioCtx.currentTime - spStartTime;
 
@@ -6392,7 +6394,7 @@ async function startPitch() {
   try {
     const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
     audioCtx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
-    analyser=audioCtx.createAnalyser(); analyser.fftSize=8192; analyser.smoothingTimeConstant=0.85;
+    analyser=audioCtx.createAnalyser(); analyser.fftSize=4096; analyser.smoothingTimeConstant=0.5;
     bufLen=analyser.fftSize; dataArr=new Float32Array(bufLen);
     audioCtx.createMediaStreamSource(stream).connect(analyser);
     pitchOn=true;
@@ -6450,7 +6452,7 @@ function showFingering(writtenName) {
 }
 // 改進版音高檢測：Hanning window + 平滑，解決管樂諧波誤判與 jitter 問題
 const _pitchSmooth = [];
-const _SMOOTH_WIN = 7;
+const _SMOOTH_WIN = 3; // 3幀中位數 ≈ ~60ms，平衡穩定與即時
 
 function autoCorrelate(buf, sr) {
   const size = buf.length;
