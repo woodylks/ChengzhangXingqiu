@@ -3584,7 +3584,7 @@ async function spStart() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     const source = spAudioCtx.createMediaStreamSource(stream);
     spAnalyser = spAudioCtx.createAnalyser();
-    spAnalyser.fftSize = 2048;
+    spAnalyser.fftSize = 4096; // 提升低音域解析度（44100Hz下 ≈10.7Hz精度）
     source.connect(spAnalyser);
   } catch(e) {
     alert('無法開啟麥克風：' + e.message); return;
@@ -3663,7 +3663,7 @@ function spLoop() {
     document.getElementById('sp-cur-note').style.color = color;
     if (centsVal !== null) {
       const sign = centsVal >= 0 ? '+' : '';
-      document.getElementById('sp-cents').textContent = sign + centsVal.toFixed(1) + '¢';
+      document.getElementById('sp-cents').textContent = sign + Math.round(Math.abs(centsVal)) + '¢';
       document.getElementById('sp-cents').style.color = color;
       // Deviation bar
       const bar = document.getElementById('sp-dev-bar');
@@ -5706,8 +5706,56 @@ function buildPracticeEmbed() {
 <div class="practice-section" id="sec-scoreplay">
   <div style="padding:16px;">
 
-    <!-- Header -->
-    <div style="font-size:15px;font-weight:900;margin-bottom:14px;">🎼 曲目比對</div>
+    <!-- Tab switcher -->
+    <div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:14px;">
+      <div id="sp-tab-library" onclick="spShowTab(\'library\')"
+        style="flex:1;text-align:center;padding:8px;font-size:13px;font-weight:800;cursor:pointer;
+          color:rgba(0,0,0,0.3);border-bottom:2px solid transparent;margin-bottom:-2px;">
+        📚 曲目庫
+      </div>
+      <div id="sp-tab-compare" onclick="spShowTab(\'compare\')"
+        style="flex:1;text-align:center;padding:8px;font-size:13px;font-weight:800;cursor:pointer;
+          color:#FF6B35;border-bottom:2px solid #FF6B35;margin-bottom:-2px;">
+        🎯 實時比對
+      </div>
+    </div>
+
+    <!-- Library Panel -->
+    <div id="sp-panel-library" style="display:none;">
+      <div id="sp-rep-list" style="margin-bottom:14px;">
+        <div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">載入中…</div>
+      </div>
+      <div style="background:var(--bg);border-radius:12px;padding:14px;border:1.5px solid var(--border);">
+        <div style="font-size:12px;font-weight:900;margin-bottom:10px;color:var(--muted);">➕ 新增曲目</div>
+        <input id="sp-new-name" type="text" placeholder="曲目名稱"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
+            font-family:\'Noto Sans TC\',sans-serif;font-size:13px;margin-bottom:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <label style="flex:1;padding:8px;border:1.5px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;">
+            🎹 MIDI 文件
+            <input type="file" accept=".mid,.midi" style="display:none;" onchange="spPreviewMidi(event)">
+          </label>
+          <label style="flex:1;padding:8px;border:1.5px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;">
+            🖼 樂譜圖片
+            <input type="file" accept="image/*" style="display:none;" onchange="spPreviewImg(event)">
+          </label>
+        </div>
+        <div id="sp-new-preview" style="font-size:11px;color:var(--muted);margin-bottom:8px;"></div>
+        <button onclick="spSaveNewRep()"
+          style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--kid1);color:white;
+            font-family:\'Noto Sans TC\',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">
+          💾 保存曲目
+        </button>
+      </div>
+    </div>
+
+    <!-- Compare Panel -->
+    <div id="sp-panel-compare">
+      <div id="sp-cur-rep-info" style="display:none;background:var(--bg);border-radius:10px;padding:10px 14px;margin-bottom:12px;border:1.5px solid var(--border);flex-direction:column;">
+        <div style="font-size:11px;color:var(--muted);font-weight:700;">當前曲目</div>
+        <div id="sp-cur-rep-name" style="font-size:14px;font-weight:900;margin-top:2px;"></div>
+        <div id="sp-cur-rep-info2" style="font-size:11px;color:var(--muted);margin-top:2px;"></div>
+      </div>
 
     <!-- MIDI Upload -->
     <div id="sp-upload-area">
@@ -5792,6 +5840,24 @@ function buildPracticeEmbed() {
       <div id="sp-stat-pct" style="text-align:center;margin-top:10px;font-size:15px;font-weight:900;"></div>
     </div>
 
+    <!-- Sheet music display -->
+    <div id="sp-sheet-wrap" style="display:none;margin-top:12px;background:#0d0d14;border-radius:12px;overflow:hidden;">
+      <canvas id="sp-sheet-canvas" style="width:100%;display:block;"></canvas>
+      <div id="sp-sheet-bar" style="display:flex;justify-content:center;gap:6px;padding:8px;"></div>
+    </div>
+
+    <!-- Save log area -->
+    <div id="sp-log-area" style="display:none;margin-top:12px;background:white;border-radius:12px;border:1.5px solid var(--border);padding:14px;">
+      <div style="font-size:13px;font-weight:900;margin-bottom:10px;">💬 AI 評語 & 保存記錄</div>
+      <div id="sp-ai-comment" style="font-size:13px;color:#444;margin-bottom:10px;line-height:1.6;min-height:40px;">生成中...</div>
+      <button onclick="spSavePracticeLog()"
+        style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--kid1);color:white;
+          font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">
+        💾 保存此次記錄
+      </button>
+    </div>
+
+    </div><!-- end compare panel -->
   </div>
 </div><!-- end scoreplay section -->`;
 }
@@ -6384,55 +6450,74 @@ function showFingering(writtenName) {
 }
 // 改進版音高檢測：Hanning window + 平滑，解決管樂諧波誤判與 jitter 問題
 const _pitchSmooth = [];
-const _SMOOTH_WIN = 5;
+const _SMOOTH_WIN = 7;
 
 function autoCorrelate(buf, sr) {
   const size = buf.length;
 
-  // RMS 靜音門檻提高至 0.015，減少氣息噪音誤判
+  // RMS 靜音門檻 0.012 — 對小號夠靈敏，又濾掉氣息噪音
   let rms = 0;
   for (let i = 0; i < size; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / size);
-  if (rms < 0.015) return -1;
+  if (rms < 0.012) return -1;
 
   // Hanning window — 壓制諧波側瓣，讓基頻峰值更突出
+  const windowed = new Float32Array(size);
   for (let i = 0; i < size; i++)
-    buf[i] *= 0.5 * (1 - Math.cos((2 * Math.PI * i) / (size - 1)));
+    windowed[i] = buf[i] * 0.5 * (1 - Math.cos((2 * Math.PI * i) / (size - 1)));
 
-  // Autocorrelation
+  // Normalized autocorrelation (NSDF) — 比普通AC更能抗諧波誤判
   const ac = new Float32Array(size);
+  const norm = new Float32Array(size);
   for (let lag = 0; lag < size / 2; lag++) {
-    let sum = 0;
-    for (let i = 0; i < size / 2; i++) sum += buf[i] * buf[i + lag];
-    ac[lag] = sum;
+    let s = 0, n = 0;
+    for (let i = 0; i < size / 2; i++) {
+      s += windowed[i] * windowed[i + lag];
+      n += windowed[i] * windowed[i] + windowed[i + lag] * windowed[i + lag];
+    }
+    ac[lag]   = s;
+    norm[lag] = n > 0 ? (2 * s) / n : 0; // NSDF
   }
 
   // 跳過 lag=0 的自相關峰，找第一個真實週期峰
   let d = 0;
   while (d < ac.length - 1 && ac[d] > ac[d + 1]) d++;
-  let maxVal = 0, maxPos = -1;
-  for (let i = d; i < ac.length; i++) {
-    if (ac[i] > maxVal) { maxVal = ac[i]; maxPos = i; }
+
+  // 收集所有局部峰值，選信心值（NSDF）最高且對應小號頻率範圍的峰
+  const TRUMPET_MIN = 146; // D3 concert = F#3 written (lowest practical)
+  const TRUMPET_MAX = 1200; // 含高泛音
+
+  let bestVal = -1, bestPos = -1;
+  for (let i = d + 1; i < ac.length - 1; i++) {
+    if (ac[i] > ac[i - 1] && ac[i] >= ac[i + 1]) {
+      const f = sr / i;
+      if (f >= TRUMPET_MIN && f <= TRUMPET_MAX && norm[i] > bestVal) {
+        bestVal = norm[i];
+        bestPos = i;
+      }
+    }
   }
-  if (maxPos <= 0) return -1;
+  if (bestPos <= 0 || bestVal < 0.3) return -1; // 信心值不足則忽略
 
   // 拋物線插值提升精度
-  const x1 = ac[maxPos - 1], x2 = ac[maxPos], x3 = ac[maxPos + 1];
-  const a = (x1 + x3 - 2 * x2) / 2, b = (x3 - x1) / 2;
-  const period = maxPos + (a ? -b / (2 * a) : 0);
+  const x1 = ac[bestPos - 1], x2 = ac[bestPos], x3 = ac[bestPos + 1];
+  const a  = (x1 + x3 - 2 * x2) / 2, b = (x3 - x1) / 2;
+  const period = bestPos + (a ? -b / (2 * a) : 0);
   const freq = sr / period;
-  if (freq < 50 || freq > 2000) return -1;
+  if (freq < TRUMPET_MIN || freq > TRUMPET_MAX) return -1;
 
-  // 滑動平均平滑（5幀），消除曲線 jitter
+  // 中位數平滑（7幀）— 比均值更能濾掉偶發錯誤幀
   _pitchSmooth.push(freq);
   if (_pitchSmooth.length > _SMOOTH_WIN) _pitchSmooth.shift();
-  return _pitchSmooth.reduce((a, b) => a + b, 0) / _pitchSmooth.length;
+  if (_pitchSmooth.length < 3) return freq;
+  const sorted = [..._pitchSmooth].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
 }
 function findClosest(freq) {
   const notes=INSTRUMENTS[practiceKid].notes;
   let best=null,bestC=Infinity;
   notes.forEach(n=>{const c=1200*Math.log2(freq/n.cf);if(Math.abs(c)<Math.abs(bestC)){bestC=c;best=n;}});
-  return best&&Math.abs(bestC)<=70?{note:best,cents:bestC}:null;
+  return best&&Math.abs(bestC)<=80?{note:best,cents:Math.round(bestC)}:null;
 }
 function detectPitch() {
   analyser.getFloatTimeDomainData(dataArr);
@@ -6447,9 +6532,10 @@ function detectPitch() {
 function updatePitch(note,cents,freq) {
   const abs=Math.abs(cents);
   let cls,icon,text,sub;
-  if(abs<=10){cls='perfect';icon='✅';text='非常準！';sub=`${note.name} · 偏差 ${cents.toFixed(1)} 音分`;}
-  else if(abs<=25){cls='close';icon='🔶';text=cents>0?'稍微偏高':'稍微偏低';sub=`${note.name} · 偏差 ${cents.toFixed(1)} 音分`;}
-  else{cls='off';icon=cents>0?'⬆️':'⬇️';text=cents>0?`偏高 ${abs.toFixed(0)} 音分`:`偏低 ${abs.toFixed(0)} 音分`;sub=`目標 ${note.name} · ${freq.toFixed(1)}Hz`;}
+  const cRound = Math.round(cents), absR = Math.abs(cRound);
+  if(absR<=10){cls='perfect';icon='✅';text='非常準！';sub=`${note.name} · ${cRound>=0?'+':''}${cRound}¢`;}
+  else if(absR<=25){cls='close';icon='🔶';text=cRound>0?'稍微偏高':'稍微偏低';sub=`${note.name} · ${cRound>=0?'+':''}${cRound}¢`;}
+  else{cls='off';icon=cRound>0?'⬆️':'⬇️';text=cRound>0?`偏高 ${absR}¢`:`偏低 ${absR}¢`;sub=`目標 ${note.name} · ${freq.toFixed(0)}Hz`;}
 
   document.getElementById('note-display').className=`note-display listening-pulse ${cls}`;
   const m=note.name.match(/^([A-Gb#]+)(\d)$/);
@@ -6465,7 +6551,7 @@ function updatePitch(note,cents,freq) {
   const fill=document.getElementById('tuning-fill');
   fill.style.left=Math.min(pct,50)+'%'; fill.style.width=Math.abs(pct-50)+'%';
   fill.style.background=cls==='perfect'?'var(--green)':cls==='close'?'var(--yellow)':'var(--red)';
-  document.getElementById('tuning-cents').textContent=(cents>=0?'+':'')+cents.toFixed(1)+' 音分';
+  document.getElementById('tuning-cents').textContent=(cRound>=0?'+':'')+cRound+' ¢';
 
   setPFeedback(icon,text,sub);
   highlightChip(note.name);
@@ -8367,6 +8453,34 @@ async function spSavePracticeLog() {
   const id = await window.fbAdd('practiceLog', logData);
   const btn = document.querySelector('[onclick="spSavePracticeLog()"]');
   if (btn) { btn.textContent = id ? '✅ 已保存！' : '❌ 保存失敗'; btn.disabled = true; }
+}
+
+// Override spStop to show log area after session
+function spStop() {
+  spRunning = false;
+  if (spRafId) cancelAnimationFrame(spRafId);
+  if (spAudioCtx) { spAudioCtx.close(); spAudioCtx = null; }
+
+  document.getElementById('sp-start-btn').style.display = '';
+  document.getElementById('sp-stop-btn').style.display = 'none';
+
+  const total = spStats.good + spStats.high + spStats.low;
+  if (total > 0) {
+    const pct = Math.round(spStats.good / total * 100);
+    document.getElementById('sp-stat-good').textContent = spStats.good;
+    document.getElementById('sp-stat-high').textContent = spStats.high;
+    document.getElementById('sp-stat-low').textContent  = spStats.low;
+    document.getElementById('sp-stat-pct').textContent  =
+      `音準率 ${pct}% ${pct>=80?'🌟':pct>=60?'👍':'💪'}`;
+    document.getElementById('sp-stat-pct').style.color =
+      pct>=80?'var(--green)':pct>=60?'var(--yellow)':'var(--red)';
+    document.getElementById('sp-summary').style.display = '';
+
+    // Show log area and generate AI comment
+    const logArea = document.getElementById('sp-log-area');
+    if (logArea) { logArea.style.display = ''; }
+    spGenerateAIComment(pct);
+  }
 }
 
 // Auto-load rep list when section is shown
