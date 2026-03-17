@@ -6457,64 +6457,64 @@ const _SMOOTH_WIN = 3; // 3幀中位數 ≈ ~60ms，平衡穩定與即時
 function autoCorrelate(buf, sr) {
   const size = buf.length;
 
-  // RMS 靜音門檻 0.012 — 對小號夠靈敏，又濾掉氣息噪音
+  // RMS 靜音門檻
   let rms = 0;
   for (let i = 0; i < size; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / size);
   if (rms < 0.012) return -1;
 
-  // Hanning window — 壓制諧波側瓣，讓基頻峰值更突出
+  // Hanning window
   const windowed = new Float32Array(size);
   for (let i = 0; i < size; i++)
     windowed[i] = buf[i] * 0.5 * (1 - Math.cos((2 * Math.PI * i) / (size - 1)));
 
-  // Normalized autocorrelation (NSDF) — 比普通AC更能抗諧波誤判
-  const ac = new Float32Array(size);
-  const norm = new Float32Array(size);
-  for (let lag = 0; lag < size / 2; lag++) {
-    let s = 0, n = 0;
-    for (let i = 0; i < size / 2; i++) {
-      s += windowed[i] * windowed[i + lag];
-      n += windowed[i] * windowed[i] + windowed[i + lag] * windowed[i + lag];
-    }
-    ac[lag]   = s;
-    norm[lag] = n > 0 ? (2 * s) / n : 0; // NSDF
-  }
-
   // 根據當前樂器動態決定頻率範圍
   const _inst = (typeof INSTRUMENTS !== 'undefined' && typeof practiceKid !== 'undefined')
     ? INSTRUMENTS[practiceKid] : null;
-  const FREQ_MIN = _inst ? Math.min(..._inst.notes.map(n => n.cf)) * 0.85 : 60;
-  const FREQ_MAX = _inst ? Math.max(..._inst.notes.map(n => n.cf)) * 1.25 : 2000;
+  const FREQ_MIN = _inst ? Math.min(..._inst.notes.map(n => n.cf)) * 0.80 : 60;
+  const FREQ_MAX = _inst ? Math.max(..._inst.notes.map(n => n.cf)) * 1.30 : 2200;
 
-  // 跳過 lag=0 的自相關峰，找第一個真實週期峰
-  let d = 0;
-  while (d < ac.length - 1 && ac[d] > ac[d + 1]) d++;
+  // 對應頻率範圍的 lag 範圍（避免跳過高頻小 lag）
+  const LAG_MIN = Math.max(2, Math.floor(sr / FREQ_MAX));
+  const LAG_MAX = Math.min(Math.floor(size / 2), Math.ceil(sr / FREQ_MIN));
 
-  // 收集局部峰值，選 NSDF 信心值最高且在樂器音域內的峰
+  // NSDF（Normalized Square Difference Function）
+  // 比普通 AC 更能抗諧波，且不依賴初始下降點 d
+  const nsdf = new Float32Array(size);
+  for (let lag = LAG_MIN; lag <= LAG_MAX; lag++) {
+    let acSum = 0, normSum = 0;
+    const n = size - lag;
+    for (let i = 0; i < n; i++) {
+      acSum   += windowed[i] * windowed[i + lag];
+      normSum += windowed[i] * windowed[i] + windowed[i + lag] * windowed[i + lag];
+    }
+    nsdf[lag] = normSum > 0 ? (2 * acSum) / normSum : 0;
+  }
+
+  // 找所有局部峰值（NSDF > 0），取信心值最高的峰
   let bestVal = -1, bestPos = -1;
-  for (let i = d + 1; i < ac.length - 1; i++) {
-    if (ac[i] > ac[i - 1] && ac[i] >= ac[i + 1]) {
-      const f = sr / i;
-      if (f >= FREQ_MIN && f <= FREQ_MAX && norm[i] > bestVal) {
-        bestVal = norm[i];
+  for (let i = LAG_MIN + 1; i < LAG_MAX; i++) {
+    if (nsdf[i] > nsdf[i - 1] && nsdf[i] >= nsdf[i + 1] && nsdf[i] > 0) {
+      if (nsdf[i] > bestVal) {
+        bestVal = nsdf[i];
         bestPos = i;
       }
     }
   }
-  if (bestPos <= 0 || bestVal < 0.25) return -1; // 信心值門檻
+  if (bestPos <= 0 || bestVal < 0.20) return -1;
 
   // 拋物線插值提升精度
-  const x1 = ac[bestPos - 1], x2 = ac[bestPos], x3 = ac[bestPos + 1];
-  const a  = (x1 + x3 - 2 * x2) / 2, b = (x3 - x1) / 2;
-  const period = bestPos + (a ? -b / (2 * a) : 0);
+  const y1 = nsdf[bestPos - 1], y2 = nsdf[bestPos], y3 = nsdf[bestPos + 1];
+  const denom = y1 + y3 - 2 * y2;
+  const delta = denom !== 0 ? 0.5 * (y1 - y3) / denom : 0;
+  const period = bestPos + delta;
   const freq = sr / period;
   if (freq < FREQ_MIN || freq > FREQ_MAX) return -1;
 
-  // 中位數平滑（7幀）— 比均值更能濾掉偶發錯誤幀
+  // 中位數平滑（3幀）
   _pitchSmooth.push(freq);
   if (_pitchSmooth.length > _SMOOTH_WIN) _pitchSmooth.shift();
-  if (_pitchSmooth.length < 3) return freq;
+  if (_pitchSmooth.length < 2) return freq;
   const sorted = [..._pitchSmooth].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)];
 }
@@ -6522,7 +6522,7 @@ function findClosest(freq) {
   const notes=INSTRUMENTS[practiceKid].notes;
   let best=null,bestC=Infinity;
   notes.forEach(n=>{const c=1200*Math.log2(freq/n.cf);if(Math.abs(c)<Math.abs(bestC)){bestC=c;best=n;}});
-  return best&&Math.abs(bestC)<=80?{note:best,cents:Math.round(bestC)}:null;
+  return best&&Math.abs(bestC)<=100?{note:best,cents:Math.round(bestC)}:null;
 }
 function detectPitch() {
   analyser.getFloatTimeDomainData(dataArr);
