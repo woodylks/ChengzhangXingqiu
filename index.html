@@ -8664,6 +8664,7 @@ function spDrawSheet(elapsed) {
 function spLoop() {
   if (!spRunning) return;
   const buf = new Float32Array(spAnalyser.fftSize);
+  spAnalyser.getFloatTimeDomainData(buf); // ← 讀取麥克風數據
   const freq = autoCorrelate(buf, spAudioCtx.sampleRate);
   const elapsed = spAudioCtx.currentTime - spStartTime;
 
