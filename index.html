@@ -105,7 +105,7 @@ body {
 .nav-btn.active-2 .nav-icon { transform: scale(1.15); }
 
 /* ── MAIN ── */
-.main-content { padding: 80px 16px 30px; }
+.main-content { padding: 80px 16px calc(80px + env(safe-area-inset-bottom)); }
 
 /* ── SECTION ── */
 .section { display: none; }
@@ -520,7 +520,7 @@ body {
 .kid-tab.active-flute   { border-color:var(--flute);   color:var(--flute);   background:rgba(79,172,222,0.08); }
 
 /* ── SECTIONS ── */
-.practice-section { display:none; padding:16px; }
+.practice-section { display:none; padding:16px 16px calc(80px + env(safe-area-inset-bottom)); }
 .practice-section.practice-active { display:block; }
 
 /* ── PITCH DETECTOR ── */
@@ -1404,7 +1404,7 @@ body {
 
 <!-- BOTTOM NAV -->
 <div class="section" id="sec-admin">
-  <div style="padding:16px 16px 100px">
+  <div style="padding:16px 16px calc(100px + env(safe-area-inset-bottom))">
     <div style="font-size:18px;font-weight:900;margin-bottom:16px;">⚙️ 數據管理</div>
 
     <!-- Fix date -->
@@ -5722,7 +5722,7 @@ function buildPracticeEmbed() {
 </div><!-- end repertoire section -->
 
 <!-- ══ SCORE PLAY SECTION ══ -->
-<div class="practice-section" id="sec-scoreplay" style="padding:0;">
+<div class="practice-section" id="sec-scoreplay" style="padding:0 0 calc(80px + env(safe-area-inset-bottom));">
   <div style="padding:8px 12px 0;">
 
     <!-- Tab switcher -->
