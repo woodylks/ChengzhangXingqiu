@@ -3602,6 +3602,8 @@ async function spStart() {
   document.getElementById('sp-stop-btn').style.display = '';
   document.getElementById('sp-note-display').style.display = '';
   document.getElementById('sp-summary').style.display = 'none';
+  const _smMain = document.getElementById('sp-sheet-wrap-main');
+  if (_smMain) _smMain.style.display = '';
 
   spLoop();
 }
@@ -5805,17 +5807,66 @@ function buildPracticeEmbed() {
     <div id="sp-dev-needle" style="display:none;"></div>
     <div id="sp-cents" style="display:none;"></div>
 
-    <!-- Canvas: pitch trace (全寬無邊框) -->
-    <div style="border-radius:12px;overflow:hidden;margin-bottom:4px;">
-      <canvas id="sp-canvas" width="640" height="130" style="width:100%;display:block;"></canvas>
+    <!-- Piano Roll (主顯示，取代原 pitch canvas) -->
+    <div id="sp-sheet-wrap-main" style="background:#0d0d14;border-radius:12px;overflow:hidden;margin-bottom:4px;">
+      <canvas id="sp-sheet-canvas" style="width:100%;display:block;height:180px;"></canvas>
     </div>
-    <!-- Legend 緊貼 canvas 底部 -->
-    <div style="display:flex;gap:12px;padding:2px 4px 8px;font-size:11px;font-weight:700;">
-      <span style="color:#22c55e;">● 準確</span>
-      <span style="color:#ef4444;">● 偏高</span>
-      <span style="color:#3b82f6;">● 偏低</span>
-      <span style="color:#d1d5db;">● 靜音</span>
+    <!-- Piano Roll 圖例 + 標記工具列 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 4px 8px;">
+      <div style="display:flex;gap:10px;font-size:11px;font-weight:700;">
+        <span style="color:#22c55e;">● 準確</span>
+        <span style="color:#ef4444;">● 偏高</span>
+        <span style="color:#3b82f6;">● 偏低</span>
+        <span style="color:#d1d5db;">● 靜音</span>
+      </div>
+      <button id="sp-mark-btn" onclick="spToggleMarkMode()"
+        style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:white;
+          font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">
+        🎵 標記模式
+      </button>
     </div>
+
+    <!-- 標記模式面板（標記時顯示）-->
+    <div id="sp-mark-panel" style="display:none;background:#1e1e2e;border-radius:12px;padding:12px;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:900;color:white;margin-bottom:8px;">🎹 MIDI 預覽 + 標記音符位置</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:10px;">
+        播放 MIDI → 聽到每個音符時點「標記」→ 完成後點「套用」
+      </div>
+      <!-- 播放控制 -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button onclick="spMarkPlay()" id="sp-mark-play-btn"
+          style="flex:1;padding:8px;border-radius:8px;border:none;background:#22c55e;color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">
+          ▶ 播放
+        </button>
+        <button onclick="spMarkStop()"
+          style="flex:1;padding:8px;border-radius:8px;border:none;background:#374151;color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">
+          ⏹ 停止
+        </button>
+        <button onclick="spMarkNote()" id="sp-mark-tap-btn"
+          style="flex:2;padding:8px;border-radius:8px;border:none;background:#FF6B35;color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">
+          🎯 標記（第 <span id="sp-mark-idx">1</span> 個音）
+        </button>
+      </div>
+      <!-- 進度 -->
+      <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:8px;">
+        已標記：<span id="sp-mark-count">0</span> / <span id="sp-mark-total">0</span> 個音符
+        <span id="sp-mark-status" style="margin-left:8px;color:#22c55e;"></span>
+      </div>
+      <!-- 操作 -->
+      <div style="display:flex;gap:8px;">
+        <button onclick="spMarkUndo()"
+          style="flex:1;padding:7px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.2);background:transparent;color:white;font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">
+          ↩ 撤銷
+        </button>
+        <button onclick="spMarkApply()"
+          style="flex:2;padding:7px;border-radius:8px;border:none;background:#4FACDE;color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">
+          ✅ 套用標記
+        </button>
+      </div>
+    </div>
+
+    <!-- 隱藏的舊 pitch canvas（供 JS 相容）-->
+    <canvas id="sp-canvas" style="display:none;"></canvas>
 
     <!-- Session summary -->
     <div id="sp-summary" style="display:none;margin-top:12px;background:white;border-radius:12px;border:1.5px solid var(--border);padding:14px;">
@@ -5837,10 +5888,7 @@ function buildPracticeEmbed() {
       <div id="sp-stat-pct" style="text-align:center;margin-top:10px;font-size:15px;font-weight:900;"></div>
     </div>
 
-    <!-- Piano Roll display -->
-    <div id="sp-sheet-wrap" style="display:none;margin-top:4px;background:#0d0d14;border-radius:0;overflow:hidden;">
-      <canvas id="sp-sheet-canvas" style="width:100%;display:block;height:160px;"></canvas>
-    </div>
+    <!-- Piano Roll merged into main display above -->
 
     <!-- Save log area -->
     <div id="sp-log-area" style="display:none;margin-top:12px;background:white;border-radius:12px;border:1.5px solid var(--border);padding:14px;">
@@ -8300,11 +8348,10 @@ async function spSelectRep(id) {
     const btn = document.getElementById('sp-start-btn');
     btn.disabled = false; btn.style.opacity = '1';
     // Show sheet if data available
-    const sheetWrap = document.getElementById('sp-sheet-wrap');
-    if (sheetWrap) {
-      sheetWrap.style.display = '';
-      spDrawSheet(0);
-    }
+    // Show piano roll
+    const sheetWrap = document.getElementById('sp-sheet-wrap-main');
+    if (sheetWrap) sheetWrap.style.display = '';
+    spDrawSheet(0);
   }
   // Update current rep info display
   const infoEl = document.getElementById('sp-cur-rep-info');
@@ -8583,6 +8630,139 @@ const SP_SYSTEMS = [
 ];
 const SP_IMG_W = 630, SP_IMG_H = 4093;
 const SP_STAFF_HALF = 75; // half-height of crop strip (px in original image)
+
+// ══════════════════════════════════════════
+// MARK MODE — 邊聽邊標記音符 x 位置
+// ══════════════════════════════════════════
+let spMarkMode    = false;
+let spMarkTimes   = [];       // 用戶標記的時間戳（秒）
+let spMarkCtx     = null;     // 播放用 AudioContext
+let spMarkStartT  = null;     // 播放開始的 AudioContext 時間
+let spMarkNoteIdx = 0;        // 下一個要標記的音符 index
+
+function spToggleMarkMode() {
+  spMarkMode = !spMarkMode;
+  const panel = document.getElementById('sp-mark-panel');
+  const btn   = document.getElementById('sp-mark-btn');
+  if (spMarkMode) {
+    panel.style.display = '';
+    btn.style.background = '#FF6B35';
+    btn.style.color = 'white';
+    btn.textContent = '✕ 關閉標記';
+    // 初始化
+    spMarkTimes   = [];
+    spMarkNoteIdx = 0;
+    const total = spReferenceScore.length;
+    document.getElementById('sp-mark-total').textContent = total;
+    document.getElementById('sp-mark-count').textContent = '0';
+    document.getElementById('sp-mark-idx').textContent   = '1';
+    document.getElementById('sp-mark-status').textContent = '';
+  } else {
+    panel.style.display = 'none';
+    btn.style.background = 'white';
+    btn.style.color = '#374151';
+    btn.textContent = '🎵 標記模式';
+    spMarkStop();
+  }
+}
+
+function spMarkPlay() {
+  spMarkStop();
+  if (!spReferenceScore.length) return;
+  spMarkCtx   = new (window.AudioContext || window.webkitAudioContext)();
+  spMarkStartT = spMarkCtx.currentTime + 0.1;
+  const btn   = document.getElementById('sp-mark-play-btn');
+  btn.textContent = '⏸ 播放中…';
+
+  // 按 MIDI 音符時間合成正弦波
+  spReferenceScore.forEach((n, i) => {
+    const freq   = 440 * Math.pow(2, (n.midi - 69) / 12);
+    const tStart = spMarkStartT + n.time;
+    // 音符時長 = 下一個音符的時間差，最多 0.8s
+    const nextT  = spReferenceScore[i + 1]?.time ?? (n.time + 0.6);
+    const dur    = Math.min(nextT - n.time, 0.8) * 0.85;
+
+    const osc = spMarkCtx.createOscillator();
+    const gain= spMarkCtx.createGain();
+    osc.type  = 'triangle';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, tStart);
+    gain.gain.linearRampToValueAtTime(0.35, tStart + 0.02);
+    gain.gain.setValueAtTime(0.35, tStart + dur - 0.04);
+    gain.gain.linearRampToValueAtTime(0, tStart + dur);
+    osc.connect(gain); gain.connect(spMarkCtx.destination);
+    osc.start(tStart); osc.stop(tStart + dur);
+  });
+
+  // 播放結束後更新按鈕
+  const totalDur = spReferenceScore[spReferenceScore.length - 1].time + 1;
+  setTimeout(() => {
+    if (btn) btn.textContent = '▶ 播放';
+  }, (totalDur + 0.5) * 1000);
+}
+
+function spMarkStop() {
+  if (spMarkCtx) { try { spMarkCtx.close(); } catch(e){} spMarkCtx = null; }
+  const btn = document.getElementById('sp-mark-play-btn');
+  if (btn) btn.textContent = '▶ 播放';
+  spMarkStartT = null;
+}
+
+function spMarkNote() {
+  if (!spMarkCtx || spMarkStartT === null) {
+    document.getElementById('sp-mark-status').textContent = '⚠️ 請先播放';
+    return;
+  }
+  const elapsed = spMarkCtx.currentTime - spMarkStartT;
+  if (elapsed < 0) return;
+
+  spMarkTimes.push(elapsed);
+  spMarkNoteIdx = spMarkTimes.length;
+
+  const count = spMarkTimes.length;
+  const total = spReferenceScore.length;
+  document.getElementById('sp-mark-count').textContent = count;
+  document.getElementById('sp-mark-idx').textContent   = Math.min(count + 1, total);
+  document.getElementById('sp-mark-status').textContent =
+    count >= total ? '✅ 所有音符已標記！' : '';
+}
+
+function spMarkUndo() {
+  if (!spMarkTimes.length) return;
+  spMarkTimes.pop();
+  spMarkNoteIdx = spMarkTimes.length;
+  document.getElementById('sp-mark-count').textContent = spMarkTimes.length;
+  document.getElementById('sp-mark-idx').textContent   = spMarkTimes.length + 1;
+  document.getElementById('sp-mark-status').textContent = '';
+}
+
+function spMarkApply() {
+  if (spMarkTimes.length < 2) {
+    document.getElementById('sp-mark-status').textContent = '⚠️ 至少需要 2 個標記';
+    return;
+  }
+  // 用已標記的時間點重新對齊 spReferenceScore
+  // 已標記的數量可能少於音符總數 → 用線性插值補足
+  const marked = spMarkTimes.length;
+  const total  = spReferenceScore.length;
+
+  spReferenceScore.forEach((n, i) => {
+    if (i < marked) {
+      n.time = spMarkTimes[i];
+    } else {
+      // 線性插值：從最後一個標記點往後等比延伸
+      const lastMarked = spMarkTimes[marked - 1];
+      const avgGap = marked > 1
+        ? (spMarkTimes[marked-1] - spMarkTimes[0]) / (marked - 1)
+        : 0.5;
+      n.time = lastMarked + (i - marked + 1) * avgGap;
+    }
+  });
+
+  document.getElementById('sp-mark-status').textContent = '✅ 已套用！進度條已同步';
+  spToggleMarkMode(); // 關閉標記面板
+}
+
 
 // Piano Roll renderer — 滾動視窗，進度線固定在左1/4處，音符向左滾動
 function spDrawSheet(elapsed) {
