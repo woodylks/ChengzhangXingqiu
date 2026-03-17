@@ -3628,6 +3628,32 @@ function spStop() {
   }
 }
 
+
+// Update the new gradient-bar needle UI
+function _spUpdateNeedle(centsVal, color, curNote) {
+  const noteEl   = document.getElementById('sp-cur-note');
+  const needle   = document.getElementById('sp-dev-needle');
+  const badge    = document.getElementById('sp-tune-badge');
+  if (noteEl) { noteEl.textContent = curNote || '–'; noteEl.style.color = color || '#1e293b'; }
+  if (needle) {
+    // Map cents ±50 → 5%~95% of bar
+    const clampedC = Math.max(-50, Math.min(50, centsVal !== null ? centsVal : 0));
+    const leftPct  = 50 + clampedC; // 0→0%, 50→100%  (actually 50+c, range 0-100)
+    needle.style.left = Math.max(0, Math.min(100, leftPct)) + '%';
+    needle.style.borderColor = color || '#374151';
+  }
+  if (badge) {
+    if (centsVal === null) {
+      badge.textContent = '–'; badge.style.background = '#e5e7eb'; badge.style.color = '#6b7280';
+    } else {
+      const abs = Math.abs(Math.round(centsVal));
+      const sign = centsVal >= 0 ? '+' : '';
+      badge.textContent = sign + Math.round(centsVal) + '¢';
+      badge.style.background = color === '#22c55e' ? '#dcfce7' : color === '#ef4444' ? '#fee2e2' : '#dbeafe';
+      badge.style.color = color || '#374151';
+    }
+  }
+}
 function spLoop() {
   if (!spRunning) return;
   const buf = new Float32Array(spAnalyser.fftSize);
@@ -3659,26 +3685,10 @@ function spLoop() {
       else                               { color = '#3b82f6'; spStats.low++;  }
     }
 
-    document.getElementById('sp-cur-note').textContent = curNote;
-    document.getElementById('sp-cur-note').style.color = color;
-    if (centsVal !== null) {
-      const sign = centsVal >= 0 ? '+' : '';
-      document.getElementById('sp-cents').textContent = sign + Math.round(Math.abs(centsVal)) + '¢';
-      document.getElementById('sp-cents').style.color = color;
-      const bar = document.getElementById('sp-dev-bar');
-      const pct = Math.max(-50, Math.min(50, centsVal));
-      if (pct >= 0) { bar.style.left = '50%'; bar.style.width = pct + '%'; }
-      else          { bar.style.left = (50 + pct) + '%'; bar.style.width = (-pct) + '%'; }
-      bar.style.background = color;
-    }
+    _spUpdateNeedle(centsVal, color, curNote);
   } else {
-    // 靜音 → 清空顯示，不保留上一個音
-    document.getElementById('sp-cur-note').textContent = '–';
-    document.getElementById('sp-cur-note').style.color = '#d1d5db';
-    document.getElementById('sp-cents').textContent = '–';
-    document.getElementById('sp-cents').style.color = '#d1d5db';
-    const bar = document.getElementById('sp-dev-bar');
-    bar.style.width = '0%'; bar.style.left = '50%';
+    // 靜音 → 清空顯示
+    _spUpdateNeedle(null, '#d1d5db', '–');
   }
 
   if (ref) {
@@ -5705,8 +5715,8 @@ function buildPracticeEmbed() {
 </div><!-- end repertoire section -->
 
 <!-- ══ SCORE PLAY SECTION ══ -->
-<div class="practice-section" id="sec-scoreplay">
-  <div style="padding:16px;">
+<div class="practice-section" id="sec-scoreplay" style="padding:0;">
+  <div style="padding:8px 12px 0;">
 
     <!-- Tab switcher -->
     <div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:14px;">
@@ -5755,7 +5765,7 @@ function buildPracticeEmbed() {
     </div>
 
     <!-- Compare Panel -->
-    <div id="sp-panel-compare">
+    <div id="sp-panel-compare" style="padding:0 12px;">
       <div id="sp-cur-rep-info" style="display:none;background:var(--bg);border-radius:10px;padding:10px 14px;margin-bottom:12px;border:1.5px solid var(--border);flex-direction:column;">
         <div style="font-size:11px;color:var(--muted);font-weight:700;">當前曲目</div>
         <div id="sp-cur-rep-name" style="font-size:14px;font-weight:900;margin-top:2px;"></div>
@@ -5776,7 +5786,7 @@ function buildPracticeEmbed() {
     </div>
 
     <!-- Controls -->
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
       <button id="sp-start-btn" onclick="spStart()" disabled
         style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;opacity:0.4;">
         ▶ 開始比對
@@ -5786,43 +5796,44 @@ function buildPracticeEmbed() {
       </button>
     </div>
 
-    <!-- Live note display -->
-    <div id="sp-note-display" style="display:none;background:white;border-radius:12px;border:1.5px solid var(--border);padding:12px 16px;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;">當前音</div>
-          <div id="sp-cur-note" style="font-size:28px;font-weight:900;font-family:'Space Mono',monospace;">–</div>
+    <!-- Live: 當前音 + 目標音 + 彩色偏差條 (inline, compact) -->
+    <div id="sp-note-display" style="display:none;margin-bottom:10px;">
+      <!-- 音名行 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="display:flex;align-items:baseline;gap:6px;">
+          <span style="font-size:10px;color:var(--muted);font-weight:700;">當前</span>
+          <span id="sp-cur-note" style="font-size:26px;font-weight:900;font-family:'Space Mono',monospace;color:#1e293b;">–</span>
         </div>
-        <div style="text-align:center;">
-          <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;">偏差</div>
-          <div id="sp-cents" style="font-size:22px;font-weight:900;font-family:'Nunito',sans-serif;">–</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;">目標音</div>
-          <div id="sp-target-note" style="font-size:28px;font-weight:900;font-family:'Space Mono',monospace;color:var(--muted);">–</div>
+        <div id="sp-tune-badge" style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;background:#e5e7eb;color:#6b7280;">–</div>
+        <div style="display:flex;align-items:baseline;gap:6px;">
+          <span style="font-size:10px;color:var(--muted);font-weight:700;">目標</span>
+          <span id="sp-target-note" style="font-size:26px;font-weight:900;font-family:'Space Mono',monospace;color:var(--muted);">–</span>
         </div>
       </div>
-      <!-- Deviation bar -->
-      <div style="position:relative;height:8px;border-radius:4px;background:#eee;margin-top:10px;overflow:hidden;">
-        <div style="position:absolute;left:50%;top:0;width:2px;height:100%;background:#999;transform:translateX(-50%);"></div>
-        <div id="sp-dev-bar" style="position:absolute;height:100%;border-radius:4px;background:var(--green);transition:all 0.1s;left:50%;width:0%;"></div>
+      <!-- 彩色偏差條：左=偏低(藍) 中=準確(綠) 右=偏高(紅) -->
+      <div style="position:relative;height:14px;border-radius:7px;overflow:hidden;background:linear-gradient(to right,#3b82f6 0%,#22c55e 40%,#22c55e 60%,#ef4444 100%);">
+        <!-- 中線 -->
+        <div style="position:absolute;left:50%;top:0;width:2px;height:100%;background:rgba(255,255,255,0.6);transform:translateX(-50%);"></div>
+        <!-- 指針 -->
+        <div id="sp-dev-needle" style="position:absolute;top:-2px;width:18px;height:18px;border-radius:50%;background:white;border:3px solid #374151;box-shadow:0 2px 4px rgba(0,0,0,0.3);left:50%;transform:translateX(-50%);transition:left 0.08s;"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;">
-        <span>偏低 ◀</span><span>▶ 偏高</span>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px;font-weight:700;">
+        <span style="color:#3b82f6;">◀ 偏低</span><span style="color:#22c55e;">準確</span><span style="color:#ef4444;">偏高 ▶</span>
       </div>
     </div>
+    <!-- 隱藏的 sp-cents 供 JS 用 -->
+    <div id="sp-cents" style="display:none;"></div>
 
-    <!-- Canvas: pitch trace -->
-    <div style="background:white;border-radius:12px;border:1.5px solid var(--border);overflow:hidden;">
-      <div style="padding:10px 14px 4px;font-size:11px;font-weight:700;color:var(--muted);">音高軌跡</div>
-      <canvas id="sp-canvas" width="640" height="140" style="width:100%;display:block;"></canvas>
-      <!-- Legend -->
-      <div style="display:flex;gap:12px;padding:6px 14px 10px;font-size:11px;font-weight:700;">
-        <span style="color:#22c55e;">● 準確</span>
-        <span style="color:#ef4444;">● 偏高</span>
-        <span style="color:#3b82f6;">● 偏低</span>
-        <span style="color:#d1d5db;">● 靜音</span>
-      </div>
+    <!-- Canvas: pitch trace (全寬無邊框) -->
+    <div style="border-radius:12px;overflow:hidden;margin-bottom:4px;">
+      <canvas id="sp-canvas" width="640" height="130" style="width:100%;display:block;"></canvas>
+    </div>
+    <!-- Legend 緊貼 canvas 底部 -->
+    <div style="display:flex;gap:12px;padding:2px 4px 8px;font-size:11px;font-weight:700;">
+      <span style="color:#22c55e;">● 準確</span>
+      <span style="color:#ef4444;">● 偏高</span>
+      <span style="color:#3b82f6;">● 偏低</span>
+      <span style="color:#d1d5db;">● 靜音</span>
     </div>
 
     <!-- Session summary -->
@@ -5846,7 +5857,7 @@ function buildPracticeEmbed() {
     </div>
 
     <!-- Sheet music display -->
-    <div id="sp-sheet-wrap" style="display:none;margin-top:12px;background:#0d0d14;border-radius:12px;overflow:hidden;">
+    <div id="sp-sheet-wrap" style="display:none;margin-top:4px;background:white;border-radius:0;overflow:hidden;">
       <canvas id="sp-sheet-canvas" style="width:100%;display:block;"></canvas>
       <div id="sp-sheet-bar" style="display:flex;justify-content:center;gap:6px;padding:8px;"></div>
     </div>
@@ -8700,25 +8711,9 @@ function spLoop() {
       else                               { color = '#3b82f6'; spStats.low++;  }
     }
 
-    // Update live display
-    document.getElementById('sp-cur-note').textContent = curNote;
-    document.getElementById('sp-cur-note').style.color = color;
-    if (centsVal !== null) {
-      const sign = centsVal >= 0 ? '+' : '';
-      document.getElementById('sp-cents').textContent = sign + centsVal.toFixed(1) + '¢';
-      document.getElementById('sp-cents').style.color = color;
-      // Deviation bar
-      const bar = document.getElementById('sp-dev-bar');
-      const pct = Math.max(-50, Math.min(50, centsVal));
-      if (pct >= 0) {
-        bar.style.left = '50%';
-        bar.style.width = (pct) + '%';
-      } else {
-        bar.style.left = (50 + pct) + '%';
-        bar.style.width = (-pct) + '%';
-      }
-      bar.style.background = color;
-    }
+    _spUpdateNeedle(centsVal, color, curNote);
+  } else {
+    _spUpdateNeedle(null, '#d1d5db', '–');
   }
 
   if (ref) {
