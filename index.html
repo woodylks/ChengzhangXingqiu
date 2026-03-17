@@ -3491,6 +3491,7 @@ let spAudioCtx = null;
 let spAnalyser = null;
 let spRafId    = null;
 let spRunning  = false;
+let spLastColor = '#d1d5db';
 let spStartTime = 0;
 let spTracePoints = []; // {t, color, y} for canvas
 let spStats = { good:0, high:0, low:0 };
@@ -5796,32 +5797,12 @@ function buildPracticeEmbed() {
       </button>
     </div>
 
-    <!-- Live: 當前音 + 目標音 + 彩色偏差條 (inline, compact) -->
-    <div id="sp-note-display" style="display:none;margin-bottom:10px;">
-      <!-- 音名行 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="display:flex;align-items:baseline;gap:6px;">
-          <span style="font-size:10px;color:var(--muted);font-weight:700;">當前</span>
-          <span id="sp-cur-note" style="font-size:26px;font-weight:900;font-family:'Space Mono',monospace;color:#1e293b;">–</span>
-        </div>
-        <div id="sp-tune-badge" style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;background:#e5e7eb;color:#6b7280;">–</div>
-        <div style="display:flex;align-items:baseline;gap:6px;">
-          <span style="font-size:10px;color:var(--muted);font-weight:700;">目標</span>
-          <span id="sp-target-note" style="font-size:26px;font-weight:900;font-family:'Space Mono',monospace;color:var(--muted);">–</span>
-        </div>
-      </div>
-      <!-- 彩色偏差條：左=偏低(藍) 中=準確(綠) 右=偏高(紅) -->
-      <div style="position:relative;height:14px;border-radius:7px;overflow:hidden;background:linear-gradient(to right,#3b82f6 0%,#22c55e 40%,#22c55e 60%,#ef4444 100%);">
-        <!-- 中線 -->
-        <div style="position:absolute;left:50%;top:0;width:2px;height:100%;background:rgba(255,255,255,0.6);transform:translateX(-50%);"></div>
-        <!-- 指針 -->
-        <div id="sp-dev-needle" style="position:absolute;top:-2px;width:18px;height:18px;border-radius:50%;background:white;border:3px solid #374151;box-shadow:0 2px 4px rgba(0,0,0,0.3);left:50%;transform:translateX(-50%);transition:left 0.08s;"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px;font-weight:700;">
-        <span style="color:#3b82f6;">◀ 偏低</span><span style="color:#22c55e;">準確</span><span style="color:#ef4444;">偏高 ▶</span>
-      </div>
-    </div>
-    <!-- 隱藏的 sp-cents 供 JS 用 -->
+    <!-- 隱藏元素供 JS 用 -->
+    <div id="sp-note-display" style="display:none;"></div>
+    <span id="sp-cur-note" style="display:none;"></span>
+    <span id="sp-target-note" style="display:none;"></span>
+    <div id="sp-tune-badge" style="display:none;"></div>
+    <div id="sp-dev-needle" style="display:none;"></div>
     <div id="sp-cents" style="display:none;"></div>
 
     <!-- Canvas: pitch trace (全寬無邊框) -->
@@ -8646,7 +8627,7 @@ function spDrawSheet(elapsed) {
     0, 0, W, H                   // dest rect
   );
 
-  // Blue playhead
+  // 彩色 playhead（顏色由外部 spLastColor 決定：綠=準確 紅=偏高 藍=偏低）
   const progress = Math.max(0, Math.min(1,
     (elapsed - sys.tStart) / (sys.tEnd - sys.tStart)
   ));
@@ -8654,14 +8635,14 @@ function spDrawSheet(elapsed) {
   const xEndD   = (sys.xEnd   / SP_IMG_W) * W;
   const phX     = xStartD + progress * (xEndD - xStartD);
 
+  const lineColor = (typeof spLastColor !== 'undefined' && spLastColor) ? spLastColor : '#4FACDE';
+
   ctx.save();
-  ctx.shadowBlur = 12; ctx.shadowColor = '#4FACDE';
-  ctx.strokeStyle = '#4FACDE';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(phX, 4); ctx.lineTo(phX, H - 4); ctx.stroke();
+  ctx.shadowBlur = 14; ctx.shadowColor = lineColor;
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(phX, 2); ctx.lineTo(phX, H - 2); ctx.stroke();
   ctx.shadowBlur = 0;
-  ctx.fillStyle = '#4FACDE';
-  ctx.beginPath(); ctx.arc(phX, 4, 4, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
   // Row indicator dots
@@ -8711,8 +8692,10 @@ function spLoop() {
       else                               { color = '#3b82f6'; spStats.low++;  }
     }
 
+    spLastColor = color;
     _spUpdateNeedle(centsVal, color, curNote);
   } else {
+    spLastColor = '#d1d5db';
     _spUpdateNeedle(null, '#d1d5db', '–');
   }
 
