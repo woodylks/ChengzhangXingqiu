@@ -3652,7 +3652,6 @@ function spLoop() {
     curNote = midiToNoteName(nearestMidi);
 
     if (ref) {
-      // Diff in cents from reference
       diffCents = (nearestMidi - ref.midi) * 100 + selfCents;
       centsVal = diffCents;
       if (Math.abs(diffCents) <= 20)     { color = '#22c55e'; spStats.good++; }
@@ -3660,25 +3659,26 @@ function spLoop() {
       else                               { color = '#3b82f6'; spStats.low++;  }
     }
 
-    // Update live display
     document.getElementById('sp-cur-note').textContent = curNote;
     document.getElementById('sp-cur-note').style.color = color;
     if (centsVal !== null) {
       const sign = centsVal >= 0 ? '+' : '';
       document.getElementById('sp-cents').textContent = sign + Math.round(Math.abs(centsVal)) + '¢';
       document.getElementById('sp-cents').style.color = color;
-      // Deviation bar
       const bar = document.getElementById('sp-dev-bar');
       const pct = Math.max(-50, Math.min(50, centsVal));
-      if (pct >= 0) {
-        bar.style.left = '50%';
-        bar.style.width = (pct) + '%';
-      } else {
-        bar.style.left = (50 + pct) + '%';
-        bar.style.width = (-pct) + '%';
-      }
+      if (pct >= 0) { bar.style.left = '50%'; bar.style.width = pct + '%'; }
+      else          { bar.style.left = (50 + pct) + '%'; bar.style.width = (-pct) + '%'; }
       bar.style.background = color;
     }
+  } else {
+    // 靜音 → 清空顯示，不保留上一個音
+    document.getElementById('sp-cur-note').textContent = '–';
+    document.getElementById('sp-cur-note').style.color = '#d1d5db';
+    document.getElementById('sp-cents').textContent = '–';
+    document.getElementById('sp-cents').style.color = '#d1d5db';
+    const bar = document.getElementById('sp-dev-bar');
+    bar.style.width = '0%'; bar.style.left = '50%';
   }
 
   if (ref) {
@@ -6527,7 +6527,10 @@ function detectPitch() {
   document.getElementById('vol-fill').style.width=Math.min(rms*400,100)+'%';
   if(rms>0.015){
     const freq=autoCorrelate(dataArr,audioCtx.sampleRate);
-    if(freq>50&&freq<2000){ const r=findClosest(freq); if(r) updatePitch(r.note,r.cents,freq); }
+    if(freq>50&&freq<2000){ const r=findClosest(freq); if(r) updatePitch(r.note,r.cents,freq); else resetPitchDisplay(); }
+    else resetPitchDisplay();
+  } else {
+    resetPitchDisplay();
   }
   rafId=requestAnimationFrame(detectPitch);
 }
