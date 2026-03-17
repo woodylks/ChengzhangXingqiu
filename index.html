@@ -5837,10 +5837,9 @@ function buildPracticeEmbed() {
       <div id="sp-stat-pct" style="text-align:center;margin-top:10px;font-size:15px;font-weight:900;"></div>
     </div>
 
-    <!-- Sheet music display -->
-    <div id="sp-sheet-wrap" style="display:none;margin-top:4px;background:white;border-radius:0;overflow:hidden;">
-      <canvas id="sp-sheet-canvas" style="width:100%;display:block;"></canvas>
-      <div id="sp-sheet-bar" style="display:flex;justify-content:center;gap:6px;padding:8px;"></div>
+    <!-- Piano Roll display -->
+    <div id="sp-sheet-wrap" style="display:none;margin-top:4px;background:#0d0d14;border-radius:0;overflow:hidden;">
+      <canvas id="sp-sheet-canvas" style="width:100%;display:block;height:160px;"></canvas>
     </div>
 
     <!-- Save log area -->
@@ -8304,7 +8303,6 @@ async function spSelectRep(id) {
     const sheetWrap = document.getElementById('sp-sheet-wrap');
     if (sheetWrap) {
       sheetWrap.style.display = '';
-      document.getElementById('sp-sheet-total').textContent = dur + 's';
       spDrawSheet(0);
     }
   }
@@ -8586,76 +8584,102 @@ const SP_SYSTEMS = [
 const SP_IMG_W = 630, SP_IMG_H = 4093;
 const SP_STAFF_HALF = 75; // half-height of crop strip (px in original image)
 
+// Piano Roll renderer — 滾動視窗，進度線固定在左1/4處，音符向左滾動
 function spDrawSheet(elapsed) {
   const canvas = document.getElementById('sp-sheet-canvas');
-  if (!canvas) return;
+  if (!canvas || !spReferenceScore.length) return;
 
-  const dpr     = window.devicePixelRatio || 1;
-  const dispW   = canvas.getBoundingClientRect().width || 340;
-  const dispH   = 150;
+  const dpr   = window.devicePixelRatio || 1;
+  const dispW = canvas.getBoundingClientRect().width || 360;
+  const dispH = 160;
   canvas.width  = dispW * dpr;
   canvas.height = dispH * dpr;
+  canvas.style.height = dispH + 'px';
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   const W = dispW, H = dispH;
 
-  ctx.fillStyle = '#fafaf8';
+  // ── 背景 ──
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, W, H);
 
-  if (!spScoreImgLoaded) {
-    ctx.fillStyle = '#9B8B7A';
-    ctx.font = '13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('載入樂譜圖片中…', W/2, H/2);
-    ctx.textAlign = 'left';
-    return;
+  // ── 音域範圍（MIDI pitch）──
+  const allMidi = spReferenceScore.map(n => n.midi);
+  const midiLo  = Math.min(...allMidi) - 2;
+  const midiHi  = Math.max(...allMidi) + 2;
+  const midiSpan = Math.max(midiHi - midiLo, 12);
+
+  const midiToY = m => H - ((m - midiLo) / midiSpan) * H;
+
+  // ── 格線（每個半音一條淡線）──
+  for (let m = midiLo; m <= midiHi; m++) {
+    const y = midiToY(m);
+    const isBlack = [1,3,6,8,10].includes(m % 12);
+    ctx.fillStyle = isBlack ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
+    ctx.fillRect(0, y - (H / midiSpan / 2), W, H / midiSpan);
   }
 
-  // Find current system
-  let sysIdx = SP_SYSTEMS.length - 1;
-  for (let i = 0; i < SP_SYSTEMS.length; i++) {
-    if (elapsed <= SP_SYSTEMS[i].tEnd) { sysIdx = i; break; }
-  }
-  const sys = SP_SYSTEMS[sysIdx];
+  // ── 時間視窗：進度線固定在左 25% 處，顯示前後各幾秒 ──
+  const CURSOR_X  = W * 0.25;   // 進度線 x 位置
+  const WIN_BEFORE = 2;          // 進度線左側顯示 2 秒（已過去）
+  const WIN_AFTER  = 6;          // 進度線右側顯示 6 秒（即將到來）
+  const timeToX = t => CURSOR_X + (t - elapsed) / (WIN_BEFORE + WIN_AFTER) * W * ((WIN_BEFORE + WIN_AFTER) / WIN_AFTER);
 
-  // Crop: show Tpt staff strip (Piano staff above + Tpt staff)
-  const cropY = Math.max(0, sys.yCenter - SP_STAFF_HALF);
-  const cropH = SP_STAFF_HALF * 2;
-  // Draw score strip scaled to full canvas width
-  ctx.drawImage(SP_SCORE_IMG,
-    0, cropY, SP_IMG_W, cropH,   // source rect
-    0, 0, W, H                   // dest rect
+  // 只過濾可見範圍內的音符
+  const visNotes = spReferenceScore.filter(n =>
+    n.time >= elapsed - WIN_BEFORE - 0.5 &&
+    n.time <= elapsed + WIN_AFTER + 0.5
   );
 
-  // 彩色 playhead（顏色由外部 spLastColor 決定：綠=準確 紅=偏高 藍=偏低）
-  const progress = Math.max(0, Math.min(1,
-    (elapsed - sys.tStart) / (sys.tEnd - sys.tStart)
-  ));
-  const xStartD = (sys.xStart / SP_IMG_W) * W;
-  const xEndD   = (sys.xEnd   / SP_IMG_W) * W;
-  const phX     = xStartD + progress * (xEndD - xStartD);
+  // ── 計算每個音符時長（下一個音符開始前或默認0.4s）──
+  visNotes.forEach((n, i) => {
+    const nextTime = spReferenceScore[spReferenceScore.indexOf(n) + 1]?.time ?? (n.time + 0.5);
+    const dur = Math.min(nextTime - n.time, 1.2);
+    const x  = timeToX(n.time);
+    const x2 = timeToX(n.time + dur);
+    const y  = midiToY(n.midi);
+    const noteH = Math.max(6, (H / midiSpan) * 0.75);
 
+    // 顏色：已過去=暗，即將到來=亮
+    const isPast   = n.time < elapsed - 0.05;
+    const isCur    = Math.abs(n.time - elapsed) < 0.6;
+    let noteColor  = '#4FACDE';
+    if (isPast)   noteColor = 'rgba(79,172,222,0.35)';
+    if (isCur)    noteColor = '#ffffff';
+
+    const noteW = Math.max(4, x2 - x - 1);
+    ctx.fillStyle = noteColor;
+    ctx.beginPath();
+    ctx.roundRect(x, y - noteH/2, noteW, noteH, 2);
+    ctx.fill();
+
+    // 音名標籤（只顯示即將到來的）
+    if (!isPast && x2 - x > 18) {
+      const names = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+      const label = names[n.midi % 12];
+      ctx.fillStyle = isCur ? '#0d0d14' : 'rgba(255,255,255,0.7)';
+      ctx.font = `bold ${Math.min(10, noteH * 0.8)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x + Math.min(noteW/2, 14), y + 3);
+      ctx.textAlign = 'left';
+    }
+  });
+
+  // ── 進度線 ──
   const lineColor = (typeof spLastColor !== 'undefined' && spLastColor) ? spLastColor : '#4FACDE';
-
   ctx.save();
-  ctx.shadowBlur = 14; ctx.shadowColor = lineColor;
+  ctx.shadowBlur = 16; ctx.shadowColor = lineColor;
   ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(phX, 2); ctx.lineTo(phX, H - 2); ctx.stroke();
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(CURSOR_X, 0); ctx.lineTo(CURSOR_X, H); ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.restore();
 
-  // Row indicator dots
-  const dotY = H - 5;
-  const total = SP_SYSTEMS.length;
-  SP_SYSTEMS.forEach((s, i) => {
-    const isCur = (i === sysIdx);
-    ctx.fillStyle = isCur ? '#4FACDE' : 'rgba(0,0,0,0.15)';
-    const dotX = W/2 + (i - total/2 + 0.5) * 12;
-    ctx.beginPath();
-    ctx.arc(dotX, dotY, isCur ? 4 : 2, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  // ── 時間標記 ──
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '9px monospace';
+  const secs = Math.floor(elapsed);
+  ctx.fillText(`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`, 4, H - 4);
 }
 
 
