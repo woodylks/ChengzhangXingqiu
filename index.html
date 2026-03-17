@@ -5732,22 +5732,25 @@ function buildPracticeEmbed() {
         <input id="sp-new-name" type="text" placeholder="曲目名稱"
           style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
             font-family:\'Noto Sans TC\',sans-serif;font-size:13px;margin-bottom:8px;">
+        <input type="file" id="sp-midi-file-input" accept=".mid,.midi" style="display:none;" onchange="spPreviewMidi(event)">
+        <input type="file" id="sp-img-file-input" accept="image/*" style="display:none;" onchange="spPreviewImg(event)">
         <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <label style="flex:1;padding:8px;border:1.5px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;">
-            🎹 MIDI 文件
-            <input type="file" accept=".mid,.midi" style="display:none;" onchange="spPreviewMidi(event)">
-          </label>
-          <label style="flex:1;padding:8px;border:1.5px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;">
-            🖼 樂譜圖片
-            <input type="file" accept="image/*" style="display:none;" onchange="spPreviewImg(event)">
-          </label>
+          <button type="button" onclick="document.getElementById(\'sp-midi-file-input\').click()"
+            style="flex:1;padding:8px;border:1.5px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;background:white;font-family:\'Noto Sans TC\',sans-serif;">
+            <span id="sp-new-midi-label">🎹 MIDI 文件</span>
+          </button>
+          <button type="button" onclick="document.getElementById(\'sp-img-file-input\').click()"
+            style="flex:1;padding:8px;border:1.5px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;background:white;font-family:\'Noto Sans TC\',sans-serif;">
+            <span id="sp-new-img-label">🖼 樂譜圖片</span>
+          </button>
         </div>
         <div id="sp-new-preview" style="font-size:11px;color:var(--muted);margin-bottom:8px;"></div>
-        <button onclick="spSaveNewRep()"
+        <button type="button" onclick="spSaveNewRep()"
           style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--kid1);color:white;
             font-family:\'Noto Sans TC\',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">
           💾 保存曲目
         </button>
+        <div id="sp-save-status" style="font-size:11px;text-align:center;margin-top:6px;min-height:16px;"></div>
       </div>
     </div>
 
