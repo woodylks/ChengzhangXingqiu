@@ -8460,11 +8460,13 @@ function spLoop() {
   let diffCents = 0;
 
   if (freq > 0) {
-    // 識別當前音名（用最近半音）
+    // 識別當前音名（小號記譜音 = concert pitch + 2 半音）
     const A4 = 440;
     const midiF = 12 * Math.log2(freq / A4) + 69;
     const nearestMidi = Math.round(midiF);
-    curNote = midiToNoteName(nearestMidi);
+    const writtenMidi = nearestMidi + (practiceKid === 'trumpet' ? 2 : 0);
+    const _wNames = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+    curNote = _wNames[((writtenMidi % 12) + 12) % 12] + (Math.floor(writtenMidi / 12) - 1);
 
     if (ref) {
       // 用 cents 比較頻率和目標頻率
