@@ -8528,10 +8528,14 @@ function spLoop() {
       ctx2d.lineWidth = 1;
       ctx2d.beginPath(); ctx2d.moveTo(0, gy); ctx2d.lineTo(W, gy); ctx2d.stroke();
       if (isNatural) {
-        const oct = Math.floor(m / 12) - 1;
+        // 小號記譜音標籤（+2半音）
+        const wm = m + (practiceKid === 'trumpet' ? 2 : 0);
+        const wNames = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+        const wName = wNames[((wm % 12) + 12) % 12];
+        const wOct  = Math.floor(wm / 12) - 1;
         ctx2d.fillStyle = 'rgba(255,255,255,0.35)';
         ctx2d.font = '9px monospace';
-        ctx2d.fillText(`${name}${oct}`, 3, gy - 2);
+        ctx2d.fillText(`${wName}${wOct}`, 3, gy - 2);
       }
     }
 
