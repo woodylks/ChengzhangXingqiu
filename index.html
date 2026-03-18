@@ -3651,134 +3651,6 @@ function _spUpdateNeedle(centsVal, color, curNote) {
     }
   }
 }
-function spLoop() {
-  if (!spRunning) return;
-  const buf = new Float32Array(spAnalyser.fftSize);
-  spAnalyser.getFloatTimeDomainData(buf); // ← 必須先讀取麥克風數據
-  const freq = autoCorrelate(buf, spAudioCtx.sampleRate);
-  const elapsed = spAudioCtx.currentTime - spStartTime;
-
-  // Find current reference note
-  const ref = [...spReferenceScore].reverse().find(n => elapsed >= n.time);
-
-  let color = '#d1d5db'; // silent = gray
-  let centsVal = null;
-  let curNote = '–';
-  let diffCents = 0;
-
-  if (freq > 0) {
-    // Convert freq to MIDI + cents
-    const A4 = 440;
-    const midiF = 12 * Math.log2(freq / A4) + 69;
-    const nearestMidi = Math.round(midiF);
-    const selfCents = (midiF - nearestMidi) * 100;
-    curNote = midiToNoteName(nearestMidi);
-
-    if (ref) {
-      diffCents = (nearestMidi - ref.midi) * 100 + selfCents;
-      centsVal = diffCents;
-      if (Math.abs(diffCents) <= 20)     { color = '#22c55e'; spStats.good++; }
-      else if (diffCents > 20)           { color = '#ef4444'; spStats.high++; }
-      else                               { color = '#3b82f6'; spStats.low++;  }
-    }
-
-    _spUpdateNeedle(centsVal, color, curNote);
-  } else {
-    // 靜音 → 清空顯示
-    _spUpdateNeedle(null, '#d1d5db', '–');
-  }
-
-  if (ref) {
-    // 小號記譜音 = concert pitch + 2 半音
-    const _wMidi = ref.midi + (practiceKid === 'trumpet' ? 2 : 0);
-    const _names = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
-    const _wName = _names[((_wMidi % 12) + 12) % 12] + (Math.floor(_wMidi / 12) - 1);
-    document.getElementById('sp-target-note').textContent = practiceKid === 'trumpet' ? _wName : ref.noteName;
-  }
-
-  // Canvas trace
-  const canvas = document.getElementById('sp-canvas');
-  if (canvas) {
-    const W = canvas.width, H = canvas.height;
-    // Log-scale Y: map freq 50–2000 to height
-    const yPos = freq > 0
-      ? H - ((Math.log2(freq / 50)) / Math.log2(2000 / 50)) * H
-      : H / 2;
-    spTracePoints.push({ t: elapsed, y: yPos, color });
-    // Keep last 8s of points
-    const maxT = 8;
-    while (spTracePoints.length > 0 && elapsed - spTracePoints[0].t > maxT) spTracePoints.shift();
-
-    const ctx2d = canvas.getContext('2d');
-    ctx2d.fillStyle = '#0d0d14';
-    ctx2d.fillRect(0, 0, W, H);
-
-    // 進度線固定在 75% 處，音符從右往左流向進度線
-    const CURSOR = W * 0.75;
-    const visStart = elapsed - maxT * 0.75;
-    const visEnd   = elapsed + maxT * 0.25;
-    const timeToX  = t => ((t - visStart) / (visEnd - visStart)) * W;
-
-    // 畫參考音符（黃色橫條）
-    if (spReferenceScore.length) {
-      spReferenceScore.forEach((n, ni) => {
-        if (n.time < visStart - 0.5 || n.time > visEnd + 0.5) return;
-        const x = timeToX(n.time);
-        const refFreq = 440 * Math.pow(2, (n.midi - 69) / 12);
-        const ry = H - ((Math.log2(refFreq / 50)) / Math.log2(2000 / 50)) * H;
-        // 下一個音符決定長度
-        const nextTime = spReferenceScore[ni+1]?.time ?? (n.time + 0.8);
-        const barW = Math.max(8, timeToX(Math.min(nextTime, n.time + 1.5)) - x - 2);
-        const isCur = ref && ref.time === n.time;
-        ctx2d.fillStyle = isCur ? 'rgba(255,200,50,0.9)' : 'rgba(255,200,50,0.3)';
-        ctx2d.fillRect(x, ry - 5, barW, 10);
-        ctx2d.fillStyle = isCur ? '#fff' : 'rgba(255,255,255,0.5)';
-        ctx2d.font = '9px monospace';
-        ctx2d.fillText(n.noteName, x + 2, ry - 7);
-      });
-    }
-
-    // 畫演奏軌跡點
-    spTracePoints.forEach(p => {
-      const x = timeToX(p.t);
-      ctx2d.fillStyle = p.color;
-      ctx2d.beginPath();
-      ctx2d.arc(x, p.y, 3, 0, Math.PI * 2);
-      ctx2d.fill();
-    });
-
-    // 進度線（白色發光）
-    ctx2d.save();
-    ctx2d.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx2d.lineWidth = 2;
-    ctx2d.shadowBlur = 8; ctx2d.shadowColor = 'white';
-    ctx2d.beginPath(); ctx2d.moveTo(CURSOR, 0); ctx2d.lineTo(CURSOR, H); ctx2d.stroke();
-    ctx2d.restore();
-  }
-
-  // 更新時間進度條
-  if (spReferenceScore.length) {
-    const totalDur = spReferenceScore[spReferenceScore.length-1].time + 0.5;
-    const pct = Math.min(100, (elapsed / totalDur) * 100);
-    const pb = document.getElementById('sp-progress-bar');
-    if (pb) pb.style.width = pct + '%';
-    const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-    const et = document.getElementById('sp-elapsed-time');
-    const tt = document.getElementById('sp-total-time');
-    if (et) et.textContent = fmt(elapsed);
-    if (tt) tt.textContent = fmt(totalDur);
-    // 當前是第幾個音符
-    // 用時間找 index 而非 indexOf（更可靠）
-    let noteIdx = 0;
-    for (let i = spReferenceScore.length - 1; i >= 0; i--) {
-      if (elapsed >= spReferenceScore[i].time) { noteIdx = i + 1; break; }
-    }
-    const np = document.getElementById('sp-note-progress');
-    if (np) np.textContent = noteIdx > 0 ? `第 ${noteIdx} / ${spReferenceScore.length} 音` : `等待開始…`;
-  }
-
-  spRafId = requestAnimationFrame(spLoop);
-}
 
 // ══════════════════════════════════════════════
 //  AI CHAT
@@ -8596,20 +8468,21 @@ function spLoop() {
   let diffCents = 0;
 
   if (freq > 0) {
-    // Convert freq to MIDI + cents
+    // 識別當前音名（用最近半音）
     const A4 = 440;
     const midiF = 12 * Math.log2(freq / A4) + 69;
     const nearestMidi = Math.round(midiF);
-    const selfCents = (midiF - nearestMidi) * 100;
     curNote = midiToNoteName(nearestMidi);
 
     if (ref) {
-      // Diff in cents from reference
-      diffCents = (nearestMidi - ref.midi) * 100 + selfCents;
+      // 正確做法：用 cents 比較頻率和目標頻率
+      // cents = 1200 * log2(played / target)
+      const refFreq = A4 * Math.pow(2, (ref.midi - 69) / 12);
+      diffCents = Math.round(1200 * Math.log2(freq / refFreq));
       centsVal = diffCents;
-      if (Math.abs(diffCents) <= 20)     { color = '#22c55e'; spStats.good++; }
-      else if (diffCents > 20)           { color = '#ef4444'; spStats.high++; }
-      else                               { color = '#3b82f6'; spStats.low++;  }
+      if (Math.abs(diffCents) <= 50)      { color = '#22c55e'; spStats.good++; }
+      else if (diffCents > 50)            { color = '#ef4444'; spStats.high++; }
+      else                                { color = '#3b82f6'; spStats.low++;  }
     }
 
     spLastColor = color;
