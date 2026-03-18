@@ -8161,6 +8161,9 @@ async function spSelectRep(id) {
       ? { time: n.t, midi: n.m, noteName: midiToNoteName(n.m) }
       : n
     );
+    // 對齊時間：讓第一個音符從 0 開始
+    const _off = spReferenceScore[0]?.time || 0;
+    if (_off > 0) spReferenceScore.forEach(n => { n.time = +(n.time - _off).toFixed(3); });
     const dur = (spReferenceScore[spReferenceScore.length-1].time + 1).toFixed(1);
     document.getElementById('sp-midi-status').innerHTML =
       `✅ 已從庫載入：<strong>${rep.midiNotes.length}</strong> 個音符，時長約 ${dur}s`;
@@ -8462,7 +8465,8 @@ function spLoop() {
     if (rmsEarly > 0.03 && freq > 0) {
       spAlignFrames = (spAlignFrames || 0) + 1;
       if (spAlignFrames >= 3) {
-        spStartTime = spAudioCtx.currentTime;
+        // 往前補償 3 幀的延遲（約 50ms @ 60fps）
+        spStartTime = spAudioCtx.currentTime - 0.05;
         spAlignFrames = 0;
         const statusEl = document.getElementById('sp-midi-status');
         if (statusEl) { statusEl.textContent = '🎯 已對齊！開始比對…'; statusEl.style.color = 'var(--green)'; }
