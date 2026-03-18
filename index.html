@@ -8369,28 +8369,18 @@ function spLoop() {
   rmsEarly = Math.sqrt(rmsEarly / buf.length);
   const hasSound = rmsEarly > 0.015 && freq > 0;
 
-  // ── 首音符對齊：連續 3 幀有聲才確認，但以第 1 幀時間為準 ──
+  // ── 首音符對齊：RMS 超過門檻且有有效頻率，立即對齊 ──
   if (spStartTime === null) {
-    if (rmsEarly > 0.03 && freq > 0) {
-      spAlignFrames++;
-      if (spAlignFrames === 1) {
-        // 記錄第一幀有聲音的時間
-        spAlignStartTime = spAudioCtx.currentTime;
-      }
-      if (spAlignFrames >= 3) {
-        // 用第一幀的時間作為對齊點（不是現在）
-        spStartTime = spAlignStartTime;
-        spAlignFrames = 0;
-        spAlignStartTime = null;
-        const statusEl = document.getElementById('sp-midi-status');
-        if (statusEl) { statusEl.textContent = '🎯 已對齊！開始比對…'; statusEl.style.color = 'var(--green)'; }
-      }
+    if (rmsEarly > 0.05 && freq > 0) {
+      // 立即以此幀為對齊點，不等待多幀確認
+      spStartTime = spAudioCtx.currentTime;
+      const statusEl = document.getElementById('sp-midi-status');
+      if (statusEl) { statusEl.textContent = '🎯 已對齊！開始比對…'; statusEl.style.color = 'var(--green)'; }
+      // 不 return，繼續執行本幀的識別邏輯
     } else {
-      spAlignFrames = 0;
-      spAlignStartTime = null;
+      spRafId = requestAnimationFrame(spLoop);
+      return;
     }
-    spRafId = requestAnimationFrame(spLoop);
-    return;
   }
 
   const elapsed = spAudioCtx.currentTime - spStartTime;
