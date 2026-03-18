@@ -3702,52 +3702,67 @@ function spLoop() {
     while (spTracePoints.length > 0 && elapsed - spTracePoints[0].t > maxT) spTracePoints.shift();
 
     const ctx2d = canvas.getContext('2d');
-    ctx2d.fillStyle = 'white';
+    ctx2d.fillStyle = '#0d0d14';
     ctx2d.fillRect(0, 0, W, H);
 
-    // Draw reference note lines (faint)
+    // 進度線固定在 75% 處，音符從右往左流向進度線
+    const CURSOR = W * 0.75;
+    const visStart = elapsed - maxT * 0.75;
+    const visEnd   = elapsed + maxT * 0.25;
+    const timeToX  = t => ((t - visStart) / (visEnd - visStart)) * W;
+
+    // 畫參考音符（黃色橫條）
     if (spReferenceScore.length) {
-      const visStart = elapsed - maxT;
-      spReferenceScore.forEach(n => {
-        if (n.time < visStart - 0.5 || n.time > elapsed + 1) return;
-        const x = ((n.time - visStart) / maxT) * W;
+      spReferenceScore.forEach((n, ni) => {
+        if (n.time < visStart - 0.5 || n.time > visEnd + 0.5) return;
+        const x = timeToX(n.time);
         const refFreq = 440 * Math.pow(2, (n.midi - 69) / 12);
         const ry = H - ((Math.log2(refFreq / 50)) / Math.log2(2000 / 50)) * H;
-        ctx2d.strokeStyle = '#e5e7eb';
-        ctx2d.lineWidth = 12;
-        ctx2d.beginPath();
-        ctx2d.moveTo(x, ry - 6);
-        ctx2d.lineTo(x + 30, ry - 6);
-        ctx2d.stroke();
-        ctx2d.fillStyle = '#9ca3af';
+        // 下一個音符決定長度
+        const nextTime = spReferenceScore[ni+1]?.time ?? (n.time + 0.8);
+        const barW = Math.max(8, timeToX(Math.min(nextTime, n.time + 1.5)) - x - 2);
+        const isCur = ref && ref.time === n.time;
+        ctx2d.fillStyle = isCur ? 'rgba(255,200,50,0.9)' : 'rgba(255,200,50,0.3)';
+        ctx2d.fillRect(x, ry - 5, barW, 10);
+        ctx2d.fillStyle = isCur ? '#fff' : 'rgba(255,255,255,0.5)';
         ctx2d.font = '9px monospace';
-        ctx2d.fillText(n.noteName, x + 2, ry - 8);
+        ctx2d.fillText(n.noteName, x + 2, ry - 7);
       });
     }
 
-    // Draw center line
-    ctx2d.strokeStyle = '#e5e7eb';
-    ctx2d.lineWidth = 1;
-    ctx2d.beginPath();
-    ctx2d.moveTo(0, H/2); ctx2d.lineTo(W, H/2);
-    ctx2d.stroke();
-
-    // Draw trace dots
+    // 畫演奏軌跡點
     spTracePoints.forEach(p => {
-      const x = ((p.t - (elapsed - maxT)) / maxT) * W;
+      const x = timeToX(p.t);
       ctx2d.fillStyle = p.color;
       ctx2d.beginPath();
       ctx2d.arc(x, p.y, 3, 0, Math.PI * 2);
       ctx2d.fill();
     });
 
-    // Current time line
-    ctx2d.strokeStyle = '#374151';
-    ctx2d.lineWidth = 1.5;
-    ctx2d.beginPath();
-    ctx2d.moveTo(W * (maxT - 0) / maxT, 0);
-    ctx2d.lineTo(W * (maxT - 0) / maxT, H);
-    ctx2d.stroke();
+    // 進度線（白色發光）
+    ctx2d.save();
+    ctx2d.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx2d.lineWidth = 2;
+    ctx2d.shadowBlur = 8; ctx2d.shadowColor = 'white';
+    ctx2d.beginPath(); ctx2d.moveTo(CURSOR, 0); ctx2d.lineTo(CURSOR, H); ctx2d.stroke();
+    ctx2d.restore();
+  }
+
+  // 更新時間進度條
+  if (spReferenceScore.length) {
+    const totalDur = spReferenceScore[spReferenceScore.length-1].time + 0.5;
+    const pct = Math.min(100, (elapsed / totalDur) * 100);
+    const pb = document.getElementById('sp-progress-bar');
+    if (pb) pb.style.width = pct + '%';
+    const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+    const et = document.getElementById('sp-elapsed-time');
+    const tt = document.getElementById('sp-total-time');
+    if (et) et.textContent = fmt(elapsed);
+    if (tt) tt.textContent = fmt(totalDur);
+    // 當前是第幾個音符
+    const noteIdx = ref ? spReferenceScore.indexOf(ref) + 1 : 0;
+    const np = document.getElementById('sp-note-progress');
+    if (np) np.textContent = `第 ${noteIdx} / ${spReferenceScore.length} 音`;
   }
 
   spRafId = requestAnimationFrame(spLoop);
@@ -5763,6 +5778,17 @@ function buildPracticeEmbed() {
       </div>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;">
         <span>偏低 ◀</span><span>▶ 偏高</span>
+      </div>
+      <!-- 時間進度條 -->
+      <div style="margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px;">
+          <span id="sp-elapsed-time">0:00</span>
+          <span id="sp-note-progress" style="font-weight:700;">第 0 / 0 音</span>
+          <span id="sp-total-time">0:00</span>
+        </div>
+        <div style="position:relative;height:6px;border-radius:3px;background:#eee;overflow:hidden;">
+          <div id="sp-progress-bar" style="position:absolute;left:0;top:0;height:100%;border-radius:3px;background:var(--kid1);width:0%;transition:width 0.3s;"></div>
+        </div>
       </div>
     </div>
 
