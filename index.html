@@ -3548,6 +3548,10 @@ function spLoadMIDI(event) {
 
       if (notes.length === 0) throw new Error('MIDI 文件中未找到音符');
 
+      // 對齊時間：讓第一個音符從 0 開始，去掉前面的靜音段
+      const timeOffset = notes[0].time;
+      if (timeOffset > 0) notes.forEach(n => { n.time = +(n.time - timeOffset).toFixed(3); });
+
       spReferenceScore = notes;
       const dur = (notes[notes.length - 1].time + 1).toFixed(1);
       statusEl.innerHTML = `✅ 載入成功：<strong>${notes.length}</strong> 個音符，時長約 ${dur}s`;
@@ -3685,7 +3689,11 @@ function spLoop() {
   }
 
   if (ref) {
-    document.getElementById('sp-target-note').textContent = ref.noteName;
+    // 小號記譜音 = concert pitch + 2 半音
+    const _wMidi = ref.midi + (practiceKid === 'trumpet' ? 2 : 0);
+    const _names = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+    const _wName = _names[((_wMidi % 12) + 12) % 12] + (Math.floor(_wMidi / 12) - 1);
+    document.getElementById('sp-target-note').textContent = practiceKid === 'trumpet' ? _wName : ref.noteName;
   }
 
   // Canvas trace
@@ -8612,7 +8620,11 @@ function spLoop() {
   }
 
   if (ref) {
-    document.getElementById('sp-target-note').textContent = ref.noteName;
+    // 小號記譜音 = concert pitch + 2 半音
+    const _wMidi = ref.midi + (practiceKid === 'trumpet' ? 2 : 0);
+    const _names = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+    const _wName = _names[((_wMidi % 12) + 12) % 12] + (Math.floor(_wMidi / 12) - 1);
+    document.getElementById('sp-target-note').textContent = practiceKid === 'trumpet' ? _wName : ref.noteName;
   }
 
   // ── Canvas pitch trace (dark background, dynamic Y-axis) ──
