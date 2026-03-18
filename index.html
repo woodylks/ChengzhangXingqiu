@@ -3499,6 +3499,7 @@ let spLastRefTime = -1; // 上次計分的音符時間，避免重複計數
 let spCentsSamples = []; // 當前音符的 cents 樣本，用中位數計分
 let spAlignFrames = 0;   // 首音符對齊：連續有聲幀數
 let spAlignStartTime = null; // 首音符對齊：第一幀有聲的時間
+let spPitchLog = [];         // 完整音高記錄，供匯出
 
 // MIDI note number → note name
 function midiToNoteName(m) {
@@ -3534,6 +3535,7 @@ async function spStart() {
   spCentsSamples = [];
   spAlignFrames = 0;
   spAlignStartTime = null;
+  spPitchLog = [];
   _pitchSmooth.length = 0;
 
   document.getElementById('sp-start-btn').style.display = 'none';
@@ -5191,6 +5193,7 @@ function buildPracticeEmbed() {
   <div class="note-grid" id="note-grid"></div>
 
   <button class="btn-primary trumpet" id="pitch-btn" onclick="togglePitch()">🎙️ 開始聆聽</button>
+  <button id="tuner-export-btn" onclick="exportTunerPitch()" style="display:none;margin-top:8px;width:100%;padding:9px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);font-family:\'Noto Sans TC\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📥 匯出音準數據 CSV</button>
 </div>
 
 <!-- ══ EXERCISE SECTION ══ -->
@@ -5616,7 +5619,10 @@ function buildPracticeEmbed() {
 
     <!-- Session summary -->
     <div id="sp-summary" style="display:none;margin-top:12px;background:white;border-radius:12px;border:1.5px solid var(--border);padding:14px;">
-      <div style="font-size:13px;font-weight:900;margin-bottom:10px;">📊 本次比對結果</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:900;">📊 本次比對結果</div>
+        <button onclick="exportComparePitch()" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:\'Noto Sans TC\',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">📥 匯出數據</button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
         <div style="background:var(--bg);border-radius:8px;padding:10px;">
           <div style="font-size:20px;font-weight:900;color:#22c55e;" id="sp-stat-good">–</div>
@@ -5831,6 +5837,7 @@ let bpmState = { lip:60, tongue:60, breath:60 };
 
 // Pitch detector state
 let audioCtx=null,analyser=null,bufLen=null,dataArr=null,rafId=null,pitchOn=false;
+let tunerPitchLog=[], tunerStartTime=null;
 
 // Metronome state
 let metroIntervals = {};
@@ -6171,21 +6178,25 @@ async function startPitch() {
     bufLen=analyser.fftSize; dataArr=new Float32Array(bufLen);
     audioCtx.createMediaStreamSource(stream).connect(analyser);
     pitchOn=true;
+    tunerStartTime = Date.now();
+    tunerPitchLog = [];
     document.getElementById('pitch-btn').textContent='⏹ 停止聆聽';
     document.getElementById('pitch-btn').className='btn-primary stop';
     document.getElementById('note-display').classList.add('listening-pulse');
+    document.getElementById('tuner-export-btn').style.display='none';
     setPFeedback('🎙️','正在聆聽...','開始吹奏吧！');
     detectPitch();
   } catch(e) { setPFeedback('❌','無法使用麥克風','請允許瀏覽器使用麥克風'); }
 }
 function stopPitch() {
-  _pitchSmooth.length = 0; // reset smooth buffer
+  _pitchSmooth.length = 0;
   pitchOn=false; cancelAnimationFrame(rafId);
   if(audioCtx){audioCtx.close();audioCtx=null;}
   document.getElementById('pitch-btn').textContent='🎙️ 開始聆聽';
   document.getElementById('pitch-btn').className=`btn-primary ${practiceKid}`;
   document.getElementById('note-display').classList.remove('listening-pulse');
   resetPitchDisplay();
+  if (tunerPitchLog.length > 0) document.getElementById('tuner-export-btn').style.display='';
 }
 function resetPitchDisplay() {
   document.getElementById('note-name').textContent='–';
@@ -6301,10 +6312,16 @@ function detectPitch() {
   analyser.getFloatTimeDomainData(dataArr);
   let rms=0; for(let i=0;i<bufLen;i++) rms+=dataArr[i]*dataArr[i]; rms=Math.sqrt(rms/bufLen);
   document.getElementById('vol-fill').style.width=Math.min(rms*400,100)+'%';
+  const pitchT = (Date.now() - (tunerStartTime||Date.now())) / 1000;
   if(rms>0.015){
     const freq=autoCorrelate(dataArr,audioCtx.sampleRate);
-    if(freq>50){ const r=findClosest(freq); if(r) updatePitch(r.note,r.cents,freq); else resetPitchDisplay(); }
-    else resetPitchDisplay();
+    if(freq>50){
+      const r=findClosest(freq);
+      if(r){
+        updatePitch(r.note,r.cents,freq);
+        tunerPitchLog.push({ t: +pitchT.toFixed(3), freq: +freq.toFixed(2), note: r.note.name, cents: r.cents });
+      } else resetPitchDisplay();
+    } else resetPitchDisplay();
   } else {
     resetPitchDisplay();
   }
@@ -8357,6 +8374,37 @@ const SP_SYSTEMS = [
 const SP_IMG_W = 630, SP_IMG_H = 4093;
 const SP_STAFF_HALF = 75;
 
+// ══════════════════════════════════════════
+// 音高數據匯出（CSV → 下載）
+// ══════════════════════════════════════════
+function exportPitchCSV(data, filename) {
+  if (!data || !data.length) { alert('沒有數據可匯出，請先錄製一段演奏'); return; }
+  const keys = Object.keys(data[0]);
+  const header = keys.join(',');
+  const rows = data.map(row =>
+    keys.map(k => {
+      const v = row[k];
+      return v === null || v === undefined ? '' : String(v);
+    }).join(',')
+  );
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportComparePitch() {
+  exportPitchCSV(spPitchLog, 'compare_pitch.csv');
+}
+
+function exportTunerPitch() {
+  exportPitchCSV(tunerPitchLog, 'tuner_pitch.csv');
+}
+
 function spLoop() {
   if (!spRunning) return;
   const buf = new Float32Array(spAnalyser.fftSize);
@@ -8506,6 +8554,19 @@ function spLoop() {
     // Store midiVal (not Y) so we can recalc on window switch
     const midiVal = freq > 0 ? (12 * Math.log2(freq / 440) + 69) : null;
     spTracePoints.push({ t: elapsed, midiVal, color });
+    // 完整記錄（不丟棄）供匯出用
+    if (typeof spPitchLog !== 'undefined') {
+      const refN = spReferenceScore[refIdx];
+      spPitchLog.push({
+        t: +elapsed.toFixed(3),
+        freq: freq > 0 ? +freq.toFixed(2) : 0,
+        midiVal: midiVal ? +midiVal.toFixed(2) : null,
+        refMidi: refN ? refN.midi : null,
+        refNote: refN ? refN.noteName : '',
+        cents: centsVal !== null ? centsVal : null,
+        color
+      });
+    }
     while (spTracePoints.length > 0 && elapsed - spTracePoints[0].t > maxT) spTracePoints.shift();
 
     const ctx2d = canvas.getContext('2d');
