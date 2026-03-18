@@ -3497,6 +3497,7 @@ let spTracePoints = []; // {t, color, y} for canvas
 let spStats = { good:0, high:0, low:0 };
 let spLastRefTime = -1; // 上次計分的音符時間，避免重複計數
 let spCentsSamples = []; // 當前音符的 cents 樣本，用中位數計分
+let spAlignFrames = 0;   // 首音符對齊：連續有聲幀數
 
 // MIDI note number → note name
 function midiToNoteName(m) {
@@ -3596,6 +3597,7 @@ async function spStart() {
   spStats = { good:0, high:0, low:0 };
   spLastRefTime = -1;
   spCentsSamples = [];
+  spAlignFrames = 0;
   _pitchSmooth.length = 0;
 
   document.getElementById('sp-start-btn').style.display = 'none';
@@ -8455,16 +8457,21 @@ function spLoop() {
   rmsEarly = Math.sqrt(rmsEarly / buf.length);
   const hasSound = rmsEarly > 0.015 && freq > 0;
 
-  // ── 首音符對齊：等到偵測到第一個音才開始計時 ──
+  // ── 首音符對齊：連續 5 幀 RMS > 0.06 才觸發（排除背景噪音）──
   if (spStartTime === null) {
-    if (hasSound) {
-      spStartTime = spAudioCtx.currentTime;
-      const statusEl = document.getElementById('sp-midi-status');
-      if (statusEl) { statusEl.textContent = '🎯 已對齊！開始比對…'; statusEl.style.color = 'var(--green)'; }
+    if (rmsEarly > 0.06 && freq > 0) {
+      spAlignFrames = (spAlignFrames || 0) + 1;
+      if (spAlignFrames >= 5) {
+        spStartTime = spAudioCtx.currentTime;
+        spAlignFrames = 0;
+        const statusEl = document.getElementById('sp-midi-status');
+        if (statusEl) { statusEl.textContent = '🎯 已對齊！開始比對…'; statusEl.style.color = 'var(--green)'; }
+      }
     } else {
-      spRafId = requestAnimationFrame(spLoop);
-      return;
+      spAlignFrames = 0; // 中斷就重置
     }
+    spRafId = requestAnimationFrame(spLoop);
+    return;
   }
 
   const elapsed = spAudioCtx.currentTime - spStartTime;
