@@ -3506,72 +3506,6 @@ function midiToNoteName(m) {
 }
 
 // Parse MIDI file — fully self-contained, no external library needed
-function spLoadMIDI(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const statusEl = document.getElementById('sp-midi-status');
-  statusEl.textContent = '解析中…';
-  statusEl.style.color = 'var(--muted)';
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const midi = parseMidiBuffer(e.target.result);
-      const tpb  = midi.timeDivision || 480;
-
-      // Find tempo (default 120 BPM = 500000 µs/beat)
-      let tempo = 500000;
-      outer:
-      for (const track of midi.track) {
-        for (const ev of (track.event || [])) {
-          if (ev.type === 255 && ev.metaType === 81 && ev.data.length >= 3) {
-            tempo = (ev.data[0] << 16) | (ev.data[1] << 8) | ev.data[2];
-            break outer;
-          }
-        }
-      }
-      const secPerTick = (tempo / 1e6) / tpb;
-
-      // Collect all noteOn events (velocity > 0) across all tracks
-      const notes = [];
-      for (const track of midi.track) {
-        let ticks = 0;
-        for (const ev of (track.event || [])) {
-          ticks += ev.deltaTime || 0;
-          if (ev.type === 9 && ev.data && ev.data[1] > 0) {
-            notes.push({
-              time:     +(ticks * secPerTick).toFixed(3),
-              midi:     ev.data[0],
-              noteName: midiToNoteName(ev.data[0])
-            });
-          }
-        }
-      }
-      notes.sort((a, b) => a.time - b.time);
-
-      if (notes.length === 0) throw new Error('MIDI 文件中未找到音符');
-
-      // 對齊時間：讓第一個音符從 0 開始，去掉前面的靜音段
-      const timeOffset = notes[0].time;
-      if (timeOffset > 0) notes.forEach(n => { n.time = +(n.time - timeOffset).toFixed(3); });
-
-      spReferenceScore = notes;
-      const dur = (notes[notes.length - 1].time + 1).toFixed(1);
-      statusEl.innerHTML = `✅ 載入成功：<strong>${notes.length}</strong> 個音符，時長約 ${dur}s`;
-      statusEl.style.color = 'var(--green)';
-
-      // Enable start button
-      const btn = document.getElementById('sp-start-btn');
-      btn.disabled    = false;
-      btn.style.opacity = '1';
-
-    } catch(err) {
-      statusEl.textContent = '❌ 解析失敗：' + err.message;
-      statusEl.style.color = 'var(--red)';
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
 
 
 async function spStart() {
@@ -3612,37 +3546,6 @@ async function spStart() {
   spLoop();
 }
 
-function spStop() {
-  // 結算最後一個音符
-  if (spCentsSamples.length > 0) {
-    const sorted = [...spCentsSamples].sort((a,b) => a-b);
-    const median = sorted[Math.floor(sorted.length / 2)];
-    if (Math.abs(median) <= 100)   spStats.good++;
-    else if (median > 100)         spStats.high++;
-    else                           spStats.low++;
-    spCentsSamples = [];
-  }
-  spRunning = false;
-  if (spRafId) cancelAnimationFrame(spRafId);
-  if (spAudioCtx) { spAudioCtx.close(); spAudioCtx = null; }
-
-  document.getElementById('sp-start-btn').style.display = '';
-  document.getElementById('sp-stop-btn').style.display = 'none';
-
-  // Show summary
-  const total = spStats.good + spStats.high + spStats.low;
-  if (total > 0) {
-    const pct = Math.round(spStats.good / total * 100);
-    document.getElementById('sp-stat-good').textContent = spStats.good;
-    document.getElementById('sp-stat-high').textContent = spStats.high;
-    document.getElementById('sp-stat-low').textContent  = spStats.low;
-    document.getElementById('sp-stat-pct').textContent  =
-      `音準率 ${pct}% ${pct>=80?'🌟':pct>=60?'👍':'💪'}`;
-    document.getElementById('sp-stat-pct').style.color =
-      pct>=80?'var(--green)':pct>=60?'var(--yellow)':'var(--red)';
-    document.getElementById('sp-summary').style.display = '';
-  }
-}
 
 
 // Update the new gradient-bar needle UI
@@ -8085,6 +7988,10 @@ function spLoadMIDI(event) {
       notes.sort((a, b) => a.time - b.time);
 
       if (notes.length === 0) throw new Error('MIDI 文件中未找到音符');
+
+      // 對齊時間：第一個音符從 0 開始，去掉前面的靜音段
+      const timeOffset = notes[0].time;
+      if (timeOffset > 0) notes.forEach(n => { n.time = +(n.time - timeOffset).toFixed(3); });
 
       spReferenceScore = notes;
       const dur = (notes[notes.length - 1].time + 1).toFixed(1);
