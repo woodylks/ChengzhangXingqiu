@@ -3580,7 +3580,7 @@ async function spStart() {
   // Init audio
   try {
     spAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false });
     const source = spAudioCtx.createMediaStreamSource(stream);
     spAnalyser = spAudioCtx.createAnalyser();
     spAnalyser.fftSize = 4096;              // 與音準頁面一致，提升識別精度
@@ -3611,8 +3611,8 @@ function spStop() {
   if (spCentsSamples.length > 0) {
     const sorted = [...spCentsSamples].sort((a,b) => a-b);
     const median = sorted[Math.floor(sorted.length / 2)];
-    if (Math.abs(median) <= 50)    spStats.good++;
-    else if (median > 50)          spStats.high++;
+    if (Math.abs(median) <= 100)   spStats.good++;
+    else if (median > 100)         spStats.high++;
     else                           spStats.low++;
     spCentsSamples = [];
   }
@@ -8437,21 +8437,8 @@ const SP_SYSTEMS = [
   { yCenter:3831, xStart:60,  xEnd:610, tStart:130.000, tEnd:135.625 },  // m70-72
 ];
 const SP_IMG_W = 630, SP_IMG_H = 4093;
-const SP_STAFF_HALF = 75; // half-height of crop strip (px in original image)
+const SP_STAFF_HALF = 75;
 
-// ══════════════════════════════════════════
-// MARK MODE — 邊聽邊標記音符 x 位置
-// ══════════════════════════════════════════
-       // 用戶標記的時間戳（秒）
-     // 播放用 AudioContext
-     // 播放開始的 AudioContext 時間
-        // 下一個要標記的音符 index// ══════════════════════════════════════════
-// SCORE CALIBRATION  —  自動識別小節 + 手動微調
-// ══════════════════════════════════════════
-   // 正在校準的曲目 id
-     // [{x1,y1,x2,y2, noteIdxStart, noteIdxEnd}]
-   // {mi, corner} 正在拖動的框角
-// ── 自動識別：掃描水平黑線密度找譜行，再找垂直線切小節 ──// ── 繪製框 ──// ── 拖動邏輯 ──
 function spLoop() {
   if (!spRunning) return;
   const buf = new Float32Array(spAnalyser.fftSize);
@@ -8460,17 +8447,26 @@ function spLoop() {
   const elapsed = spAudioCtx.currentTime - spStartTime;
 
   // Find current reference note + its index
+  // 找到當前時間對應的音符，同時也考慮前後各一個音符作為候選
   let ref = null, refIdx = -1;
   for (let i = spReferenceScore.length - 1; i >= 0; i--) {
     if (elapsed >= spReferenceScore[i].time) { ref = spReferenceScore[i]; refIdx = i; break; }
   }
+  // 如果有聲音，找與當前頻率 cents 偏差最小的鄰近音符（前後各1個），避免時間差導致判錯
+  // 這樣即使比 MIDI 慢了一點，只要音符正確就算準確
 
   let color = '#d1d5db'; // silent = gray
   let centsVal = null;
   let curNote = '–';
   let diffCents = 0;
 
-  if (freq > 0) {
+  // RMS 靜音過濾（與音準頁面一致）
+  let rms = 0;
+  for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / buf.length);
+  const hasSound = rms > 0.015 && freq > 0;
+
+  if (hasSound) {
     // 識別當前音名（小號記譜音 = concert pitch + 2 半音）
     const A4 = 440;
     const midiF = 12 * Math.log2(freq / A4) + 69;
@@ -8480,39 +8476,49 @@ function spLoop() {
     curNote = _wNames[((writtenMidi % 12) + 12) % 12] + (Math.floor(writtenMidi / 12) - 1);
 
     if (ref) {
-      // 用 cents 比較頻率和目標頻率
-      const refFreq = A4 * Math.pow(2, (ref.midi - 69) / 12);
-      diffCents = Math.round(1200 * Math.log2(freq / refFreq));
+      const A4c = 440;
+      // 找前後各1個音符中，cents 偏差最小的作為比對目標
+      const candidates = [refIdx - 1, refIdx, refIdx + 1]
+        .filter(i => i >= 0 && i < spReferenceScore.length)
+        .map(i => {
+          const n = spReferenceScore[i];
+          const nFreq = A4c * Math.pow(2, (n.midi - 69) / 12);
+          return { idx: i, cents: Math.round(1200 * Math.log2(freq / nFreq)) };
+        });
+      // 取絕對值最小的候選（最接近你吹的音）
+      const best = candidates.reduce((a, b) => Math.abs(a.cents) < Math.abs(b.cents) ? a : b);
+      diffCents = best.cents;
       centsVal = diffCents;
-      if (Math.abs(diffCents) <= 50)      color = '#22c55e';
-      else if (diffCents > 50)            color = '#ef4444';
+
+      // 顏色：±100 cents 內算準確
+      if (Math.abs(diffCents) <= 100)     color = '#22c55e';
+      else if (diffCents > 100)           color = '#ef4444';
       else                                color = '#3b82f6';
 
-      // 收集此音符的 cents 樣本（切換音符前先結算上一個）
+      // 收集樣本，切換音符時結算
       if (refIdx !== spLastRefTime) {
-        // 結算上一個音符（如果有收集到樣本）
         if (spCentsSamples.length > 0) {
           const sorted = [...spCentsSamples].sort((a,b) => a-b);
           const median = sorted[Math.floor(sorted.length / 2)];
-          if (Math.abs(median) <= 50)    spStats.good++;
-          else if (median > 50)          spStats.high++;
+          if (Math.abs(median) <= 100)   spStats.good++;
+          else if (median > 100)         spStats.high++;
           else                           spStats.low++;
           spCentsSamples = [];
         }
         spLastRefTime = refIdx;
       }
-      // 只在音符的中段取樣（跳過剛開始吹的不穩定幀）
       spCentsSamples.push(diffCents);
     }
 
     spLastColor = color;
     _spUpdateNeedle(centsVal, color, curNote);
   } else {
-    // 靜音：不計分，但切換音符時清空樣本
+    // 靜音/噪音：不計分，切換音符時清空樣本
     if (ref && refIdx !== spLastRefTime) {
       spLastRefTime = refIdx;
       spCentsSamples = [];
     }
+    curNote = '–';
     spLastColor = '#d1d5db';
     _spUpdateNeedle(null, '#d1d5db', '–');
   }
