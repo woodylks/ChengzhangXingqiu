@@ -8731,14 +8731,21 @@ function spLoop() {
     ctx2d.textAlign = 'left';
   }
 
-  // ── Update sheet music + progress bar (same elapsed) ──
-  const songDurTotal = spReferenceScore.length
-    ? spReferenceScore[spReferenceScore.length-1].time + 1 : 1;
-  const pct = Math.min(100, (elapsed / songDurTotal) * 100);
-  const bar = document.getElementById('sp-sheet-bar');
-  if (bar) bar.style.width = pct + '%';
-  const timeEl = document.getElementById('sp-sheet-time');
-  if (timeEl) timeEl.textContent = elapsed.toFixed(1) + 's';
+  // ── 進度條 + 時間 + 音符計數 ──
+  if (spReferenceScore.length) {
+    const songDurTotal = spReferenceScore[spReferenceScore.length-1].time + 0.5;
+    const pct = Math.min(100, (elapsed / songDurTotal) * 100);
+    const pb = document.getElementById('sp-progress-bar');
+    if (pb) pb.style.width = pct + '%';
+    const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+    const et = document.getElementById('sp-elapsed-time');
+    const tt = document.getElementById('sp-total-time');
+    if (et) et.textContent = fmt(elapsed);
+    if (tt) tt.textContent = fmt(songDurTotal);
+    const noteIdx = ref ? spReferenceScore.indexOf(ref) + 1 : 0;
+    const np = document.getElementById('sp-note-progress');
+    if (np) np.textContent = `第 ${noteIdx} / ${spReferenceScore.length} 音`;
+  }
 
   spRafId = requestAnimationFrame(spLoop);
 }
