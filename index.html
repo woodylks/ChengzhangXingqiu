@@ -8441,19 +8441,6 @@ const SP_STAFF_HALF = 75; // half-height of crop strip (px in original image)
      // [{x1,y1,x2,y2, noteIdxStart, noteIdxEnd}]
    // {mi, corner} 正在拖動的框角
 // ── 自動識別：掃描水平黑線密度找譜行，再找垂直線切小節 ──// ── 繪製框 ──// ── 拖動邏輯 ──
-function spCalGetPos(e) {
-  const canvas = document.getElementById('sp-cal-canvas');
-  const rect   = canvas.getBoundingClientRect();
-  const t = e.touches ? e.touches[0] : e;
-  return {
-    x: (t.clientX - rect.left) / canvas.width  * spCalImgW,
-    y: (t.clientY - rect.top)  / canvas.height * spCalImgH,
-  };
-}// ── 演奏時：根據當前音符 idx 找對應小節，放大裁切顯示 ──// ══════════════════════════════════════════
-// 曲譜行標記 + 分列顯示
-// ══════════════════════════════════════════
-      // 每行頂部 y 座標（原圖像素），最後一個 = 最後一行底部
-// 把行資訊分列：每行切左右兩半 → segments 陣列
 function spLoop() {
   if (!spRunning) return;
   const buf = new Float32Array(spAnalyser.fftSize);
@@ -8488,9 +8475,9 @@ function spLoop() {
       else if (diffCents > 50)            color = '#ef4444';
       else                                color = '#3b82f6';
 
-      // 每個音符只計分一次
+      // 每個音符只計分一次（音符切換時取第一幀有聲音的結果）
       if (refIdx !== spLastRefTime) {
-        spLastRefTime = refIdx;
+        spLastRefTime = refIdx; // 無論有沒有聲音都標記已處理此音符
         if (Math.abs(diffCents) <= 50)    spStats.good++;
         else if (diffCents > 50)          spStats.high++;
         else                              spStats.low++;
@@ -8500,6 +8487,11 @@ function spLoop() {
     spLastColor = color;
     _spUpdateNeedle(centsVal, color, curNote);
   } else {
+    // 靜音時也更新 spLastRefTime，防止下一個有聲幀重複計分
+    if (ref && refIdx !== spLastRefTime) {
+      spLastRefTime = refIdx;
+      spStats.low++; // 靜音 = 沒吹出來 = 偏低
+    }
     spLastColor = '#d1d5db';
     _spUpdateNeedle(null, '#d1d5db', '–');
   }
