@@ -5815,25 +5815,58 @@ function buildPracticeEmbed() {
     <div id="sp-dev-needle" style="display:none;"></div>
     <div id="sp-cents" style="display:none;"></div>
 
-    <!-- Piano Roll (主顯示，取代原 pitch canvas) -->
-    <div id="sp-sheet-wrap-main" style="background:#0d0d14;border-radius:12px;overflow:hidden;margin-bottom:4px;display:none;">
-      <canvas id="sp-sheet-canvas" style="width:100%;display:block;height:180px;"></canvas>
+    <!-- ① Pitch 音高軌跡 canvas（恢復）-->
+    <div style="background:#0d0d14;border-radius:12px;overflow:hidden;margin-bottom:4px;">
+      <canvas id="sp-canvas" width="640" height="110" style="width:100%;display:block;"></canvas>
     </div>
-    <!-- Piano Roll 圖例 -->
-    <div style="display:flex;gap:10px;padding:2px 4px 8px;font-size:11px;font-weight:700;">
+    <div style="display:flex;gap:10px;padding:2px 4px 6px;font-size:11px;font-weight:700;">
       <span style="color:#22c55e;">● 準確</span>
       <span style="color:#ef4444;">● 偏高</span>
       <span style="color:#3b82f6;">● 偏低</span>
       <span style="color:#d1d5db;">● 靜音</span>
     </div>
 
-    <!-- 標記模式面板（標記時顯示）-->
+    <!-- ② 曲譜顯示（有圖片才出現）-->
+    <div id="sp-sheet-wrap-main" style="display:none;margin-bottom:4px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);">🎼 曲譜</div>
+        <button id="sp-row-btn" onclick="spToggleRowMark()"
+          style="padding:3px 10px;border-radius:8px;border:1.5px solid var(--border);background:white;
+            font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">
+          ✂️ 標記行
+        </button>
+      </div>
+      <canvas id="sp-sheet-canvas" style="width:100%;display:block;border-radius:10px;"></canvas>
+    </div>
+
+    <!-- 標記行面板 -->
+    <div id="sp-row-panel" style="display:none;background:#1e1e2e;border-radius:12px;padding:12px;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:900;color:white;margin-bottom:6px;">✂️ 標記每行譜的位置</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:10px;">
+        在下方圖片上點擊每行譜的<b style="color:white;">頂部</b>，標記完所有行後點「完成」
+      </div>
+      <!-- 縮略圖 + 點擊標記 -->
+      <div style="position:relative;margin-bottom:10px;border-radius:8px;overflow:hidden;">
+        <img id="sp-row-thumb" style="width:100%;display:block;" draggable="false">
+        <canvas id="sp-row-mark-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;"></canvas>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:8px;">
+        已標記 <span id="sp-row-count">0</span> 行
+        <button onclick="spRowUndo()" style="margin-left:8px;padding:2px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:white;font-size:11px;cursor:pointer;">↩ 撤銷</button>
+      </div>
+      <button onclick="spRowSave()"
+        style="width:100%;padding:9px;border-radius:8px;border:none;background:#22c55e;color:white;
+          font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">
+        ✅ 完成標記
+      </button>
+    </div>
+
+    <!-- MIDI 標記面板 -->
     <div id="sp-mark-panel" style="display:none;background:#1e1e2e;border-radius:12px;padding:12px;margin-bottom:8px;">
       <div style="font-size:12px;font-weight:900;color:white;margin-bottom:8px;">🎹 MIDI 預覽 + 標記音符位置</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:10px;">
         播放 MIDI → 聽到每個音符時點「標記」→ 完成後點「套用」
       </div>
-      <!-- 播放控制 -->
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <button onclick="spMarkPlay()" id="sp-mark-play-btn"
           style="flex:1;padding:8px;border-radius:8px;border:none;background:#22c55e;color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">
@@ -5848,12 +5881,10 @@ function buildPracticeEmbed() {
           🎯 標記（第 <span id="sp-mark-idx">1</span> 個音）
         </button>
       </div>
-      <!-- 進度 -->
       <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:8px;">
         已標記：<span id="sp-mark-count">0</span> / <span id="sp-mark-total">0</span> 個音符
         <span id="sp-mark-status" style="margin-left:8px;color:#22c55e;"></span>
       </div>
-      <!-- 操作 -->
       <div style="display:flex;gap:8px;">
         <button onclick="spMarkUndo()"
           style="flex:1;padding:7px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.2);background:transparent;color:white;font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">
@@ -5865,9 +5896,6 @@ function buildPracticeEmbed() {
         </button>
       </div>
     </div>
-
-    <!-- 隱藏的舊 pitch canvas（供 JS 相容）-->
-    <canvas id="sp-canvas" style="display:none;"></canvas>
 
     <!-- Session summary -->
     <div id="sp-summary" style="display:none;margin-top:12px;background:white;border-radius:12px;border:1.5px solid var(--border);padding:14px;">
@@ -8370,14 +8398,27 @@ async function spSelectRep(id) {
       `${rep.noteCount||'–'} 音符 · ${rep.duration||'–'}s`;
   }
 
-  // 載入校準小節數據
-  spCalMeasures = (rep.measures && rep.measures.length) ? rep.measures : [];
+  // 載入行標記和小節數據
+  spRowYs      = (rep.rowYs && rep.rowYs.length) ? rep.rowYs : [];
+  spCalMeasures= (rep.measures && rep.measures.length) ? rep.measures : [];
 
-  // If rep has a saved score image, use it for the sheet display
+  // 有圖片則顯示曲譜區域
   if (rep.scoreImgBase64) {
     SP_SCORE_IMG.src = rep.scoreImgBase64;
     spScoreImgLoaded = false;
-    SP_SCORE_IMG.onload = () => { spScoreImgLoaded = true; spDrawSheet(0); };
+    SP_SCORE_IMG.onload = () => {
+      spScoreImgLoaded = true;
+      const wrap = document.getElementById('sp-sheet-wrap-main');
+      if (wrap) wrap.style.display = '';
+      const rowBtn = document.getElementById('sp-row-btn');
+      if (rowBtn) rowBtn.textContent = spRowYs.length ? `✂️ 已標記${spRowYs.length}行` : '✂️ 標記行';
+      spDrawSheet(0);
+    };
+  } else {
+    // 無圖片顯示 Piano Roll
+    const wrap = document.getElementById('sp-sheet-wrap-main');
+    if (wrap) wrap.style.display = '';
+    spDrawSheet(0);
   }
 
   // Hide upload area
@@ -9100,15 +9141,170 @@ function spDrawMeasureZoom(canvas, elapsed) {
   return true;
 }
 
-// Piano Roll renderer — 滾動視窗，進度線固定在左1/4處，音符向左滾動
+// ══════════════════════════════════════════
+// 曲譜行標記 + 分列顯示
+// ══════════════════════════════════════════
+let spRowYs = [];      // 每行頂部 y 座標（原圖像素），最後一個 = 最後一行底部
+let spRowMode = false;
+
+function spToggleRowMark() {
+  spRowMode = !spRowMode;
+  const panel = document.getElementById('sp-row-panel');
+  const btn   = document.getElementById('sp-row-btn');
+  if (spRowMode) {
+    panel.style.display = '';
+    btn.style.background = '#FF6B35'; btn.style.color = 'white';
+    btn.textContent = '✕ 關閉';
+    // 顯示縮略圖
+    const thumb = document.getElementById('sp-row-thumb');
+    thumb.src = SP_SCORE_IMG.src;
+    spRowYs = [];
+    document.getElementById('sp-row-count').textContent = '0';
+    spRowRender();
+    // 點擊事件
+    const mc = document.getElementById('sp-row-mark-canvas');
+    mc.ontouchend = spRowTap;
+    mc.onclick    = spRowTap;
+  } else {
+    panel.style.display = 'none';
+    btn.style.background = 'white'; btn.style.color = '#374151';
+    btn.textContent = '✂️ 標記行';
+  }
+}
+
+function spRowTap(e) {
+  e.preventDefault();
+  const mc   = document.getElementById('sp-row-mark-canvas');
+  const rect = mc.getBoundingClientRect();
+  const t    = e.touches ? e.changedTouches[0] : e;
+  const yPct = (t.clientY - rect.top) / rect.height;
+  const yPx  = Math.round(yPct * SP_SCORE_IMG.naturalHeight);
+  spRowYs.push(yPx);
+  spRowYs.sort((a,b) => a-b);
+  document.getElementById('sp-row-count').textContent = spRowYs.length;
+  spRowRender();
+}
+
+function spRowUndo() {
+  if (!spRowYs.length) return;
+  spRowYs.pop();
+  document.getElementById('sp-row-count').textContent = spRowYs.length;
+  spRowRender();
+}
+
+function spRowRender() {
+  const mc  = document.getElementById('sp-row-mark-canvas');
+  const img = document.getElementById('sp-row-thumb');
+  mc.width  = img.offsetWidth;
+  mc.height = img.offsetHeight;
+  const ctx = mc.getContext('2d');
+  ctx.clearRect(0, 0, mc.width, mc.height);
+  const scaleY = mc.height / SP_SCORE_IMG.naturalHeight;
+  spRowYs.forEach((y, i) => {
+    const py = y * scaleY;
+    ctx.strokeStyle = '#FF6B35';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(mc.width, py); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#FF6B35';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(`行${i+1}`, 4, py - 3);
+  });
+}
+
+async function spRowSave() {
+  if (spRowYs.length < 2) { alert('請至少標記 2 條行分隔線（每行頂部）'); return; }
+  // 保存到 Firebase
+  const reps = await window.fbGetAll('scoreReps');
+  const rep  = reps.find(r => r.id === spCurrentRepId);
+  if (!rep) return;
+  rep.rowYs = spRowYs;
+  rep.measures = []; // 清除舊的小節校準
+  await window.fbDelete(`scoreReps/${spCurrentRepId}`);
+  await window.fbAdd('scoreReps', rep);
+  alert(`✅ 已保存 ${spRowYs.length} 條分行線！`);
+  spToggleRowMark();
+  spLoadRepList();
+}
+
+// 把行資訊分列：每行切左右兩半 → segments 陣列
+// segments[i] = {x1,y1,x2,y2} 在原圖的裁切矩形
+function spBuildSegments() {
+  if (!spRowYs.length || !spScoreImgLoaded) return [];
+  const W = SP_SCORE_IMG.naturalWidth;
+  const H = SP_SCORE_IMG.naturalHeight;
+  // 補充第一行頂部 = 0，最後一行底部 = H
+  const ys = [0, ...spRowYs, H];
+  const segs = [];
+  for (let i = 0; i < ys.length - 1; i++) {
+    const y1 = ys[i], y2 = ys[i+1];
+    if (y2 - y1 < 10) continue;
+    const mid = Math.round(W / 2);
+    segs.push({ x1:0,   y1, x2:mid, y2 }); // 左半
+    segs.push({ x1:mid, y1, x2:W,   y2 }); // 右半
+  }
+  return segs;
+}
+
+// 演奏時當前 segment index（按時間平均分配）
+function spCurrentSegIdx(elapsed) {
+  const segs    = spBuildSegments();
+  if (!segs.length || !spReferenceScore.length) return 0;
+  const totalDur = spReferenceScore[spReferenceScore.length-1].time + 0.5;
+  const idx      = Math.floor((elapsed / totalDur) * segs.length);
+  return Math.max(0, Math.min(segs.length - 1, idx));
+}
+
+// 曲譜分列放大顯示
 function spDrawSheet(elapsed) {
   const canvas = document.getElementById('sp-sheet-canvas');
-  if (!canvas || !spReferenceScore.length) return;
+  if (!canvas) return;
 
-  // 優先用小節放大視圖（已校準 + 有圖片）
-  if (spCalMeasures.length > 0 && spScoreImgLoaded) {
-    if (spDrawMeasureZoom(canvas, elapsed)) return;
+  // ── 有行標記 + 有圖片：分列放大 ──
+  const segs = spBuildSegments();
+  if (segs.length > 0 && spScoreImgLoaded) {
+    const segIdx = spCurrentSegIdx(elapsed);
+    const seg    = segs[segIdx];
+    const dpr    = window.devicePixelRatio || 1;
+    const dispW  = canvas.getBoundingClientRect().width || 360;
+    const aspect = (seg.x2 - seg.x1) / (seg.y2 - seg.y1);
+    const dispH  = Math.round(dispW / aspect);
+    canvas.width  = dispW * dpr;
+    canvas.height = dispH * dpr;
+    canvas.style.height = dispH + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.fillStyle = '#fafaf8';
+    ctx.fillRect(0, 0, dispW, dispH);
+    ctx.drawImage(SP_SCORE_IMG, seg.x1, seg.y1, seg.x2-seg.x1, seg.y2-seg.y1, 0, 0, dispW, dispH);
+
+    // 進度線（在本格內的進度）
+    const totalDur = spReferenceScore.length ? spReferenceScore[spReferenceScore.length-1].time + 0.5 : 1;
+    const segDur   = totalDur / segs.length;
+    const segStart = segIdx * segDur;
+    const prog     = Math.max(0, Math.min(1, (elapsed - segStart) / segDur));
+    const phX      = prog * dispW;
+    const lineColor = (typeof spLastColor!=='undefined' && spLastColor) ? spLastColor : '#4FACDE';
+    ctx.save();
+    ctx.shadowBlur = 12; ctx.shadowColor = lineColor;
+    ctx.strokeStyle = lineColor; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(phX, 0); ctx.lineTo(phX, dispH); ctx.stroke();
+    ctx.shadowBlur = 0; ctx.restore();
+
+    // 格數指示點
+    const dotY = dispH - 5;
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    segs.forEach((_, i) => {
+      ctx.fillStyle = i===segIdx ? lineColor : 'rgba(0,0,0,0.2)';
+      const dotX = dispW/2 + (i - segs.length/2 + 0.5) * Math.min(10, dispW/segs.length);
+      ctx.beginPath(); ctx.arc(dotX, dotY, i===segIdx ? 4 : 2, 0, Math.PI*2); ctx.fill();
+    });
+    return;
   }
+
+  // ── 退回 Piano Roll ──
+  if (!spReferenceScore.length) return;
 
   const dpr   = window.devicePixelRatio || 1;
   const dispW = canvas.getBoundingClientRect().width || 360;
