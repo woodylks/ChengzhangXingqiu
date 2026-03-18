@@ -8459,9 +8459,9 @@ function spLoop() {
 
   // ── 首音符對齊：連續 5 幀 RMS > 0.06 才觸發（排除背景噪音）──
   if (spStartTime === null) {
-    if (rmsEarly > 0.06 && freq > 0) {
+    if (rmsEarly > 0.03 && freq > 0) {
       spAlignFrames = (spAlignFrames || 0) + 1;
-      if (spAlignFrames >= 5) {
+      if (spAlignFrames >= 3) {
         spStartTime = spAudioCtx.currentTime;
         spAlignFrames = 0;
         const statusEl = document.getElementById('sp-midi-status');
