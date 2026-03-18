@@ -3581,8 +3581,8 @@ async function spStart() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     const source = spAudioCtx.createMediaStreamSource(stream);
     spAnalyser = spAudioCtx.createAnalyser();
-    spAnalyser.fftSize = 2048;              // 2048@44100Hz ≈ 46ms 緩衝，延遲最小
-    spAnalyser.smoothingTimeConstant = 0;   // 不做時域平滑，讓響應更即時
+    spAnalyser.fftSize = 4096;              // 與音準頁面一致，提升識別精度
+    spAnalyser.smoothingTimeConstant = 0.5; // 與音準頁面一致
     source.connect(spAnalyser);
   } catch(e) {
     alert('無法開啟麥克風：' + e.message); return;
