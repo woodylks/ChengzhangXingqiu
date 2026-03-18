@@ -3760,9 +3760,13 @@ function spLoop() {
     if (et) et.textContent = fmt(elapsed);
     if (tt) tt.textContent = fmt(totalDur);
     // 當前是第幾個音符
-    const noteIdx = ref ? spReferenceScore.indexOf(ref) + 1 : 0;
+    // 用時間找 index 而非 indexOf（更可靠）
+    let noteIdx = 0;
+    for (let i = spReferenceScore.length - 1; i >= 0; i--) {
+      if (elapsed >= spReferenceScore[i].time) { noteIdx = i + 1; break; }
+    }
     const np = document.getElementById('sp-note-progress');
-    if (np) np.textContent = `第 ${noteIdx} / ${spReferenceScore.length} 音`;
+    if (np) np.textContent = noteIdx > 0 ? `第 ${noteIdx} / ${spReferenceScore.length} 音` : `等待開始…`;
   }
 
   spRafId = requestAnimationFrame(spLoop);
@@ -8740,7 +8744,8 @@ function spLoop() {
     const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
     const et = document.getElementById('sp-elapsed-time');
     const tt = document.getElementById('sp-total-time');
-    if (et) et.textContent = fmt(elapsed);
+    // 顯示 elapsed（即使 ref 為 null 也能看到時間在走）
+    if (et) et.textContent = fmt(Math.max(0, elapsed));
     if (tt) tt.textContent = fmt(songDurTotal);
     const noteIdx = ref ? spReferenceScore.indexOf(ref) + 1 : 0;
     const np = document.getElementById('sp-note-progress');
