@@ -3495,6 +3495,7 @@ let spRunning  = false;
 let spStartTime = 0;
 let spTracePoints = []; // {t, color, y} for canvas
 let spStats = { good:0, high:0, low:0 };
+let spLastRefTime = -1; // 上次計分的音符時間，避免重複計數
 
 // MIDI note number → note name
 function midiToNoteName(m) {
@@ -3592,6 +3593,7 @@ async function spStart() {
   spStartTime = spAudioCtx.currentTime;
   spTracePoints = [];
   spStats = { good:0, high:0, low:0 };
+  spLastRefTime = -1;
   _pitchSmooth.length = 0;
 
   document.getElementById('sp-start-btn').style.display = 'none';
@@ -8459,8 +8461,11 @@ function spLoop() {
   const freq = autoCorrelate(buf, spAudioCtx.sampleRate);
   const elapsed = spAudioCtx.currentTime - spStartTime;
 
-  // Find current reference note
-  const ref = [...spReferenceScore].reverse().find(n => elapsed >= n.time);
+  // Find current reference note + its index
+  let ref = null, refIdx = -1;
+  for (let i = spReferenceScore.length - 1; i >= 0; i--) {
+    if (elapsed >= spReferenceScore[i].time) { ref = spReferenceScore[i]; refIdx = i; break; }
+  }
 
   let color = '#d1d5db'; // silent = gray
   let centsVal = null;
@@ -8475,14 +8480,21 @@ function spLoop() {
     curNote = midiToNoteName(nearestMidi);
 
     if (ref) {
-      // 正確做法：用 cents 比較頻率和目標頻率
-      // cents = 1200 * log2(played / target)
+      // 用 cents 比較頻率和目標頻率
       const refFreq = A4 * Math.pow(2, (ref.midi - 69) / 12);
       diffCents = Math.round(1200 * Math.log2(freq / refFreq));
       centsVal = diffCents;
-      if (Math.abs(diffCents) <= 50)      { color = '#22c55e'; spStats.good++; }
-      else if (diffCents > 50)            { color = '#ef4444'; spStats.high++; }
-      else                                { color = '#3b82f6'; spStats.low++;  }
+      if (Math.abs(diffCents) <= 50)      color = '#22c55e';
+      else if (diffCents > 50)            color = '#ef4444';
+      else                                color = '#3b82f6';
+
+      // 每個音符只計分一次
+      if (refIdx !== spLastRefTime) {
+        spLastRefTime = refIdx;
+        if (Math.abs(diffCents) <= 50)    spStats.good++;
+        else if (diffCents > 50)          spStats.high++;
+        else                              spStats.low++;
+      }
     }
 
     spLastColor = color;
