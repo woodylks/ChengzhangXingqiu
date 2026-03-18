@@ -3496,6 +3496,7 @@ let spStartTime = 0;
 let spTracePoints = []; // {t, color, y} for canvas
 let spStats = { good:0, high:0, low:0 };
 let spLastRefTime = -1; // 上次計分的音符時間，避免重複計數
+let spCentsSamples = []; // 當前音符的 cents 樣本，用中位數計分
 
 // MIDI note number → note name
 function midiToNoteName(m) {
@@ -3594,6 +3595,7 @@ async function spStart() {
   spTracePoints = [];
   spStats = { good:0, high:0, low:0 };
   spLastRefTime = -1;
+  spCentsSamples = [];
   _pitchSmooth.length = 0;
 
   document.getElementById('sp-start-btn').style.display = 'none';
@@ -3605,6 +3607,15 @@ async function spStart() {
 }
 
 function spStop() {
+  // 結算最後一個音符
+  if (spCentsSamples.length > 0) {
+    const sorted = [...spCentsSamples].sort((a,b) => a-b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    if (Math.abs(median) <= 50)    spStats.good++;
+    else if (median > 50)          spStats.high++;
+    else                           spStats.low++;
+    spCentsSamples = [];
+  }
   spRunning = false;
   if (spRafId) cancelAnimationFrame(spRafId);
   if (spAudioCtx) { spAudioCtx.close(); spAudioCtx = null; }
@@ -8477,22 +8488,30 @@ function spLoop() {
       else if (diffCents > 50)            color = '#ef4444';
       else                                color = '#3b82f6';
 
-      // 每個音符只計分一次（音符切換時取第一幀有聲音的結果）
+      // 收集此音符的 cents 樣本（切換音符前先結算上一個）
       if (refIdx !== spLastRefTime) {
-        spLastRefTime = refIdx; // 無論有沒有聲音都標記已處理此音符
-        if (Math.abs(diffCents) <= 50)    spStats.good++;
-        else if (diffCents > 50)          spStats.high++;
-        else                              spStats.low++;
+        // 結算上一個音符（如果有收集到樣本）
+        if (spCentsSamples.length > 0) {
+          const sorted = [...spCentsSamples].sort((a,b) => a-b);
+          const median = sorted[Math.floor(sorted.length / 2)];
+          if (Math.abs(median) <= 50)    spStats.good++;
+          else if (median > 50)          spStats.high++;
+          else                           spStats.low++;
+          spCentsSamples = [];
+        }
+        spLastRefTime = refIdx;
       }
+      // 只在音符的中段取樣（跳過剛開始吹的不穩定幀）
+      spCentsSamples.push(diffCents);
     }
 
     spLastColor = color;
     _spUpdateNeedle(centsVal, color, curNote);
   } else {
-    // 靜音時也更新 spLastRefTime，防止下一個有聲幀重複計分
+    // 靜音：不計分，但切換音符時清空樣本
     if (ref && refIdx !== spLastRefTime) {
       spLastRefTime = refIdx;
-      spStats.low++; // 靜音 = 沒吹出來 = 偏低
+      spCentsSamples = [];
     }
     spLastColor = '#d1d5db';
     _spUpdateNeedle(null, '#d1d5db', '–');
