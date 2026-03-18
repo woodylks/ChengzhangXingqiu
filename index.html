@@ -8584,10 +8584,13 @@ function spLoop() {
       ctx2d.setLineDash([4, 4]);
       ctx2d.beginPath(); ctx2d.moveTo(x1, ry); ctx2d.lineTo(x2, ry); ctx2d.stroke();
       ctx2d.setLineDash([]);
-      // Note label
+      // Note label（小號記譜音 = concert pitch + 2 半音）
+      const _lMidi = n.midi + (practiceKid === 'trumpet' ? 2 : 0);
+      const _lNames = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+      const _lName = _lNames[((_lMidi % 12) + 12) % 12] + (Math.floor(_lMidi / 12) - 1);
       ctx2d.fillStyle = 'rgba(247,201,72,0.75)';
       ctx2d.font = '9px monospace';
-      ctx2d.fillText(n.noteName, x1 + 2, ry - 10);
+      ctx2d.fillText(practiceKid === 'trumpet' ? _lName : n.noteName, x1 + 2, ry - 10);
     });
 
     // Draw trace as coloured connected line (Y recalculated from midiVal each frame)
