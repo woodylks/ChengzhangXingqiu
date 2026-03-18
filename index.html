@@ -3591,7 +3591,7 @@ async function spStart() {
   }
 
   spRunning = true;
-  spStartTime = spAudioCtx.currentTime;
+  spStartTime = null;       // null = 等待首音符觸發才開始計時
   spTracePoints = [];
   spStats = { good:0, high:0, low:0 };
   spLastRefTime = -1;
@@ -3602,6 +3602,10 @@ async function spStart() {
   document.getElementById('sp-stop-btn').style.display = '';
   document.getElementById('sp-note-display').style.display = '';
   document.getElementById('sp-summary').style.display = 'none';
+
+  // 提示等待首音符
+  const statusEl = document.getElementById('sp-midi-status');
+  if (statusEl) { statusEl.textContent = '🎺 等待你吹出第一個音…'; statusEl.style.color = '#f59e0b'; }
 
   spLoop();
 }
@@ -8444,27 +8448,37 @@ function spLoop() {
   const buf = new Float32Array(spAnalyser.fftSize);
   spAnalyser.getFloatTimeDomainData(buf); // ← 讀取麥克風數據
   const freq = autoCorrelate(buf, spAudioCtx.sampleRate);
+
+  // RMS（靜音過濾 + 首音符偵測共用）
+  let rmsEarly = 0;
+  for (let i = 0; i < buf.length; i++) rmsEarly += buf[i] * buf[i];
+  rmsEarly = Math.sqrt(rmsEarly / buf.length);
+  const hasSound = rmsEarly > 0.015 && freq > 0;
+
+  // ── 首音符對齊：等到偵測到第一個音才開始計時 ──
+  if (spStartTime === null) {
+    if (hasSound) {
+      spStartTime = spAudioCtx.currentTime;
+      const statusEl = document.getElementById('sp-midi-status');
+      if (statusEl) { statusEl.textContent = '🎯 已對齊！開始比對…'; statusEl.style.color = 'var(--green)'; }
+    } else {
+      spRafId = requestAnimationFrame(spLoop);
+      return;
+    }
+  }
+
   const elapsed = spAudioCtx.currentTime - spStartTime;
 
   // Find current reference note + its index
-  // 找到當前時間對應的音符，同時也考慮前後各一個音符作為候選
   let ref = null, refIdx = -1;
   for (let i = spReferenceScore.length - 1; i >= 0; i--) {
     if (elapsed >= spReferenceScore[i].time) { ref = spReferenceScore[i]; refIdx = i; break; }
   }
-  // 如果有聲音，找與當前頻率 cents 偏差最小的鄰近音符（前後各1個），避免時間差導致判錯
-  // 這樣即使比 MIDI 慢了一點，只要音符正確就算準確
 
   let color = '#d1d5db'; // silent = gray
   let centsVal = null;
   let curNote = '–';
   let diffCents = 0;
-
-  // RMS 靜音過濾（與音準頁面一致）
-  let rms = 0;
-  for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
-  rms = Math.sqrt(rms / buf.length);
-  const hasSound = rms > 0.015 && freq > 0;
 
   if (hasSound) {
     // 識別當前音名（小號記譜音 = concert pitch + 2 半音）
@@ -8495,7 +8509,15 @@ function spLoop() {
       else if (diffCents > 100)           color = '#ef4444';
       else                                color = '#3b82f6';
 
-      // 收集樣本，切換音符時結算
+      // 計算音符持續時間，只取中段 30%~70% 計分（跳過起始和結尾）
+      const noteStart = ref.time;
+      const noteEnd   = spReferenceScore[refIdx + 1]?.time ?? (noteStart + 0.8);
+      const noteDur   = noteEnd - noteStart;
+      const winStart  = noteStart + noteDur * 0.05;
+      const winEnd    = noteStart + noteDur * 0.95;
+      const inWindow  = elapsed >= winStart && elapsed <= winEnd;
+
+      // 切換到新音符時，先結算上一個
       if (refIdx !== spLastRefTime) {
         if (spCentsSamples.length > 0) {
           const sorted = [...spCentsSamples].sort((a,b) => a-b);
@@ -8507,7 +8529,8 @@ function spLoop() {
         }
         spLastRefTime = refIdx;
       }
-      spCentsSamples.push(diffCents);
+      // 只在中段窗口內收集樣本
+      if (inWindow) spCentsSamples.push(diffCents);
     }
 
     spLastColor = color;
