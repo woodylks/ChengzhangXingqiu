@@ -7285,7 +7285,7 @@ async function analyzeUploadedAudio() {
   try {
     const arrayBuf = await uploadedAudioFile.arrayBuffer();
     // Decode at lower sample rate to speed up processing
-    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 22050 });
+    const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
     const audioBuf = await actx.decodeAudioData(arrayBuf);
     await actx.close();
 
@@ -7326,12 +7326,13 @@ function extractPitchAsync(audioBuf, onProgress) {
   return new Promise(resolve => {
     const sr = audioBuf.sampleRate;
     const data = audioBuf.getChannelData(0);
-    const frameSize = 4096;                     // smaller frame = faster
-    const hopSize = Math.floor(sr * 0.1);       // 100ms hops (was 50ms)
+    const frameSize = 4096;
+    const hopSize = Math.floor(sr * 0.02);      // 20ms hops（提高時間解析度）
     const totalFrames = Math.floor((data.length - frameSize) / hopSize);
     const BATCH = 20;                           // frames per batch before yielding
     const log = [];
     let frameIdx = 0;
+    const smoothBuf = []; // 中位數平滑緩衝（3幀，與麥克風識別一致）
 
     function processBatch() {
       const end = Math.min(frameIdx + BATCH, totalFrames);
@@ -7345,8 +7346,21 @@ function extractPitchAsync(audioBuf, onProgress) {
         if (rms > 0.012) {
           // Pass subarray view instead of slice
           const frame = data.subarray(offset, offset + frameSize);
-          const freq = autoCorrelate(frame, sr);
-          if (freq > 60 && freq < 2500) {
+          const rawFreq = autoCorrelate(frame, sr);
+          // 中位數平滑（3幀），與麥克風識別一致
+          if (rawFreq > 60 && rawFreq < 2500) {
+            smoothBuf.push(rawFreq);
+          } else {
+            smoothBuf.push(null);
+          }
+          if (smoothBuf.length > 3) smoothBuf.shift();
+          const validFreqs = smoothBuf.filter(f => f !== null);
+          let freq = null;
+          if (validFreqs.length >= 2) {
+            const sorted = [...validFreqs].sort((a, b) => a - b);
+            freq = sorted[Math.floor(sorted.length / 2)];
+          }
+          if (freq) {
             const r = findClosest(freq);
             log.push({ t, freq, note: r?.note.name || null });
           } else {
@@ -8497,46 +8511,74 @@ async function spAnalyzeAudio() {
 
   try {
     const arrayBuf = await spAudioFile.arrayBuffer();
-    const actx     = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 22050 });
+    const actx     = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
     const audioBuf = await actx.decodeAudioData(arrayBuf);
     await actx.close();
 
     label.textContent = '提取音高… 0%';
 
-    // 用現有的 extractPitchAsync（練習模組裡的）
     const rawLog = await extractPitchAsync(audioBuf, pct => {
       label.textContent = `提取音高… ${pct}%`;
       bar.style.width   = pct + '%';
     });
 
     // 把 rawLog 轉成 spReferenceScore 格式：{time(秒), midi, noteName}
-    // 合併連續同音，每段取中位數頻率
-    const HOP_SEC   = 0.1; // extractPitchAsync 的 hop = 100ms
-    const notes     = [];
+    // 雙條件切割：靜音段 OR 音高跳變（> 80 cents）
+    const MIN_NOTE_MS       = 50;  // 最短音符 50ms
+    const SILENCE_THRESH_MS = 30;  // 靜音門檻 30ms
+    const PITCH_JUMP_CENTS  = 80;   // 音高跳變 > 80 cents = 新音符
+    const notes = [];
     let segStart = null, segFreqs = [];
 
-    const flush = (endT) => {
+    const freqToCents = f => 1200 * Math.log2(f / 440);
+
+    const flushSeg = (endT) => {
       if (segStart === null || !segFreqs.length) return;
-      const sorted  = [...segFreqs].sort((a,b) => a-b);
-      const medFreq = sorted[Math.floor(sorted.length / 2)];
-      if (medFreq > 60 && medFreq < 2500) {
-        const midi     = Math.round(12 * Math.log2(medFreq / 440) + 69);
-        const names    = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-        const noteName = names[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1);
-        notes.push({ time: +(segStart / 1000).toFixed(3), midi, noteName });
+      const dur = endT - segStart;
+      if (dur >= MIN_NOTE_MS) {
+        const sorted  = [...segFreqs].sort((a,b) => a-b);
+        const medFreq = sorted[Math.floor(sorted.length / 2)];
+        if (medFreq > 60 && medFreq < 2500) {
+          const midi     = Math.round(12 * Math.log2(medFreq / 440) + 69);
+          const names    = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+          const noteName = names[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1);
+          notes.push({ time: +(segStart / 1000).toFixed(3), midi, noteName });
+        }
       }
       segStart = null; segFreqs = [];
     };
 
-    rawLog.forEach((p, i) => {
+    let silenceStart = null;
+    let prevFreq = null;
+
+    rawLog.forEach((p) => {
       if (p.freq && p.freq > 60 && p.freq < 2500) {
+        // 有聲：先處理靜音結束
+        if (silenceStart !== null) {
+          const silDur = p.t - silenceStart;
+          if (silDur >= SILENCE_THRESH_MS) flushSeg(silenceStart);
+          silenceStart = null;
+        }
+
+        // 音高跳變判斷（與上一幀比較）
+        if (prevFreq && segStart !== null && segFreqs.length >= 2) {
+          const jump = Math.abs(freqToCents(p.freq) - freqToCents(prevFreq));
+          if (jump > PITCH_JUMP_CENTS) {
+            // 音高跳了，切割新音符
+            flushSeg(p.t);
+          }
+        }
+
         if (segStart === null) segStart = p.t;
         segFreqs.push(p.freq);
+        prevFreq = p.freq;
       } else {
-        flush(p.t);
+        // 靜音
+        if (silenceStart === null && segStart !== null) silenceStart = p.t;
+        prevFreq = null;
       }
     });
-    flush(rawLog[rawLog.length-1]?.t || 0);
+    flushSeg(rawLog[rawLog.length-1]?.t || 0);
 
     if (!notes.length) throw new Error('未能識別到音符，請使用清晰的單旋律錄音');
 
