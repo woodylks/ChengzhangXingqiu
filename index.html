@@ -8595,10 +8595,14 @@ async function spAnalyzeScore() {
       return (parseInt(m[2]) + 1) * 12 + (steps[m[1]] ?? 0);
     };
     const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    // 小號樂諜是 Bb 移調\uff08誘譜音\u00a0= concert pitch + 2 半音\uff09
+    // 需要減 2 半音轉回 concert pitch 儲存
+    const transposeOffset = (practiceKid === 'trumpet') ? -2 : 0;
     let time = 0;
     const notes = noteList.map(n => {
-      const midi = noteNameToMidi(n.note);
-      if (!midi) return null;
+      const writtenMidi = noteNameToMidi(n.note);
+      if (!writtenMidi) return null;
+      const midi = writtenMidi + transposeOffset; // concert pitch
       const entry = { time: +time.toFixed(3), midi, noteName: names[((midi%12)+12)%12] + (Math.floor(midi/12)-1) };
       time += (n.dur || 1) * secPerBeat;
       return entry;
