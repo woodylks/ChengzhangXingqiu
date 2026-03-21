@@ -8618,7 +8618,7 @@ async function spAnalyzeScore() {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-a5a9b48f7bb34817a3811920aad62e12' },
         body: JSON.stringify({
           model: 'qwen-vl-plus',
-          max_tokens: 4000,
+          max_tokens: 6000,
           messages: [{ role: 'user', content: [
             { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + resizedB64 } },
             { type: 'text', text: scorePrompt }
@@ -8631,12 +8631,27 @@ async function spAnalyzeScore() {
     const data = await response.json();
     if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.choices?.[0]?.message?.content || '';
-    if (!text) throw new Error('\u56de\u61c9\u70ba\u7a7a\uff0c\u8acb\u91cd\u8a66');
-    // 解析 JSON
-    const clean = text.replace(/```json|```/g, '').trim();
-    const noteList = JSON.parse(clean);
+    if (!text) throw new Error('回應為空，請重試');
+    // 解析 JSON — 支援截斷的不完整 JSON
+    let clean = text.replace(/```json|```/g, '').trim();
+    // 找到 JSON 數組開頭
+    const arrStart = clean.indexOf('[');
+    if (arrStart === -1) throw new Error('AI 未返回音符數組，請重試');
+    clean = clean.slice(arrStart);
+    // 如果 JSON 被截斷，截取到最後一個完整的 } 後加 ]
+    let noteList;
+    try {
+      noteList = JSON.parse(clean);
+    } catch(e) {
+      // 嘗試修復截斷：找到最後一個完整音符（以 } 結尾）
+      const lastBrace = clean.lastIndexOf('}');
+      if (lastBrace === -1) throw new Error('無法解析回應，請重試');
+      const fixed = clean.slice(0, lastBrace + 1) + ']';
+      noteList = JSON.parse(fixed);
+    }
 
     if (!Array.isArray(noteList) || !noteList.length) throw new Error('AI 未能識別到音符');
+    console.log('AI 識別音符數:', noteList.length, '（可能因截斷而不完整）');
 
     // 轉成 spReferenceScore 格式
     const secPerBeat = 60 / bpm;
