@@ -3529,6 +3529,7 @@ async function spStart() {
 
   spRunning = true;
   spStartTime = null;       // null = 等待首音符觸發才開始計時
+  document.getElementById('sp-save-to-lib').style.display = 'none';
   spTracePoints = [];
   spStats = { good:0, high:0, low:0 };
   spLastRefTime = -1;
@@ -5618,6 +5619,18 @@ function buildPracticeEmbed() {
       </div>
 
       <div id="sp-midi-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px;"></div>
+
+      <!-- 保存到曲目庫 -->
+      <div id="sp-save-to-lib" style="display:none;margin-bottom:12px;background:var(--card2);border-radius:12px;padding:12px;">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px;">💾 保存到曲目庫</div>
+        <input id="sp-save-name" class="form-input" placeholder="輸入曲目名稱…" style="margin-bottom:8px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="spSaveToLib()" style="flex:1;padding:8px;border-radius:10px;border:none;background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">
+            💾 保存
+          </button>
+          <div id="sp-save-to-lib-status" style="font-size:11px;color:var(--muted);flex:1;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Controls -->
@@ -8099,6 +8112,7 @@ function spLoadMIDI(event) {
       const btn = document.getElementById('sp-start-btn');
       btn.disabled    = false;
       btn.style.opacity = '1';
+      document.getElementById('sp-save-to-lib').style.display = '';
 
 
     } catch(err) {
@@ -8280,6 +8294,43 @@ async function spCompressImage(dataUrl, maxKB = 200) {
     img.onerror = () => resolve(dataUrl); // fallback
     img.src = dataUrl;
   });
+}
+
+
+async function spSaveToLib() {
+  const name = document.getElementById('sp-save-name').value.trim();
+  if (!name) { alert('請填寫曲目名稱'); return; }
+  if (!spReferenceScore.length) { alert('沒有音符數據'); return; }
+  const statusEl = document.getElementById('sp-save-to-lib-status');
+  statusEl.textContent = '保存中…'; statusEl.style.color = 'var(--muted)';
+
+  const notes = spReferenceScore;
+  const dur = (notes[notes.length-1].time + 1).toFixed(1);
+  const compactNotes = notes.map(n => ({ t: +n.time.toFixed(3), m: n.midi }));
+
+  // 如果是從樂譜圖片識別的，把圖片也一起保存
+  let imgData = null;
+  if (spScoreImageB64) {
+    try { imgData = await spCompressImage(spScoreImageB64, 200); } catch(e) {}
+  }
+
+  const data = {
+    name,
+    noteCount: notes.length,
+    duration: dur,
+    midiNotes: compactNotes,
+    scoreImgBase64: imgData,
+    createdAt: Date.now()
+  };
+
+  const id = await window.fbAdd('scoreReps', data);
+  if (id) {
+    statusEl.textContent = '✅ 已保存！'; statusEl.style.color = 'var(--green)';
+    document.getElementById('sp-save-name').value = '';
+    spLoadRepList();
+  } else {
+    statusEl.textContent = '❌ 保存失敗'; statusEl.style.color = 'var(--red)';
+  }
 }
 
 async function spSaveNewRep() {
@@ -8558,7 +8609,7 @@ async function spAnalyzeScore() {
 
     // 30s timeout
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30000);
+    const timer = setTimeout(() => controller.abort(), 60000);
     let response;
     try {
       response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
@@ -8567,6 +8618,7 @@ async function spAnalyzeScore() {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-a5a9b48f7bb34817a3811920aad62e12' },
         body: JSON.stringify({
           model: 'qwen-vl-plus',
+          max_tokens: 4000,
           messages: [{ role: 'user', content: [
             { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + resizedB64 } },
             { type: 'text', text: scorePrompt }
@@ -8616,6 +8668,7 @@ async function spAnalyzeScore() {
     statusEl.style.color = 'var(--green)';
     const startBtn = document.getElementById('sp-start-btn');
     startBtn.disabled = false; startBtn.style.opacity = '1';
+    document.getElementById('sp-save-to-lib').style.display = '';
 
     // 顯示 BPM 調整提示
     document.getElementById('sp-score-bpm-row').style.display = 'flex';
@@ -8735,6 +8788,7 @@ async function spAnalyzeAudio() {
 
     const startBtn = document.getElementById('sp-start-btn');
     startBtn.disabled = false; startBtn.style.opacity = '1';
+    document.getElementById('sp-save-to-lib').style.display = '';
 
     label.textContent = '✅ 完成！';
     bar.style.width   = '100%';
