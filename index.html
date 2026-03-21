@@ -5543,16 +5543,53 @@ function buildPracticeEmbed() {
     <!-- Header -->
     <div style="font-size:15px;font-weight:900;margin-bottom:14px;">🎼 曲目比對</div>
 
-    <!-- MIDI Upload -->
+    <!-- 音符來源選擇 -->
     <div id="sp-upload-area">
-      <div class="rep-label">上傳標準樂譜（MIDI 文件）</div>
-      <input type="file" id="sp-midi-input" accept=".mid,.midi" style="display:none;" onchange="spLoadMIDI(event)">
-      <div onclick="document.getElementById(\'sp-midi-input\').click()"
-        style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:12px;">
-        <div style="font-size:28px;margin-bottom:6px;">🎹</div>
-        <div style="font-size:13px;font-weight:700;">點擊上傳 .mid 文件</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;">系統自動解析音符時序</div>
+      <div class="rep-label">音符來源</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button id="sp-src-midi-btn" onclick="spSwitchSource('midi')"
+          style="flex:1;padding:8px;border-radius:10px;border:2px solid var(--kid1);background:var(--kid1);color:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">
+          🎹 MIDI 文件
+        </button>
+        <button id="sp-src-audio-btn" onclick="spSwitchSource('audio')"
+          style="flex:1;padding:8px;border-radius:10px;border:2px solid var(--border);background:white;font-family:'Noto Sans TC',sans-serif;font-size:12px;font-weight:800;cursor:pointer;color:var(--muted);">
+          🎵 上傳錄音
+        </button>
       </div>
+
+      <!-- MIDI 面板 -->
+      <div id="sp-src-midi-panel">
+        <input type="file" id="sp-midi-input" accept=".mid,.midi" style="display:none;" onchange="spLoadMIDI(event)">
+        <div onclick="document.getElementById('sp-midi-input').click()"
+          style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:12px;">
+          <div style="font-size:28px;margin-bottom:6px;">🎹</div>
+          <div style="font-size:13px;font-weight:700;">點擊上傳 .mid 文件</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">系統自動解析音符時序</div>
+        </div>
+      </div>
+
+      <!-- 錄音面板 -->
+      <div id="sp-src-audio-panel" style="display:none;">
+        <input type="file" id="sp-audio-input" accept="audio/*" style="display:none;" onchange="spAudioFileSelected(event)">
+        <div onclick="document.getElementById('sp-audio-input').click()"
+          style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);margin-bottom:10px;">
+          <div style="font-size:28px;margin-bottom:6px;">🎵</div>
+          <div id="sp-audio-drop-label" style="font-size:13px;font-weight:700;">點擊上傳錄音</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">MP3 / WAV / M4A</div>
+        </div>
+        <button id="sp-audio-analyze-btn" onclick="spAnalyzeAudio()" disabled
+          style="width:100%;padding:10px;border-radius:10px;border:none;background:var(--kid1);color:white;
+            font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;opacity:0.4;margin-bottom:10px;">
+          🔍 分析音符
+        </button>
+        <div id="sp-audio-progress" style="display:none;margin-bottom:10px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;" id="sp-audio-progress-label">分析中…</div>
+          <div style="height:6px;border-radius:3px;background:#eee;overflow:hidden;">
+            <div id="sp-audio-progress-bar" style="height:100%;background:var(--kid1);width:0%;transition:width 0.2s;border-radius:3px;"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="sp-midi-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px;"></div>
     </div>
 
@@ -8403,6 +8440,129 @@ function exportComparePitch() {
 
 function exportTunerPitch() {
   exportPitchCSV(tunerPitchLog, 'tuner_pitch.csv');
+}
+
+// ══════════════════════════════════════════
+// 比對頁面：錄音分析為音符時序
+// ══════════════════════════════════════════
+let spAudioFile = null;
+
+function spSwitchSource(src) {
+  const midiPanel  = document.getElementById('sp-src-midi-panel');
+  const audioPanel = document.getElementById('sp-src-audio-panel');
+  const midiBtn    = document.getElementById('sp-src-midi-btn');
+  const audioBtn   = document.getElementById('sp-src-audio-btn');
+  if (src === 'midi') {
+    midiPanel.style.display  = '';
+    audioPanel.style.display = 'none';
+    midiBtn.style.background  = 'var(--kid1)';
+    midiBtn.style.color       = 'white';
+    midiBtn.style.borderColor = 'var(--kid1)';
+    audioBtn.style.background = 'white';
+    audioBtn.style.color      = 'var(--muted)';
+    audioBtn.style.borderColor= 'var(--border)';
+  } else {
+    midiPanel.style.display  = 'none';
+    audioPanel.style.display = '';
+    audioBtn.style.background  = 'var(--kid1)';
+    audioBtn.style.color       = 'white';
+    audioBtn.style.borderColor = 'var(--kid1)';
+    midiBtn.style.background   = 'white';
+    midiBtn.style.color        = 'var(--muted)';
+    midiBtn.style.borderColor  = 'var(--border)';
+  }
+}
+
+function spAudioFileSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  spAudioFile = file;
+  document.getElementById('sp-audio-drop-label').textContent = `✅ ${file.name}`;
+  const btn = document.getElementById('sp-audio-analyze-btn');
+  btn.disabled = false; btn.style.opacity = '1';
+}
+
+async function spAnalyzeAudio() {
+  if (!spAudioFile) return;
+  const btn      = document.getElementById('sp-audio-analyze-btn');
+  const progress = document.getElementById('sp-audio-progress');
+  const label    = document.getElementById('sp-audio-progress-label');
+  const bar      = document.getElementById('sp-audio-progress-bar');
+  const statusEl = document.getElementById('sp-midi-status');
+
+  btn.disabled = true; btn.style.opacity = '0.5';
+  progress.style.display = '';
+  label.textContent = '解碼音頻…';
+  bar.style.width   = '0%';
+
+  try {
+    const arrayBuf = await spAudioFile.arrayBuffer();
+    const actx     = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 22050 });
+    const audioBuf = await actx.decodeAudioData(arrayBuf);
+    await actx.close();
+
+    label.textContent = '提取音高… 0%';
+
+    // 用現有的 extractPitchAsync（練習模組裡的）
+    const rawLog = await extractPitchAsync(audioBuf, pct => {
+      label.textContent = `提取音高… ${pct}%`;
+      bar.style.width   = pct + '%';
+    });
+
+    // 把 rawLog 轉成 spReferenceScore 格式：{time(秒), midi, noteName}
+    // 合併連續同音，每段取中位數頻率
+    const HOP_SEC   = 0.1; // extractPitchAsync 的 hop = 100ms
+    const notes     = [];
+    let segStart = null, segFreqs = [];
+
+    const flush = (endT) => {
+      if (segStart === null || !segFreqs.length) return;
+      const sorted  = [...segFreqs].sort((a,b) => a-b);
+      const medFreq = sorted[Math.floor(sorted.length / 2)];
+      if (medFreq > 60 && medFreq < 2500) {
+        const midi     = Math.round(12 * Math.log2(medFreq / 440) + 69);
+        const names    = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        const noteName = names[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1);
+        notes.push({ time: +(segStart / 1000).toFixed(3), midi, noteName });
+      }
+      segStart = null; segFreqs = [];
+    };
+
+    rawLog.forEach((p, i) => {
+      if (p.freq && p.freq > 60 && p.freq < 2500) {
+        if (segStart === null) segStart = p.t;
+        segFreqs.push(p.freq);
+      } else {
+        flush(p.t);
+      }
+    });
+    flush(rawLog[rawLog.length-1]?.t || 0);
+
+    if (!notes.length) throw new Error('未能識別到音符，請使用清晰的單旋律錄音');
+
+    // 對齊時間到 0
+    const off = notes[0].time;
+    if (off > 0) notes.forEach(n => { n.time = +(n.time - off).toFixed(3); });
+
+    spReferenceScore = notes;
+    const dur = (notes[notes.length-1].time + 1).toFixed(1);
+    statusEl.innerHTML = `✅ 錄音分析完成：<strong>${notes.length}</strong> 個音符，時長約 ${dur}s`;
+    statusEl.style.color = 'var(--green)';
+
+    const startBtn = document.getElementById('sp-start-btn');
+    startBtn.disabled = false; startBtn.style.opacity = '1';
+
+    label.textContent = '✅ 完成！';
+    bar.style.width   = '100%';
+
+  } catch(e) {
+    statusEl.textContent = '❌ 分析失敗：' + e.message;
+    statusEl.style.color = 'var(--red)';
+    console.error(e);
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1';
+    setTimeout(() => { progress.style.display = 'none'; }, 2000);
+  }
 }
 
 function spLoop() {
