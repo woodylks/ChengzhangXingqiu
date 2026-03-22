@@ -3517,7 +3517,7 @@ async function spStart() {
   // Init audio
   try {
     spAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints(), video: false });
     const source = spAudioCtx.createMediaStreamSource(stream);
     spAnalyser = spAudioCtx.createAnalyser();
     spAnalyser.fftSize = 4096;              // 與音準頁面一致，提升識別精度
@@ -4065,6 +4065,55 @@ async function uploadHomeworkPhoto(file) {
   return url;
 }
 let pendingScanTasks = [];
+
+
+// ══════════════════════════════════════════
+// 全局麥克風選擇
+// ══════════════════════════════════════════
+let selectedMicId = localStorage.getItem('selected_mic_id') || '';
+// 清除可能殘留的無效 deviceId（避免 getUserMedia 失敗）
+if (selectedMicId) {
+  navigator.mediaDevices.enumerateDevices().then(devices => {
+    const valid = devices.some(d => d.kind === 'audioinput' && d.deviceId === selectedMicId);
+    if (!valid) { selectedMicId = ''; localStorage.removeItem('selected_mic_id'); }
+  }).catch(() => { selectedMicId = ''; localStorage.removeItem('selected_mic_id'); });
+}
+
+function getAudioConstraints() {
+  const base = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+  if (selectedMicId) base.deviceId = { ideal: selectedMicId }; // ideal 而非 exact，找不到自動回退預設
+  return base;
+}
+
+function saveSelectedMic() {
+  const sel = document.getElementById('mic-select');
+  if (!sel) return;
+  selectedMicId = sel.value;
+  localStorage.setItem('selected_mic_id', selectedMicId);
+}
+
+async function refreshMicList() {
+  // 先請求麥克風權限，才能 enumerate labels
+  try {
+    const tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
+    tmp.getTracks().forEach(t => t.stop());
+  } catch(e) {}
+
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const mics = devices.filter(d => d.kind === 'audioinput');
+  const sel = document.getElementById('mic-select');
+  if (!sel) return;
+  const saved = localStorage.getItem('selected_mic_id') || '';
+  sel.innerHTML = '<option value="">預設麥克風</option>' +
+    mics.map(d => `<option value="${d.deviceId}" ${d.deviceId === saved ? 'selected' : ''}>${d.label || '麥克風 ' + d.deviceId.slice(0,6)}</option>`).join('');
+  selectedMicId = saved;
+}
+
+// 頁面載入後自動填充麥克風列表
+document.addEventListener('DOMContentLoaded', () => {
+  refreshMicList();
+  navigator.mediaDevices.addEventListener('devicechange', refreshMicList);
+});
 
 function getApiKey() {
   return localStorage.getItem('anthropic_api_key') || '';
@@ -5193,6 +5242,13 @@ function buildPracticeEmbed() {
   <div class="note-grid-title" id="note-grid-title">Bb小號音域（記譜音）</div>
   <div class="note-grid" id="note-grid"></div>
 
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+    <span style="font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;">🎤 麥克風</span>
+    <select id="mic-select" onchange="saveSelectedMic()" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid var(--border);font-family:'Noto Sans TC',sans-serif;font-size:12px;background:var(--bg);">
+      <option value="">預設麥克風</option>
+    </select>
+    <button onclick="refreshMicList()" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-size:13px;cursor:pointer;">🔄</button>
+  </div>
   <button class="btn-primary trumpet" id="pitch-btn" onclick="togglePitch()">🎙️ 開始聆聽</button>
   <button id="tuner-export-btn" onclick="exportTunerPitch()" style="display:none;margin-top:8px;width:100%;padding:9px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);font-family:\'Noto Sans TC\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📥 匯出音準數據 CSV</button>
 </div>
@@ -6249,7 +6305,7 @@ function togglePitch() { pitchOn ? stopPitch() : startPitch(); }
 
 async function startPitch() {
   try {
-    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const stream=await navigator.mediaDevices.getUserMedia({audio:getAudioConstraints()});
     audioCtx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
     analyser=audioCtx.createAnalyser(); analyser.fftSize=4096; analyser.smoothingTimeConstant=0.5;
     bufLen=analyser.fftSize; dataArr=new Float32Array(bufLen);
@@ -6553,7 +6609,7 @@ function startPitchChart(panel) {
   let startT = null;
 
   // Audio setup
-  navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })
+  navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints() })
     .then(stream => {
       const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
       const analyser = actx.createAnalyser();
@@ -6727,7 +6783,7 @@ async function startRecording(panel) {
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      audio: getAudioConstraints()
     });
 
     // Setup analyser for pitch tracking during recording
@@ -7125,7 +7181,7 @@ function toggleHumRecording() {
 async function startHumRecording() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      audio: getAudioConstraints()
     });
     const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
     const analyser = actx.createAnalyser();
@@ -7535,7 +7591,7 @@ function renderDemoControls(item) {
 async function startDemoRec() {
   if(demoRecState?.recording){ await stopDemoRec(); return; }
   try {
-    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const stream=await navigator.mediaDevices.getUserMedia({audio:getAudioConstraints()});
     const actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
     const analyser=actx.createAnalyser(); analyser.fftSize=8192; analyser.smoothingTimeConstant=0.85;
     actx.createMediaStreamSource(stream).connect(analyser);
@@ -7638,7 +7694,7 @@ function startRepPitchChart(item){
   const WINDOW_MS = beatMs * 8;
   const history = [];
 
-  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})
+  navigator.mediaDevices.getUserMedia({audio:getAudioConstraints()})
     .then(stream=>{
       const actx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:44100});
       const analyser=actx.createAnalyser(); analyser.fftSize=8192; analyser.smoothingTimeConstant=0.85;
