@@ -4071,10 +4071,17 @@ let pendingScanTasks = [];
 // 全局麥克風選擇
 // ══════════════════════════════════════════
 let selectedMicId = localStorage.getItem('selected_mic_id') || '';
+// 清除可能殘留的無效 deviceId（避免 getUserMedia 失敗）
+if (selectedMicId) {
+  navigator.mediaDevices.enumerateDevices().then(devices => {
+    const valid = devices.some(d => d.kind === 'audioinput' && d.deviceId === selectedMicId);
+    if (!valid) { selectedMicId = ''; localStorage.removeItem('selected_mic_id'); }
+  }).catch(() => { selectedMicId = ''; localStorage.removeItem('selected_mic_id'); });
+}
 
 function getAudioConstraints() {
   const base = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
-  if (selectedMicId) base.deviceId = { exact: selectedMicId };
+  if (selectedMicId) base.deviceId = { ideal: selectedMicId }; // ideal 而非 exact，找不到自動回退預設
   return base;
 }
 
