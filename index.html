@@ -5597,8 +5597,20 @@ function buildPracticeEmbed() {
 <div class="practice-section" id="sec-scoreplay">
   <div style="padding:16px;">
 
-    <!-- Header -->
-    <div style="font-size:15px;font-weight:900;margin-bottom:14px;">🎼 曲目比對</div>
+    <!-- Header with tabs -->
+    <div style="display:flex;align-items:center;border-bottom:1.5px solid var(--border);margin-bottom:14px;gap:0;">
+      <button id="sp-tab-compare" onclick="spShowTab('compare')"
+        style="flex:1;padding:10px 0;background:none;border:none;border-bottom:2.5px solid #FF6B35;color:#FF6B35;font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">
+        🎼 比對
+      </button>
+      <button id="sp-tab-library" onclick="spShowTab('library')"
+        style="flex:1;padding:10px 0;background:none;border:none;border-bottom:2.5px solid transparent;color:rgba(0,0,0,0.3);font-family:'Noto Sans TC',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">
+        📚 曲目庫
+      </button>
+    </div>
+
+    <!-- Compare panel -->
+    <div id="sp-panel-compare">
 
     <!-- 音符來源選擇 -->
     <div id="sp-upload-area">
@@ -5771,6 +5783,13 @@ function buildPracticeEmbed() {
         </div>
       </div>
       <div id="sp-stat-pct" style="text-align:center;margin-top:10px;font-size:15px;font-weight:900;"></div>
+    </div>
+
+    </div><!-- end sp-panel-compare -->
+
+    <!-- Library panel -->
+    <div id="sp-panel-library" style="display:none;">
+      <div id="sp-rep-list"></div>
     </div>
 
   </div>
