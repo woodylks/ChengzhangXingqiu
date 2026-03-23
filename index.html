@@ -2083,6 +2083,8 @@ function switchTab(tab) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
   document.getElementById(`sec-${tab}`).classList.add('visible');
   updateNavActive();
+  // 切換到體藝 tab 時刷新曲目列表
+  if (tab === 'arts') { try { showRepList(); } catch(e) {} }
 }
 function updateNavActive() {
   document.querySelectorAll('.nav-btn').forEach(b => {
