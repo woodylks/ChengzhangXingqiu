@@ -5459,7 +5459,10 @@ function buildPracticeEmbed() {
 
     <!-- Input method selector -->
     <div class="rep-field">
-      <div class="rep-label">錄入音符（示範錄音）</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div class="rep-label" style="margin-bottom:0;">示範錄音 <span style="color:var(--muted);font-size:11px;">（選填）</span></div>
+        <button onclick="skipRecording()" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:'Noto Sans TC',sans-serif;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);">跳過 →</button>
+      </div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="rep-view-btn active" id="input-tab-hum" onclick="switchInputTab('hum')" style="flex:1;">🎙 哼唱錄入</button>
         <button class="rep-view-btn" id="input-tab-upload" onclick="switchInputTab('upload')" style="flex:1;">📤 上傳音頻</button>
@@ -5468,7 +5471,7 @@ function buildPracticeEmbed() {
       <!-- Hum tab -->
       <div id="input-panel-hum">
         <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">吹奏一遍，App 自動識別音符和時值，同時作為示範錄音保存。</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">吹奏一遍，App 自動識別音符和時值，同時作為示範錄音保存。識別完成後出現「💾 保存曲目」按鈕。</div>
           <div id="hum-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;font-family:'Space Mono',monospace;">準備就緒</div>
           <div id="hum-viz" style="height:60px;background:#0d0d14;border-radius:8px;margin-bottom:10px;overflow:hidden;position:relative;">
             <canvas id="hum-canvas" style="width:100%;height:100%;display:block;"></canvas>
@@ -6031,6 +6034,7 @@ function selectKid(kid) {
   if(document.getElementById('note-grid')) renderNoteGrid();
   if(document.getElementById('ex-grid')) renderExGrid();
   if(document.getElementById('note-name')) resetPitchDisplay();
+  if(document.getElementById('rep-cards')) renderRepCards();
   closeAllPanels();
 }
 
@@ -7092,6 +7096,8 @@ function showRepAdd() {
   switchInputTab('hum');
   repNotes=[]; repScoreImageB64=null; repScoreUrl=null;
   humRecState=null; uploadedAudioFile=null; pendingDemoBlob=null; pendingDemoContour=null;
+  const _canvas = document.getElementById('rep-preview-canvas');
+  if (_canvas) _canvas.style.display = 'block';
 }
 function showRepPractice(id) {
   const item=repList.find(r=>r.id===id); if(!item) return;
@@ -7550,11 +7556,24 @@ function drawRepPreview() {
   });
 }
 
+
+function skipRecording() {
+  // 不需要錄音，直接顯示保存介面
+  repNotes = [];
+  document.getElementById('rep-editor').style.display = 'block';
+  document.getElementById('rep-note-count').textContent = '無示範錄音';
+  document.getElementById('rep-note-editor').innerHTML =
+    '<div style="font-size:12px;color:var(--muted);padding:8px 0;">（無音符數據，僅保存曲目名稱和圖片）</div>';
+  // 隱藏預覽圖 canvas
+  const canvas = document.getElementById('rep-preview-canvas');
+  if (canvas) canvas.style.display = 'none';
+}
+
 // ── Save ──
 async function saveRepertoire() {
   const name=document.getElementById('rep-name-input').value.trim();
   if(!name){alert('請輸入曲目名稱');return;}
-  if(!repNotes.length){alert('請先錄入音符');return;}
+  // repNotes 為空也允許保存（示範錄音選填）
   const saveBtn=document.querySelector('#rep-editor .btn-primary');
   if(saveBtn){saveBtn.textContent='⏳ 上傳中...';saveBtn.disabled=true;}
 
