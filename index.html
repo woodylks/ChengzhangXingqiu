@@ -5212,10 +5212,46 @@ function buildPracticeEmbed() {
   <!-- Fingering (trumpet only) -->
   <div id="fingering-section">
     <div class="fingering-label" id="fingering-label">按鍵</div>
-    <div class="fingering-wrap">
+
+    <!-- 小號指法 -->
+    <div id="trumpet-fingering" class="fingering-wrap">
       <div class="valve"><div class="valve-num">1</div><div class="valve-circle" id="v1">1</div></div>
       <div class="valve"><div class="valve-num">2</div><div class="valve-circle" id="v2">2</div></div>
       <div class="valve"><div class="valve-num">3</div><div class="valve-circle" id="v3">3</div></div>
+    </div>
+
+    <!-- 長笛指法圖 -->
+    <div id="flute-fingering" style="display:none;">
+      <svg id="flute-svg" viewBox="0 0 320 72" style="width:100%;max-width:320px;display:block;margin:0 auto;">
+        <!-- 笛身橫管 -->
+        <rect x="4" y="28" width="312" height="16" rx="8" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <!-- 吹孔（最左） -->
+        <ellipse cx="24" cy="36" rx="9" ry="7" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <!-- 左拇鍵（背面，小方塊） -->
+        <rect id="fh-lt" x="48" y="20" width="10" height="10" rx="2" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <!-- 左手3孔 -->
+        <circle id="fh-l1" cx="68"  cy="36" r="9" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <circle id="fh-l2" cx="95"  cy="36" r="9" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <circle id="fh-l3" cx="122" cy="36" r="9" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <!-- G# 鍵（小圓） -->
+        <circle id="fh-l4" cx="142" cy="52" r="5" fill="none" stroke="#4FACDE" stroke-width="1.5"/>
+        <!-- 右手3孔 -->
+        <circle id="fh-r1" cx="168" cy="36" r="9" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <circle id="fh-r2" cx="195" cy="36" r="9" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <circle id="fh-r3" cx="222" cy="36" r="9" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <!-- R4 小圓孔 -->
+        <circle id="fh-r4" cx="245" cy="52" r="5" fill="none" stroke="#4FACDE" stroke-width="1.5"/>
+        <!-- 右小指鍵（方形按鍵群） -->
+        <rect id="fh-rp" x="262" y="22" width="14" height="28" rx="3" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <!-- 孔名標籤 -->
+        <text x="48"  y="17" text-anchor="middle" font-size="8" fill="#4FACDE" opacity="0.6">拇</text>
+        <text x="68"  y="56" text-anchor="middle" font-size="8" fill="#4FACDE" opacity="0.6">1</text>
+        <text x="95"  y="56" text-anchor="middle" font-size="8" fill="#4FACDE" opacity="0.6">2</text>
+        <text x="122" y="56" text-anchor="middle" font-size="8" fill="#4FACDE" opacity="0.6">3</text>
+        <text x="168" y="56" text-anchor="middle" font-size="8" fill="#4FACDE" opacity="0.6">4</text>
+        <text x="195" y="56" text-anchor="middle" font-size="8" fill="#4FACDE" opacity="0.6">5</text>
+        <text x="222" y="56" text-anchor="middle" font-size="8" fill="#4FACDE" opacity="0.6">6</text>
+      </svg>
     </div>
   </div>
 
@@ -5821,6 +5857,50 @@ const SOLFEGE = {
   'G#':'Si','Ab':'Le','A':'La','A#':'Li','Bb':'Te','B':'Ti',
 };
 
+
+// 長笛指法：[L拇, L1, L2, L3, L4(G#), R1, R2, R3, R4, R小指]
+// 0=開, 1=閉/按
+const FLUTE_FINGERING = {
+  // 第一八度
+  'C4':  [1,1,1,1,0, 1,1,1,1, 1], // low C（需要右小指C#鍵）
+  'C#4': [1,1,1,1,0, 1,1,1,0, 0],
+  'D4':  [0,1,1,1,0, 1,1,1,0, 0],
+  'Eb4': [0,1,1,1,0, 1,1,0,1, 0],
+  'E4':  [0,1,1,1,0, 1,1,0,0, 0],
+  'F4':  [0,1,1,1,0, 1,0,0,0, 0],
+  'F#4': [0,1,1,0,0, 1,0,0,0, 0],
+  'G4':  [0,1,1,0,0, 0,0,0,0, 0],
+  'Ab4': [0,1,1,0,1, 0,0,0,0, 0],
+  'A4':  [0,1,0,0,0, 0,0,0,0, 0],
+  'Bb4': [0,1,0,1,0, 0,0,0,0, 0],
+  'B4':  [0,1,0,0,0, 0,0,0,0, 0], // 同A4，靠embouchure
+  // 第二八度（加超吹）
+  'C5':  [0,0,1,1,0, 1,1,1,0, 0],
+  'C#5': [0,0,1,1,0, 1,1,0,0, 0],
+  'D5':  [0,1,1,1,0, 1,1,0,0, 0],
+  'Eb5': [0,1,1,1,0, 1,0,1,0, 0],
+  'E5':  [0,1,1,1,0, 1,0,0,0, 0],
+  'F5':  [0,1,1,1,0, 0,1,0,0, 0],
+  'F#5': [0,1,1,0,0, 1,0,0,0, 0],
+  'G5':  [0,1,1,0,0, 0,0,0,0, 0],
+  'Ab5': [0,1,1,0,1, 0,0,0,0, 0],
+  'A5':  [0,1,0,0,0, 0,0,0,0, 0],
+  'Bb5': [0,1,0,1,0, 0,0,0,0, 0],
+  'B5':  [0,0,1,0,0, 0,0,0,0, 0],
+  // 第三八度
+  'C6':  [0,0,1,1,0, 1,1,0,0, 0],
+  'C#6': [0,1,0,1,0, 1,0,0,0, 0],
+  'D6':  [1,1,0,1,0, 1,1,0,0, 0],
+  'Eb6': [0,1,1,0,0, 0,1,0,0, 0],
+  'E6':  [0,1,1,1,0, 0,0,1,0, 0],
+  'F6':  [0,1,1,0,0, 0,0,0,0, 0],
+  'F#6': [0,1,0,0,0, 1,0,0,0, 0],
+  'G6':  [0,0,1,1,0, 0,0,0,0, 0],
+  'A6':  [0,1,0,0,0, 1,0,0,0, 0],
+  'B6':  [0,1,0,0,0, 0,1,0,0, 0],
+  'C7':  [0,1,0,0,0, 0,0,1,0, 0],
+};
+
 const TRUMPET_FINGERING = {
   'G3':[0,0,0],'G#3':[0,1,1],'Ab3':[0,1,1],'A3':[1,1,0],'Bb3':[1,0,0],'B3':[0,1,0],
   'C4':[0,0,0],'C#4':[1,1,1],'Db4':[1,1,1],'D4':[1,0,1],'D#4':[0,1,1],'Eb4':[0,1,1],
@@ -6035,6 +6115,11 @@ function selectKid(kid) {
   if(document.getElementById('ex-grid')) renderExGrid();
   if(document.getElementById('note-name')) resetPitchDisplay();
   if(document.getElementById('rep-cards')) renderRepCards();
+  // 切換指法圖顯示
+  const _tr = document.getElementById('trumpet-fingering');
+  const _fl = document.getElementById('flute-fingering');
+  if (_tr) _tr.style.display = kid === 'trumpet' ? '' : 'none';
+  if (_fl) _fl.style.display = kid === 'flute' ? '' : 'none';
   closeAllPanels();
 }
 
@@ -6382,15 +6467,34 @@ function highlightChip(name) {
   if(el) el.className=`note-chip active-${practiceKid}`;
 }
 function showFingering(writtenName) {
-  if(practiceKid!=='trumpet') return;
-  const f=TRUMPET_FINGERING[writtenName];
-  const isOpen=f&&f.every(v=>v===0);
-  document.getElementById('fingering-label').textContent=f?(isOpen?'開放（不按）':'按鍵：'+f.map((v,i)=>v?i+1:'').filter(Boolean).join(' + ')):'按鍵';
-  ['v1','v2','v3'].forEach((id,i)=>{
-    const el=document.getElementById(id);
-    if(!f){el.className='valve-circle';return;}
-    el.className=isOpen?'valve-circle open':(f[i]?'valve-circle pressed':'valve-circle');
-  });
+  if (practiceKid === 'trumpet') {
+    document.getElementById('trumpet-fingering').style.display = '';
+    document.getElementById('flute-fingering').style.display = 'none';
+    const f = TRUMPET_FINGERING[writtenName];
+    const isOpen = f && f.every(v => v === 0);
+    document.getElementById('fingering-label').textContent = f ? (isOpen ? '開放（不按）' : '按鍵：' + f.map((v,i) => v ? i+1 : '').filter(Boolean).join(' + ')) : '按鍵';
+    ['v1','v2','v3'].forEach((id,i) => {
+      const el = document.getElementById(id);
+      if (!f) { el.className = 'valve-circle'; return; }
+      el.className = isOpen ? 'valve-circle open' : (f[i] ? 'valve-circle pressed' : 'valve-circle');
+    });
+  } else if (practiceKid === 'flute') {
+    document.getElementById('trumpet-fingering').style.display = 'none';
+    document.getElementById('flute-fingering').style.display = '';
+    const f = FLUTE_FINGERING[writtenName];
+    // [lThumb, l1, l2, l3, l4(G#), r1, r2, r3, r4, rPinky]
+    const ids = ['fh-lt','fh-l1','fh-l2','fh-l3','fh-l4','fh-r1','fh-r2','fh-r3','fh-r4','fh-rp'];
+    const label = f ? writtenName + ' 指法' : '指法';
+    document.getElementById('fingering-label').textContent = label;
+    ids.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const pressed = f ? f[i] === 1 : false;
+      // 閉孔：填色；開孔：空心
+      el.style.fill = pressed ? '#4FACDE' : 'none';
+      el.style.opacity = pressed ? '1' : '0.5';
+    });
+  }
 }
 // 改進版音高檢測：Hanning window + 平滑，解決管樂諧波誤判與 jitter 問題
 const _pitchSmooth = [];
