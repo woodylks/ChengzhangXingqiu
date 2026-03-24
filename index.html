@@ -6107,7 +6107,7 @@ function selectKid(kid) {
   const _pitchBtn=document.getElementById('pitch-btn');
   if(_pitchBtn) _pitchBtn.className=`btn-primary ${kid}`+(pitchOn?' stop':'');
   const _fingerEl=document.getElementById('fingering-section');
-  if(_fingerEl) _fingerEl.style.display=kid==='trumpet'?'block':'none';
+  if(_fingerEl) _fingerEl.style.display=(kid==='trumpet'||kid==='flute')?'block':'none';
   document.querySelectorAll('.metro-slider').forEach(s=>{
     s.className='metro-slider'+(kid==='flute'?' flute':'');
   });
