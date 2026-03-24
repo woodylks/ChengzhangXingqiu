@@ -5223,40 +5223,48 @@ function buildPracticeEmbed() {
     <!-- 長笛指法圖（參考 Flutecentric chart style） -->
     <div id="flute-fingering" style="display:none;padding:4px 0;">
       <div id="fingering-flute-label" style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;"></div>
-      <svg id="flute-svg" viewBox="0 0 290 90" style="width:100%;max-width:320px;display:block;margin:0 auto;">
+      <svg id="flute-svg" viewBox="0 0 300 95" style="width:100%;max-width:320px;display:block;margin:0 auto;">
 
-        <!-- ── 左拇：碗形（開口向右，像 chart 裡的 D 形碗） ── -->
+        <!-- ══ 左手3大孔（食中無，上排） ══ -->
+        <circle id="fh-l1" cx="36"  cy="36" r="13" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
+        <circle id="fh-l2" cx="64"  cy="36" r="13" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
+        <circle id="fh-l3" cx="92"  cy="36" r="13" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
+
+        <!-- ══ 左拇2鍵（左下方） ══ -->
+        <!-- Bb大水滴 -->
         <path id="fh-lt"
-          d="M22,62 L14,62 Q4,62 4,50 Q4,28 14,28 L22,28 Z"
-          fill="none" stroke="#4FACDE" stroke-width="2.5" stroke-linejoin="round"/>
+          d="M14,58 C7,55 3,60 3,66 C3,73 8,78 14,77 C18,77 18,74 18,70 L18,58 Z"
+          fill="none" stroke="#4FACDE" stroke-width="2.2"/>
+        <!-- Bn小水滴（右邊） -->
+        <path id="fh-lt2"
+          d="M26,62 C21,60 18,64 18,69 C18,74 22,77 26,76 C29,76 29,74 29,71 L29,62 Z"
+          fill="none" stroke="#4FACDE" stroke-width="1.8"/>
 
-        <!-- ── 左手 3 大孔 ── -->
-        <circle id="fh-l1" cx="46"  cy="45" r="12" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
-        <circle id="fh-l2" cx="74"  cy="45" r="12" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
-        <circle id="fh-l3" cx="102" cy="45" r="12" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
+        <!-- ══ 左小指G#（分隔線前，靠左上方） ══ -->
+        <path id="fh-l4"
+          d="M106,18 C101,16 97,20 97,25 C97,30 101,33 106,32 C109,32 109,30 109,27 L109,18 Z"
+          fill="none" stroke="#4FACDE" stroke-width="1.8"/>
 
-        <!-- ── G# 側鍵（左手小指，小圓，右下方） ── -->
-        <circle id="fh-l4" cx="120" cy="68" r="6.5" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <!-- ══ 豎線分隔 ══ -->
+        <line x1="118" y1="14" x2="118" y2="80" stroke="#4FACDE" stroke-width="1.5" opacity="0.4"/>
 
-        <!-- ── 右手 4 大孔（間距稍大） ── -->
-        <circle id="fh-r1" cx="148" cy="45" r="12" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
-        <circle id="fh-r2" cx="176" cy="45" r="12" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
-        <circle id="fh-r3" cx="204" cy="45" r="12" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
-        <circle id="fh-r4" cx="232" cy="45" r="12" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
+        <!-- ══ 右手3大孔（食中無，上排） ══ -->
+        <circle id="fh-r1" cx="136" cy="36" r="13" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
+        <circle id="fh-r2" cx="164" cy="36" r="13" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
+        <circle id="fh-r3" cx="192" cy="36" r="13" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
+        <!-- 右手無名指下方的小輔助圓（Trill key） -->
+        <circle id="fh-r4" cx="192" cy="62" r="7" fill="none" stroke="#4FACDE" stroke-width="1.8" opacity="0.6"/>
 
-        <!-- ── 右小指方鍵（像 chart 右邊的長方形鍵） ── -->
-        <rect id="fh-rp" x="252" y="28" width="14" height="34" rx="4"
-          fill="none" stroke="#4FACDE" stroke-width="2.5"/>
+        <!-- ══ 右小指鍵組：d形 + 3個橫排細長鍵 ══ -->
+        <!-- d形（最左，豎向） -->
+        <path id="fh-rp1"
+          d="M212,22 L212,74 Q228,74 228,62 L228,34 Q228,22 212,22 Z"
+          fill="none" stroke="#4FACDE" stroke-width="2.2"/>
+        <!-- 3個細長橫鍵（並排） -->
+        <rect id="fh-rp2" x="232" y="22" width="18" height="14" rx="4" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <rect id="fh-rp3" x="232" y="42" width="18" height="14" rx="4" fill="none" stroke="#4FACDE" stroke-width="2"/>
+        <rect id="fh-rp4" x="232" y="62" width="18" height="12" rx="4" fill="none" stroke="#4FACDE" stroke-width="2"/>
 
-        <!-- ── 標籤 ── -->
-        <text x="13"  y="80" text-anchor="middle" font-size="9" fill="#4FACDE" opacity="0.5" font-family="monospace">拇</text>
-        <text x="46"  y="80" text-anchor="middle" font-size="9" fill="#4FACDE" opacity="0.5" font-family="monospace">1</text>
-        <text x="74"  y="80" text-anchor="middle" font-size="9" fill="#4FACDE" opacity="0.5" font-family="monospace">2</text>
-        <text x="102" y="80" text-anchor="middle" font-size="9" fill="#4FACDE" opacity="0.5" font-family="monospace">3</text>
-        <text x="148" y="80" text-anchor="middle" font-size="9" fill="#4FACDE" opacity="0.5" font-family="monospace">4</text>
-        <text x="176" y="80" text-anchor="middle" font-size="9" fill="#4FACDE" opacity="0.5" font-family="monospace">5</text>
-        <text x="204" y="80" text-anchor="middle" font-size="9" fill="#4FACDE" opacity="0.5" font-family="monospace">6</text>
-        <text x="232" y="80" text-anchor="middle" font-size="9" fill="#4FACDE" opacity="0.5" font-family="monospace">7</text>
       </svg>
     </div>
   </div>
@@ -5864,47 +5872,51 @@ const SOLFEGE = {
 };
 
 
-// 長笛指法：[L拇, L1, L2, L3, L4(G#), R1, R2, R3, R4, R小指]
-// 0=開, 1=閉/按
+// 長笛指法（Boehm system）
+// 格式：[Bb拇, Bn拇, L1, L2, L3, G#側, R1, R2, R3, R4(trill), d形, 細鍵1, 細鍵2, 細鍵3]
+// 對應 SVG ids: fh-lt, fh-lt2, fh-l1, fh-l2, fh-l3, fh-l4, fh-r1, fh-r2, fh-r3, fh-r4, fh-rp1, fh-rp2, fh-rp3, fh-rp4
+// 0=開/放, 1=閉/按
 const FLUTE_FINGERING = {
-  // 第一八度
-  'C4':  [1,1,1,1,0, 1,1,1,1, 1], // low C（需要右小指C#鍵）
-  'C#4': [1,1,1,1,0, 1,1,1,0, 0],
-  'D4':  [0,1,1,1,0, 1,1,1,0, 0],
-  'Eb4': [0,1,1,1,0, 1,1,0,1, 0],
-  'E4':  [0,1,1,1,0, 1,1,0,0, 0],
-  'F4':  [0,1,1,1,0, 1,0,0,0, 0],
-  'F#4': [0,1,1,0,0, 1,0,0,0, 0],
-  'G4':  [0,1,1,0,0, 0,0,0,0, 0],
-  'Ab4': [0,1,1,0,1, 0,0,0,0, 0],
-  'A4':  [0,1,0,0,0, 0,0,0,0, 0],
-  'Bb4': [0,1,0,1,0, 0,0,0,0, 0],
-  'B4':  [0,1,0,0,0, 0,0,0,0, 0], // 同A4，靠embouchure
-  // 第二八度（加超吹）
-  'C5':  [0,0,1,1,0, 1,1,1,0, 0],
-  'C#5': [0,0,1,1,0, 1,1,0,0, 0],
-  'D5':  [0,1,1,1,0, 1,1,0,0, 0],
-  'Eb5': [0,1,1,1,0, 1,0,1,0, 0],
-  'E5':  [0,1,1,1,0, 1,0,0,0, 0],
-  'F5':  [0,1,1,1,0, 0,1,0,0, 0],
-  'F#5': [0,1,1,0,0, 1,0,0,0, 0],
-  'G5':  [0,1,1,0,0, 0,0,0,0, 0],
-  'Ab5': [0,1,1,0,1, 0,0,0,0, 0],
-  'A5':  [0,1,0,0,0, 0,0,0,0, 0],
-  'Bb5': [0,1,0,1,0, 0,0,0,0, 0],
-  'B5':  [0,0,1,0,0, 0,0,0,0, 0],
-  // 第三八度
-  'C6':  [0,0,1,1,0, 1,1,0,0, 0],
-  'C#6': [0,1,0,1,0, 1,0,0,0, 0],
-  'D6':  [1,1,0,1,0, 1,1,0,0, 0],
-  'Eb6': [0,1,1,0,0, 0,1,0,0, 0],
-  'E6':  [0,1,1,1,0, 0,0,1,0, 0],
-  'F6':  [0,1,1,0,0, 0,0,0,0, 0],
-  'F#6': [0,1,0,0,0, 1,0,0,0, 0],
-  'G6':  [0,0,1,1,0, 0,0,0,0, 0],
-  'A6':  [0,1,0,0,0, 1,0,0,0, 0],
-  'B6':  [0,1,0,0,0, 0,1,0,0, 0],
-  'C7':  [0,1,0,0,0, 0,0,1,0, 0],
+  // ── 低音區（第一八度）──
+  'C4':  [1,0, 1,1,1,0, 1,1,1,0, 1,1,1,0],
+  'C#4': [1,0, 1,1,1,0, 1,1,1,0, 1,0,0,0],
+  'D4':  [1,0, 1,1,1,0, 1,1,1,0, 0,0,0,0],
+  'Eb4': [1,0, 1,1,1,0, 1,1,0,0, 0,0,1,0],
+  'E4':  [1,0, 1,1,1,0, 1,1,0,0, 0,0,0,0],
+  'F4':  [1,0, 1,1,1,0, 1,0,0,0, 0,0,0,0],
+  'F#4': [1,0, 1,1,1,0, 0,1,0,0, 0,0,0,0],
+  'G4':  [1,0, 1,1,1,0, 0,0,0,0, 0,0,0,0],
+  'Ab4': [1,0, 1,1,1,1, 0,0,0,0, 0,0,0,0],
+  'A4':  [1,0, 1,1,0,0, 0,0,0,0, 0,0,0,0],
+  'Bb4': [1,0, 1,1,0,0, 1,0,0,0, 0,0,0,0],
+  'B4':  [1,0, 1,0,0,0, 0,0,0,0, 0,0,0,0],
+  // ── 中音區（第二八度）──
+  'C5':  [0,1, 1,1,1,0, 1,1,1,0, 0,0,0,0],
+  'C#5': [0,0, 0,1,1,0, 1,1,1,0, 0,0,0,0],
+  'D5':  [1,0, 1,1,1,0, 1,1,0,0, 0,0,0,0],
+  'Eb5': [1,0, 1,1,1,0, 1,0,0,0, 0,0,1,0],
+  'E5':  [1,0, 1,1,1,0, 1,0,0,0, 0,0,0,0],
+  'F5':  [1,0, 1,1,1,0, 0,1,0,0, 0,0,0,0],
+  'F#5': [1,0, 1,1,0,0, 1,0,0,0, 0,0,0,0],
+  'G5':  [1,0, 1,1,0,0, 0,0,0,0, 0,0,0,0],
+  'Ab5': [1,0, 1,1,0,1, 0,0,0,0, 0,0,0,0],
+  'A5':  [1,0, 1,0,0,0, 0,0,0,0, 0,0,0,0],
+  'Bb5': [1,0, 1,0,0,0, 1,0,0,0, 0,0,0,0],
+  'B5':  [1,0, 0,1,0,0, 0,0,0,0, 0,0,0,0],
+  // ── 高音區（第三八度）──
+  'C6':  [0,1, 1,1,1,0, 1,1,0,0, 0,0,0,0],
+  'C#6': [0,0, 1,0,1,0, 1,0,0,0, 0,0,0,0],
+  'D6':  [1,0, 1,1,1,0, 0,1,0,0, 0,0,0,0],
+  'Eb6': [1,0, 1,1,0,0, 0,1,0,0, 0,0,0,0],
+  'E6':  [1,0, 1,1,1,0, 0,0,1,0, 0,0,0,0],
+  'F6':  [1,0, 1,1,0,0, 1,0,0,0, 0,0,0,0],
+  'F#6': [1,0, 1,0,1,0, 1,0,0,0, 0,0,0,0],
+  'G6':  [1,0, 1,1,0,0, 0,0,0,0, 0,0,0,0],
+  'Ab6': [1,0, 1,0,0,1, 0,0,0,0, 0,0,0,0],
+  'A6':  [0,0, 1,0,0,0, 1,0,0,0, 0,0,0,0],
+  'Bb6': [1,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+  'B6':  [0,0, 0,1,0,0, 0,1,0,0, 0,0,0,0],
+  'C7':  [0,1, 0,0,0,0, 1,1,0,0, 0,0,0,0],
 };
 
 const TRUMPET_FINGERING = {
@@ -6489,7 +6501,7 @@ function showFingering(writtenName) {
     document.getElementById('flute-fingering').style.display = '';
     const f = FLUTE_FINGERING[writtenName];
     // [lThumb, l1, l2, l3, l4(G#), r1, r2, r3, r4, rPinky]
-    const ids = ['fh-lt','fh-l1','fh-l2','fh-l3','fh-l4','fh-r1','fh-r2','fh-r3','fh-r4','fh-rp'];
+    const ids = ['fh-lt','fh-lt2','fh-l1','fh-l2','fh-l3','fh-l4','fh-r1','fh-r2','fh-r3','fh-r4','fh-rp1','fh-rp2','fh-rp3','fh-rp4'];
     const label = f ? writtenName : '–';
     document.getElementById('fingering-label').textContent = f ? writtenName + ' 指法' : '指法';
     const fluteLabel = document.getElementById('fingering-flute-label');
@@ -6498,8 +6510,17 @@ function showFingering(writtenName) {
       const el = document.getElementById(id);
       if (!el) return;
       const pressed = f ? f[i] === 1 : false;
-      el.setAttribute('fill', pressed ? '#4FACDE' : 'none');
-      el.setAttribute('opacity', pressed ? '1' : '0.4');
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'line') {
+        el.setAttribute('opacity', pressed ? '1' : '0.2');
+        el.setAttribute('stroke-width', pressed ? '3' : '1.5');
+      } else if (tag === 'rect') {
+        el.setAttribute('fill', pressed ? '#4FACDE' : 'none');
+        el.setAttribute('opacity', pressed ? '1' : '0.35');
+      } else {
+        el.setAttribute('fill', pressed ? '#4FACDE' : 'none');
+        el.setAttribute('opacity', pressed ? '1' : '0.35');
+      }
     });
   }
 }
