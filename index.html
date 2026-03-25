@@ -5231,12 +5231,12 @@ function buildPracticeEmbed() {
         <circle id="fh-l3" cx="92"  cy="36" r="13" fill="none" stroke="#4FACDE" stroke-width="2.5"/>
 
         <!-- ══ 左拇2鍵（左下方） ══ -->
-        <!-- Bb大水滴 -->
-        <path id="fh-lt"
+        <!-- Bn大水滴（左邊，主鍵） -->
+        <path id="fh-lt2"
           d="M14,58 C7,55 3,60 3,66 C3,73 8,78 14,77 C18,77 18,74 18,70 L18,58 Z"
           fill="none" stroke="#4FACDE" stroke-width="2.2"/>
-        <!-- Bn小水滴（右邊） -->
-        <path id="fh-lt2"
+        <!-- Bb小水滴（右邊） -->
+        <path id="fh-lt"
           d="M26,62 C21,60 18,64 18,69 C18,74 22,77 26,76 C29,76 29,74 29,71 L29,62 Z"
           fill="none" stroke="#4FACDE" stroke-width="1.8"/>
 
@@ -5873,8 +5873,8 @@ const SOLFEGE = {
 
 
 // 長笛指法（Boehm system）
-// 格式：[Bb拇, Bn拇, L1, L2, L3, G#側, R1, R2, R3, R4(trill), d形, 細鍵1, 細鍵2, 細鍵3]
-// 對應 SVG ids: fh-lt, fh-lt2, fh-l1, fh-l2, fh-l3, fh-l4, fh-r1, fh-r2, fh-r3, fh-r4, fh-rp1, fh-rp2, fh-rp3, fh-rp4
+// 格式：[Bb拇(fh-lt), Bn拇(fh-lt2), L1, L2, L3, G#側, R1, R2, R3, R4(trill), d形, 細鍵1, 細鍵2, 細鍵3]
+// Bb在右（小），Bn在左（大）
 // 0=開/放, 1=閉/按
 const FLUTE_FINGERING = {
   // ── 低音區（第一八度）──
